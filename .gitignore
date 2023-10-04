@@ -1,0 +1,23 @@
+# Compiled object files
+*.o
+
+# Executables
+onm_cli
+
+# Compiled libraries
+*.so
+
+# Include directories
+/include/
+
+# Build directory
+/build/
+
+# Temporary files
+*.swp
+*~
+
+# Dependency files
+*.d
+
+# Editor-specific files
