@@ -4,7 +4,7 @@
 
 #ifndef ONMCLI_COMMANDS_H
 #define ONMCLI_COMMANDS_H
-#include <libcli.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +17,7 @@
 #include <libyang/log.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../lib/libcli/libcli.h"
 #include "config.h"
 
 

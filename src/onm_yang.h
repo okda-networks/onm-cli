@@ -7,7 +7,11 @@
 
 #include <libyang/libyang.h>
 #include <libyang/parser_data.h>
+#include <libyang/tree.h>
+#include <libyang/tree_schema.h>
 #include <libyang/log.h>
+
+
 
 int onm_yang_init();
 
@@ -16,5 +20,6 @@ int unset_yang_searchdir(const char *dir);
 const char * const* get_yang_searchdirs();
 
 struct lysc_node *get_module_schema(char *module_name);
+
 
 #endif //ONMCLI_ONM_YANG_H

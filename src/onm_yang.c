@@ -4,11 +4,16 @@
 
 #include <stdio.h>
 #include <unistd.h>
-
+#include "utils.h"
 #include "onm_yang.h"
 #include "config.h"
 
+
 static struct ly_ctx *ctx;
+
+
+
+// Libyang utils functions
 
 int set_yang_searchdir(const char *dir) {
     printf("INFO:onm_yang.c: setting yang search path to `%s`\n",dir);
@@ -29,13 +34,12 @@ struct lysc_node *get_module_schema(char *module_name) {
     printf("DEBUG:onm_yang.c: get schema for module=%s\n",module_name);
 
     const struct lys_module *module = ly_ctx_load_module(ctx, module_name, NULL, NULL);
-    const struct lys_module *module1 = ly_ctx_load_module(ctx, "ietf-ip", NULL, NULL);
+//    const struct lys_module *module1 = ly_ctx_load_module(ctx, "ietf-ip", NULL, NULL);
 
 
 
     if (!module) {
         fprintf(stderr, "Failed to load YANG module\n");
-        ly_ctx_destroy(ctx);
         return NULL;
     }
 
@@ -45,14 +49,12 @@ struct lysc_node *get_module_schema(char *module_name) {
 
 
         fprintf(stderr, "error: module_compiled is null\n");
-        ly_ctx_destroy(ctx);
         return NULL;
     }
 
     struct lysc_node *node_root = module_compiled->data;
     if (node_root == NULL) {
         fprintf(stderr, "error: node_root is null\n");
-        ly_ctx_destroy(ctx);
         return NULL;
     }
     return node_root;
