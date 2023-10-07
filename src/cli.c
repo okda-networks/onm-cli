@@ -29,10 +29,10 @@ int onm_cli_init() {
     cli_set_banner(cli, banner);
     cli_set_hostname(cli, "dentos_r01");
 
-
     cli_set_idle_timeout_callback(cli, CLI_TIMEOUT, idle_timeout);
 
     onm_commands_init(cli);
+    return 0;
 
 
 }

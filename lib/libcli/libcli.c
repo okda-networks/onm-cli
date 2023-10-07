@@ -196,14 +196,8 @@ void cli_push_configmode(struct cli_def *cli,int mode, const char *desc) {
     struct term_mode_node *c = malloc(sizeof(struct term_mode_node));
     c->mode = mode;
     c->mode_desc = desc;
-
-    if (cli->term_mode_stack == NULL){
-        c->prev = NULL;
-        cli->term_mode_stack = c;
-    } else {
-        c->prev = cli->term_mode_stack;
-        cli->term_mode_stack = c;
-    }
+    c->prev = cli->term_mode_stack;
+    cli->term_mode_stack = c;
 }
 
 struct term_mode_node * pop_configmode(struct cli_def *cli) {
@@ -608,28 +602,19 @@ int cli_quit(struct cli_def *cli, UNUSED(struct cli_command *c),  UNUSED(const c
 }
 
 int cli_exit(struct cli_def *cli, UNUSED(struct cli_command *c),  const char *command, char *argv[], int argc) {
-    if (cli->mode == MODE_EXEC) return cli_quit(cli,c, command, argv, argc);
-
-    if (cli->mode == MODE_CONFIG)
-        cli_set_configmode(cli, MODE_EXEC, NULL);
-    else {
-        if (cli->term_mode_stack == NULL)
-            cli_set_configmode(cli, MODE_CONFIG, NULL);
-        else{
-            struct term_mode_node * curr_term_mode = pop_configmode(cli);
-            if(curr_term_mode->prev == NULL){
-                cli_set_configmode(cli, MODE_CONFIG, NULL);
-                free(curr_term_mode);
-            } else{
-                printf("herererer=%s\n",curr_term_mode->prev->mode_desc);
-                cli_set_configmode(cli, curr_term_mode->prev->mode, curr_term_mode->prev->mode_desc);
-                free(curr_term_mode);
-            }
-
-        }
-
+    if (cli->term_mode_stack->prev != NULL) {
+        struct term_mode_node *term_prev;
+        term_prev = cli->term_mode_stack->prev;
+        free(cli->term_mode_stack);
+        cli->term_mode_stack = term_prev;
+        cli_set_configmode(cli, cli->term_mode_stack->mode, cli->term_mode_stack->mode_desc);
+        return CLI_OK;
     }
-
+    if (cli->mode == MODE_EXEC) return cli_quit(cli,c, command, argv, argc);
+    if (cli->mode > MODE_CONFIG)
+        cli_set_configmode(cli, MODE_CONFIG, NULL);
+    else
+        cli_set_configmode(cli, MODE_EXEC, NULL);
     cli->service = NULL;
     return CLI_OK;
 }
@@ -739,7 +724,9 @@ struct cli_def *cli_init() {
     cli_register_optarg(c, "search_pattern", CLI_CMD_ARGUMENT | CLI_CMD_REMAINDER_OF_LINE, PRIVILEGE_UNPRIVILEGED,
                         MODE_ANY, "Search pattern", NULL, NULL, NULL);
 
-    cli->term_mode_stack = NULL;
+    cli->term_mode_stack = malloc(sizeof(struct term_mode_node));
+    cli->term_mode_stack->mode=MODE_CONFIG;
+    cli->term_mode_stack->prev=NULL;
     cli->privilege = cli->mode = -1;
     cli_set_privilege(cli, PRIVILEGE_UNPRIVILEGED);
     cli_set_configmode(cli, MODE_EXEC, 0);

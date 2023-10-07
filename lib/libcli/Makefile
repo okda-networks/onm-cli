@@ -7,7 +7,7 @@ TESTS ?= 1
 
 UNAME = $(shell sh -c 'uname -s 2>/dev/null || echo not')
 DESTDIR =
-PREFIX = /usr
+PREFIX = /usr/local
 
 MAJOR = 1
 MINOR = 10
