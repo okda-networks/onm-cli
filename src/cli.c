@@ -2,7 +2,7 @@
 // Created by ali on 10/4/23.
 //
 #include "cli.h"
-#include "commands.h"
+#include "cmds/commands.h"
 #include "VERSION.h"
 
 

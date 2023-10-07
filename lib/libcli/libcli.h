@@ -80,6 +80,7 @@ struct cli_def {
   time_t last_action;
   int telnet_protocol;
   void *user_context;
+  struct term_mode_node *term_mode_stack;
   struct cli_optarg_pair *found_optargs;
   int transient_mode;
   int disallow_buildmode;
@@ -188,6 +189,11 @@ struct cli_buildmode {
   int transient_mode;
   char *mode_text;
 };
+struct term_mode_node {
+    int mode;
+    const char *mode_desc;
+    struct term_mode_node *prev;
+} ;
 
 struct cli_def *cli_init(void);
 int cli_done(struct cli_def *cli);
@@ -221,7 +227,7 @@ void cli_free_history(struct cli_def *cli);
 void cli_set_idle_timeout(struct cli_def *cli, unsigned int seconds);
 void cli_set_idle_timeout_callback(struct cli_def *cli, unsigned int seconds, int (*callback)(struct cli_def *));
 void cli_dump_optargs_and_args(struct cli_def *cli, const char *text, char *argv[], int argc);
-
+void cli_push_configmode(struct cli_def *cli,int mode, const char *desc);
 // Enable or disable telnet protocol negotiation.
 // Note that this is enabled by default and must be changed before cli_loop() is run.
 void cli_telnet_protocol(struct cli_def *cli, int telnet_protocol);

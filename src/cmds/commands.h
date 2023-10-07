@@ -17,8 +17,8 @@
 #include <libyang/log.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../lib/libcli/libcli.h"
-#include "config.h"
+#include "../../lib/libcli/libcli.h"
+#include "../config.h"
 
 
 

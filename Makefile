@@ -1,5 +1,6 @@
 CC = gcc
-src = src/onm_main.c src/commands.c src/cli.c src/onm_yang.c src/utils.c
+commands_src = src/cmds/commands.c src/cmds/yang_commands.c
+src = src/onm_main.c src/cli.c src/onm_yang.c src/utils.c $(commands_src)
 LIB_PATH = -L/usr/local/lib/
 
 

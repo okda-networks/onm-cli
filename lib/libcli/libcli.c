@@ -1,5 +1,7 @@
 // vim:sw=2 tw=120 et
-
+//
+// this is a fork of https://github.com/dparrish/libcli
+//
 #ifdef WIN32
 #include <windows.h>
 #include <winsock2.h>
@@ -125,6 +127,8 @@ struct cli_filter_cmds {
     const char *help;
 };
 
+
+
 // Free and zero (to avoid double-free)
 #define free_z(p) \
   do {            \
@@ -187,10 +191,36 @@ static char DELIM_ARG_START[] = "<";
 static char DELIM_ARG_END[] = ">";
 static char DELIM_NONE[] = "";
 
-int ali_cli_hello(){
-    printf("hello\n");
-    return 0;
+void cli_push_configmode(struct cli_def *cli,int mode, const char *desc) {
+    cli_set_configmode(cli, mode, desc);
+    struct term_mode_node *c = malloc(sizeof(struct term_mode_node));
+    c->mode = mode;
+    c->mode_desc = desc;
+
+    if (cli->term_mode_stack == NULL){
+        c->prev = NULL;
+        cli->term_mode_stack = c;
+    } else {
+        c->prev = cli->term_mode_stack;
+        cli->term_mode_stack = c;
+    }
 }
+
+struct term_mode_node * pop_configmode(struct cli_def *cli) {
+
+    if (cli->term_mode_stack == NULL) {
+        return NULL;
+    }
+    if (cli->term_mode_stack-> prev == NULL) {
+        return cli->term_mode_stack;
+    }
+    struct term_mode_node *term_current;
+    term_current = cli->term_mode_stack;
+    cli->term_mode_stack = cli->term_mode_stack->prev;
+    return term_current;
+}
+
+
 
 static ssize_t _write(int fd, const void *buf, size_t count) {
     size_t written = 0;
@@ -580,10 +610,25 @@ int cli_quit(struct cli_def *cli, UNUSED(struct cli_command *c),  UNUSED(const c
 int cli_exit(struct cli_def *cli, UNUSED(struct cli_command *c),  const char *command, char *argv[], int argc) {
     if (cli->mode == MODE_EXEC) return cli_quit(cli,c, command, argv, argc);
 
-    if (cli->mode > MODE_CONFIG)
-        cli_set_configmode(cli, MODE_CONFIG, NULL);
-    else
+    if (cli->mode == MODE_CONFIG)
         cli_set_configmode(cli, MODE_EXEC, NULL);
+    else {
+        if (cli->term_mode_stack == NULL)
+            cli_set_configmode(cli, MODE_CONFIG, NULL);
+        else{
+            struct term_mode_node * curr_term_mode = pop_configmode(cli);
+            if(curr_term_mode->prev == NULL){
+                cli_set_configmode(cli, MODE_CONFIG, NULL);
+                free(curr_term_mode);
+            } else{
+                printf("herererer=%s\n",curr_term_mode->prev->mode_desc);
+                cli_set_configmode(cli, curr_term_mode->prev->mode, curr_term_mode->prev->mode_desc);
+                free(curr_term_mode);
+            }
+
+        }
+
+    }
 
     cli->service = NULL;
     return CLI_OK;
@@ -694,6 +739,7 @@ struct cli_def *cli_init() {
     cli_register_optarg(c, "search_pattern", CLI_CMD_ARGUMENT | CLI_CMD_REMAINDER_OF_LINE, PRIVILEGE_UNPRIVILEGED,
                         MODE_ANY, "Search pattern", NULL, NULL, NULL);
 
+    cli->term_mode_stack = NULL;
     cli->privilege = cli->mode = -1;
     cli_set_privilege(cli, PRIVILEGE_UNPRIVILEGED);
     cli_set_configmode(cli, MODE_EXEC, 0);
