@@ -1,0 +1,6 @@
+*.o
+*.a
+*.so
+*.so.*
+clitest
+compile_commands.json
