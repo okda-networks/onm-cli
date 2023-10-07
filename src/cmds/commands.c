@@ -127,7 +127,7 @@ int onm_commands_init(struct cli_def *cli) {
                          MODE_FRR, "frr subsystem config");
     printf("hello\n");
     // yang commands
-//    yang_cmds_init(cli);
+    yang_cmds_init(cli);
 
 
 
