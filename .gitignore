@@ -1,8 +1,12 @@
 # Compiled object files
 *.o
+*.a
+*.so.*
 
+compile_commands.json
 # Executables
 onm_cli
+clitest
 
 # Compiled libraries
 *.so

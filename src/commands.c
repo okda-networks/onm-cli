@@ -183,7 +183,6 @@ int cmd_yang_generic_leaf(struct cli_def *cli, struct cli_command *c, const char
 
     }
     return CLI_MISSING_ARGUMENT;
-
 }
 
 int cmd_yang_generic(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
