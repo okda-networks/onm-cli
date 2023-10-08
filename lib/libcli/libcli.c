@@ -1197,7 +1197,7 @@ int cli_loop(struct cli_def *cli, int sockfd) {
             cli->disallow_buildmode = (cli->buildmode) ? 1 : 0;
 
             if (cli->showprompt) {
-                if (cli->state != STATE_PASSWORD && cli->state != STATE_ENABLE_PASSWORD) _write(sockfd, "\r\n", 2);
+//                if (cli->state != STATE_PASSWORD && cli->state != STATE_ENABLE_PASSWORD) _write(sockfd, "\r\n", 2);
 
                 switch (cli->state) {
                     case STATE_LOGIN:
