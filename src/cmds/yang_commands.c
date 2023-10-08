@@ -76,15 +76,14 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
-    LYSC_TREE_DFS_BEGIN(child_list, child){
-            if (child->flags & LYS_KEY){
+    LYSC_TREE_DFS_BEGIN(child_list, child) {
+            if (child->flags & LYS_KEY) {
                 cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
                                     child->dsc, NULL, NULL, NULL);
                 break;
             }
         LYSC_TREE_DFS_END(child_list->next, child);
     }
-
 
 
     return 0;
@@ -107,15 +106,15 @@ int register_cmds_schema(struct lysc_node *schema, struct cli_def *cli) {
             switch (child->nodetype) {
                 case LYS_CONTAINER:
                     printf("TRACE: register CLI command for container: %s\r\n", child->name);
-                    register_cmd_container(cli,child);
+                    register_cmd_container(cli, child);
                     break;
                 case LYS_LEAF:
                     printf("TRACE: register CLI command for leaf: %s\r\n", child->name);
-                    register_cmd_leaf(cli,child);
+                    register_cmd_leaf(cli, child);
                     break;
                 case LYS_LIST:
                     printf("TRACE: register CLI command for list: %s\r\n", child->name);
-                    register_cmd_list(cli,child);
+                    register_cmd_list(cli, child);
                     break;
                     // Add cases for other node types as needed
                 default:
@@ -143,7 +142,8 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 
             if (ne != NULL)
-                cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s\r\n", ne->module->name, ne->name, xpath);
+                cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s\r\n", ne->module->name, ne->name,
+                          xpath);
             else
                 cli_print(cli, "  failed to fine yang module\r\n");
             return CLI_OK;
@@ -155,16 +155,16 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s` , help=%s\n", cmd, (char *) cli->user_context);
+    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s` , help=%s\n", cmd,
+           (char *) cli->user_context);
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli,"  %s",c->help);
+            cli_print(cli, "  %s", c->help);
             return CLI_INCOMPLETE_COMMAND;
         }
         cli_print(cli, "  unknown args\n");
         return CLI_ERROR_ARG;
     }
-
 
 
     int mode = str2int_hash((char *) cmd);
@@ -174,13 +174,14 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
 
 int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s` , help=%s\n", cmd, (char *) cli->user_context);
+    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s` , help=%s\n", cmd,
+           (char *) cli->user_context);
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli,"  key is missing for command %s\n",cmd);
+            cli_print(cli, "  key is missing for command %s\n", cmd);
             return CLI_INCOMPLETE_COMMAND;
         }
-        cli_print(cli, "  configuring %s %s\n",cmd,argv[0]);
+        cli_print(cli, "  configuring %s %s\n", cmd, argv[0]);
         return CLI_OK;
     }
 
@@ -214,9 +215,10 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
     char *module_name = (char *) argv[0];
     struct lysc_node *schema = get_module_schema(module_name);
     if (schema == NULL) {
-        cli_print(cli, "  ERROR: yang module '%s' not found, "
-                       "please make sure to set the correct search dir for yang, use command 'yang search_dir set /path/to/yang_modules' in enable mode"
-                       "", module_name);
+        cli_print(cli, "  ERROR: yang module '%s' not found,\n"
+                       "  please make sure to set the correct search dir for yang,\n"
+                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode",
+                  module_name);
         return CLI_ERROR;
     }
     cli_print(cli, "  generating commands for yang module `%s`", module_name);
