@@ -30,34 +30,14 @@ const char * const* get_yang_searchdirs(){
     return ly_ctx_get_searchdirs(ctx);
 }
 
-struct lysc_node *get_module_schema(char *module_name) {
+const struct lys_module *get_module_schema(char *module_name) {
     printf("DEBUG:onm_yang.c: get schema for module=%s\n",module_name);
 
     const struct lys_module *module = ly_ctx_load_module(ctx, module_name, NULL, NULL);
-//    const struct lys_module *module1 = ly_ctx_load_module(ctx, "ietf-ip", NULL, NULL);
+//    const struct lys_module *module1 = ly_ctx_load_module(ctx, "ietf-interfaces", NULL, NULL);
+    return module;
 
 
-
-    if (!module) {
-        fprintf(stderr, "Failed to load YANG module\n");
-        return NULL;
-    }
-
-
-    struct lysc_module *module_compiled = module->compiled;
-    if (module_compiled == NULL) {
-
-
-        fprintf(stderr, "error: module_compiled is null\n");
-        return NULL;
-    }
-
-    struct lysc_node *node_root = module_compiled->data;
-    if (node_root == NULL) {
-        fprintf(stderr, "error: node_root is null\n");
-        return NULL;
-    }
-    return node_root;
 }
 
 int onm_yang_init() {
