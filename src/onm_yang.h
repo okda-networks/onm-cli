@@ -11,15 +11,22 @@
 #include <libyang/tree_schema.h>
 #include <libyang/log.h>
 
-
+enum {
+    ERR_GET_MODULE_NOT_FOUND = 1,
+    ERR_GET_MODULE_AUG_MODULE,
+    ERR_GET_MODULE_NOT_COMPILED,
+    ERR_GET_MODULE_UNKNOWN
+};
 
 int onm_yang_init();
 
 int set_yang_searchdir(const char *dir);
-int unset_yang_searchdir(const char *dir);
-const char * const* get_yang_searchdirs();
 
-struct lysc_node *get_module_schema(char *module_name);
+int unset_yang_searchdir(const char *dir);
+
+const char *const *get_yang_searchdirs();
+
+const struct lys_module *get_module_schema(char *module_name);
 
 
 #endif //ONMCLI_ONM_YANG_H

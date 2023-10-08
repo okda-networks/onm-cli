@@ -89,37 +89,41 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     return 0;
 }
 
+static  void register_node_routine(struct cli_def * cli, struct lysc_node *schema){
+    if (schema->flags & LYS_CONFIG_R) {
+        return ;
+    }
+    switch (schema->nodetype) {
+        case LYS_CONTAINER:
+            printf("TRACE: register CLI command for container: %s\r\n", schema->name);
+            register_cmd_container(cli, schema);
+            break;
+        case LYS_LEAF:
+            printf("TRACE: register CLI command for leaf: %s\r\n", schema->name);
+            register_cmd_leaf(cli, schema);
+            break;
+        case LYS_LIST:
+            printf("TRACE: register CLI command for list: %s\r\n", schema->name);
+            register_cmd_list(cli, schema);
+            break;
+            // Add cases for other node types as needed
+        default:
+            return ;
+    }
+    return ;
+}
+
 /**
- * register cmd commands from a schema.
- * @param schema  lysc_node schema
+ * register  commands from a yang schema.
+ * @param schema  lysc_node schema the root node
  * @param cli     libcli cli
  * @return
  */
-int register_cmds_schema(struct lysc_node *schema, struct cli_def *cli) {
+int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
-
     struct lysc_node *child = NULL;
     LYSC_TREE_DFS_BEGIN(schema, child) {
-            if (child->flags & LYS_CONFIG_R) {
-                return 0;
-            }
-            switch (child->nodetype) {
-                case LYS_CONTAINER:
-                    printf("TRACE: register CLI command for container: %s\r\n", child->name);
-                    register_cmd_container(cli, child);
-                    break;
-                case LYS_LEAF:
-                    printf("TRACE: register CLI command for leaf: %s\r\n", child->name);
-                    register_cmd_leaf(cli, child);
-                    break;
-                case LYS_LIST:
-                    printf("TRACE: register CLI command for list: %s\r\n", child->name);
-                    register_cmd_list(cli, child);
-                    break;
-                    // Add cases for other node types as needed
-                default:
-                    break;
-            }
+            register_node_routine(cli,child);
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
@@ -155,8 +159,7 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s` , help=%s\n", cmd,
-           (char *) cli->user_context);
+    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s`\n", cmd);
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
             cli_print(cli, "  %s", c->help);
@@ -213,16 +216,30 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
         return CLI_OK;
     }
     char *module_name = (char *) argv[0];
-    struct lysc_node *schema = get_module_schema(module_name);
-    if (schema == NULL) {
-        cli_print(cli, "  ERROR: yang module '%s' not found,\n"
+    const struct lys_module *module =get_module_schema(module_name) ;
+    if (module == NULL){
+        cli_print(cli, "  ERROR: module `%s` not found, \n"
                        "  please make sure to set the correct search dir for yang,\n"
-                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode",
-                  module_name);
+                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode",module_name);
         return CLI_ERROR;
+    } else if (module->compiled == NULL){
+        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n",module_name);
+        return CLI_ERROR;
+    } else if (module->compiled->data == NULL){
+        if (module->parsed == NULL){
+            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n",module_name);
+            return CLI_ERROR;
+        } else if (module->parsed->augments != NULL){
+            cli_print(cli, "  WARN: module `%s` is loaded but not parsed as it's augmenting `%s`\n"
+                           "  please run yang generate for the augmented module",module_name,module->parsed->augments->node.name);
+            return CLI_ERROR;
+
+        }
+
     }
+
     cli_print(cli, "  generating commands for yang module `%s`", module_name);
-    register_cmds_schema(schema, cli);
+    register_commands_schema(module->compiled->data, cli);
     cli_print(cli, "  commands for yang module `%s` generated successfully", module_name);
     return CLI_OK;
 
@@ -245,11 +262,11 @@ int cmd_yang_searchdir_set(struct cli_def *cli, struct cli_command *c, const cha
 
 int cmd_yang_searchdir_unset(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     if (argc == 0) {
-        cli_print(cli, "specify yang dir");
+        cli_print(cli, "  specify yang dir");
         return CLI_INCOMPLETE_COMMAND;
     }
     if (strcmp(argv[0], "?") == 0) {
-        cli_print(cli, "yang dir was not specified");
+        cli_print(cli, "  yang dir was not specified");
         return CLI_MISSING_ARGUMENT;
     }
 
@@ -261,14 +278,14 @@ int cmd_yang_searchdir_unset(struct cli_def *cli, struct cli_command *c, const c
 int cmd_yang_list_searchdirs(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli, "<cr>");
+            cli_print(cli, "  <cr>");
             return CLI_MISSING_ARGUMENT;
         }
     }
 
     const char *const *dir_list = get_yang_searchdirs();
     while (*dir_list != NULL) {
-        cli_print(cli, "[+] %s", *dir_list);
+        cli_print(cli, "  [+] %s", *dir_list);
         ++dir_list;
     }
 
