@@ -24,7 +24,7 @@ int handle_session(int fd){
 int onm_cli_init() {
     cli = cli_init();
     char banner[100];
-    sprintf(banner, "\n\nonm-cli version: %d.%d.%d\n\nby Okda networks (c) 2023", MAJOR, MINOR, PATCH);
+    sprintf(banner, "\n\nonm-cli version: %d.%d.%d\nby Okda networks (c) 2023", MAJOR, MINOR, PATCH);
 
     cli_set_banner(cli, banner);
     cli_set_hostname(cli, "dentos_r01");

@@ -1211,6 +1211,7 @@ int cli_loop(struct cli_def *cli, int sockfd) {
                     case STATE_NORMAL:
                     case STATE_ENABLE:
                         show_prompt(cli, sockfd);
+
                         _write(sockfd, cmd, l);
                         if (cursor < l) {
                             int n = l - cursor;
