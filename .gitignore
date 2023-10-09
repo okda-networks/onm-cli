@@ -25,3 +25,4 @@ clitest
 *.d
 
 # Editor-specific files
+valgrind*

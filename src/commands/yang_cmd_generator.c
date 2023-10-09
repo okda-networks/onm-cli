@@ -1,24 +1,14 @@
 //
-// Created by ali on 10/7/23.
+// Created by ali on 10/9/23.
 //
-
-#include "yang_commands.h"
-#include "../utils.h"
-
-static int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-static int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-static int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-static int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-static int cmd_yang_path(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
 
 /*
  * cli commands generator functions
  * */
+#include "yang_cmd_generator.h"
+#include "yang_cmd.h"
+#include "../utils.h"
+
 
 /**
  * register command in cli for a container node
@@ -77,11 +67,11 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
     LYSC_TREE_DFS_BEGIN(child_list, child) {
-            if (child->flags & LYS_KEY) {
-                cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
-                                    child->dsc, NULL, NULL, NULL);
-                break;
-            }
+        if (child->flags & LYS_KEY) {
+            cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
+                                child->dsc, NULL, NULL, NULL);
+            break;
+        }
         LYSC_TREE_DFS_END(child_list->next, child);
     }
 
@@ -123,85 +113,57 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
     struct lysc_node *child = NULL;
     LYSC_TREE_DFS_BEGIN(schema, child) {
-            register_node_routine(cli,child);
+        register_node_routine(cli,child);
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
 
-
 }
 
-
-int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
-    printf("DEBUG:commands.c:cmd_yang_leaf(): executing command `%s`\r\n", cmd);
-    if (argc == 1) {
-        if (strcmp(argv[0], "?") == 0) {
-            return CLI_INCOMPLETE_COMMAND;
-        } else {
-            struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
-            char xpath[100];
-
-            lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
-
-
-            if (ne != NULL)
-                cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s\r\n", ne->module->name, ne->name,
-                          xpath);
-            else
-                cli_print(cli, "  failed to fine yang module\r\n");
-            return CLI_OK;
-        }
-
+int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
+    printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
+    struct lysc_node *child = NULL;
+    LYSC_TREE_DFS_BEGIN(schema, child) {
+            if (schema != NULL)
+                cli_unregister_command(cli,schema->name);
+        LYSC_TREE_DFS_END(schema->next, child);
     }
-    return CLI_MISSING_ARGUMENT;
+    printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
+
 }
 
-int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
-    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s`\n", cmd);
-    if (argc == 1) {
-        if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli, "  %s", c->help);
-            return CLI_INCOMPLETE_COMMAND;
-        }
-        cli_print(cli, "  unknown args\n");
-        return CLI_ERROR_ARG;
+int cmd_yang2cmd_remove(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc){
+    if (argc == 0) {
+        cli_print(cli, "  please specify yang module name");
+        return CLI_INCOMPLETE_COMMAND;
     }
-
-
-    int mode = str2int_hash((char *) cmd);
-    cli_push_configmode(cli, mode, (char *) cmd);
-    return CLI_OK;
-}
-
-int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
-    printf("DEBUG:commands.c:cmd_yang_container(): executing command `%s` , help=%s\n", cmd,
-           (char *) cli->user_context);
-    if (argc == 1) {
-        if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli, "  key is missing for command %s\n", cmd);
-            return CLI_INCOMPLETE_COMMAND;
-        }
-        cli_print(cli, "  configuring %s %s\n", cmd, argv[0]);
+    if (strcmp(argv[0], "?") == 0) {
+        cli_print(cli, "  specify yang module name to generate commands from");
         return CLI_OK;
     }
 
-    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
-    char xpath[100];
+    char *module_name = (char *) argv[0];
+    const struct lys_module *module =get_module_schema(module_name) ;
+    if (module == NULL){
+        cli_print(cli, "  ERROR: module `%s` not found, \n"
+                       "  please make sure to set the correct search dir for yang,\n"
+                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode",module_name);
+        return CLI_ERROR;
+    } else if (module->compiled == NULL){
+        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n",module_name);
+        return CLI_ERROR;
+    } else if (module->compiled->data == NULL){
+        if (module->parsed == NULL){
+            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n",module_name);
+            return CLI_ERROR;
+        } else if (module->parsed->augments != NULL){
+            cli_print(cli, "  WARN: module `%s` is loaded but not parsed as it's augmenting `%s`\n"
+                           "  please run yang generate for the augmented module",module_name,module->parsed->augments->node.name);
+            return CLI_ERROR;
+        }
+    }
 
-    lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
-
-
-    if (ne != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", ne->module->name, ne->name, xpath);
-    else
-        cli_print(cli, "  failed to fine yang module");
-
-    int mode = str2int_hash((char *) cmd);
-    cli_push_configmode(cli, mode, (char *) cmd);
-    return CLI_OK;
+    unregister_commands_schema(module->compiled->data,cli );
 }
 
 int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -233,17 +195,16 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
             cli_print(cli, "  WARN: module `%s` is loaded but not parsed as it's augmenting `%s`\n"
                            "  please run yang generate for the augmented module",module_name,module->parsed->augments->node.name);
             return CLI_ERROR;
-
         }
-
     }
 
-    cli_print(cli, "  generating commands for yang module `%s`", module_name);
     register_commands_schema(module->compiled->data, cli);
     cli_print(cli, "  commands for yang module `%s` generated successfully", module_name);
     return CLI_OK;
 
 }
+
+
 
 int cmd_yang_searchdir_set(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     if (argc == 0) {
@@ -292,7 +253,7 @@ int cmd_yang_list_searchdirs(struct cli_def *cli, struct cli_command *c, const c
 
 }
 
-int yang_cmds_init(struct cli_def *cli) {
+int yang_cmd_generator_init(struct cli_def *cli) {
     struct cli_command *yang_cmd = cli_register_command(cli, NULL, NULL,
                                                         "yang", NULL, PRIVILEGE_PRIVILEGED,
                                                         MODE_EXEC, "yang settings");
@@ -312,9 +273,16 @@ int yang_cmds_init(struct cli_def *cli) {
                          MODE_EXEC, "unset yang search dir: yang set searchdir <path/to/modules>");
 
     cli_register_command(cli, yang_cmd, NULL,
-                         "generate-commands", cmd_yang2cmd_generate, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, "generate commands from module:yang generate-commands <module-name>");
-    cli_register_command(cli, yang_cmd, NULL,
                          "list-seachdir", cmd_yang_list_searchdirs, PRIVILEGE_PRIVILEGED,
                          MODE_EXEC, "list yang serachdirs");
+
+    cli_register_command(cli, yang_cmd, NULL,
+                         "load-module", cmd_yang2cmd_generate, PRIVILEGE_PRIVILEGED,
+                         MODE_EXEC, "load yang module to onm_cli:yang load-module <module-name>");
+
+    cli_register_command(cli, yang_cmd, NULL,
+                         "remove-module", cmd_yang2cmd_remove, PRIVILEGE_PRIVILEGED,
+                         MODE_EXEC, "remove yang module from onm_cli:yang remove-module <module-name>");
+
+    return 0;
 }
