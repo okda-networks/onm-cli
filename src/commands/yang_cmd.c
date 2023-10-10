@@ -12,23 +12,21 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
             return CLI_INCOMPLETE_COMMAND;
-        } else {
-            struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
-            char xpath[100];
-
-            lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
-
-
-            if (ne != NULL)
-                cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s\r\n", ne->module->name, ne->name,
-                          xpath);
-            else
-                cli_print(cli, "  failed to fine yang module\r\n");
-            return CLI_OK;
         }
-
     }
-    return CLI_MISSING_ARGUMENT;
+    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
+    char xpath[100];
+
+    lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
+
+
+    if (ne != NULL)
+        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s\r\n", ne->module->name, ne->name,
+                  xpath);
+    else
+        cli_print(cli, "  failed to fine yang module\r\n");
+    return CLI_OK;
+
 }
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {

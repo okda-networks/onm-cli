@@ -27,7 +27,6 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
         mode = str2int_hash((char *) y_node->parent->name);
     cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_container, PRIVILEGE_UNPRIVILEGED, mode,
                          help);
-
 }
 
 /**
@@ -67,11 +66,11 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
     LYSC_TREE_DFS_BEGIN(child_list, child) {
-        if (child->flags & LYS_KEY) {
-            cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
-                                child->dsc, NULL, NULL, NULL);
-            break;
-        }
+            if (child->flags & LYS_KEY) {
+                cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
+                                    child->dsc, NULL, NULL, NULL);
+                break;
+            }
         LYSC_TREE_DFS_END(child_list->next, child);
     }
 
@@ -79,9 +78,9 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     return 0;
 }
 
-static  void register_node_routine(struct cli_def * cli, struct lysc_node *schema){
+static void register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
     if (schema->flags & LYS_CONFIG_R) {
-        return ;
+        return;
     }
     switch (schema->nodetype) {
         case LYS_CONTAINER:
@@ -98,9 +97,9 @@ static  void register_node_routine(struct cli_def * cli, struct lysc_node *schem
             break;
             // Add cases for other node types as needed
         default:
-            return ;
+            return;
     }
-    return ;
+    return;
 }
 
 /**
@@ -113,7 +112,7 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
     struct lysc_node *child = NULL;
     LYSC_TREE_DFS_BEGIN(schema, child) {
-        register_node_routine(cli,child);
+            register_node_routine(cli, child);
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
@@ -132,7 +131,7 @@ int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
 
 }
 
-int cmd_yang2cmd_remove(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc){
+int cmd_yang2cmd_remove(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     if (argc == 0) {
         cli_print(cli, "  please specify yang module name");
         return CLI_INCOMPLETE_COMMAND;
@@ -143,27 +142,28 @@ int cmd_yang2cmd_remove(struct cli_def *cli, struct cli_command *c, const char *
     }
 
     char *module_name = (char *) argv[0];
-    const struct lys_module *module =get_module_schema(module_name) ;
-    if (module == NULL){
+    const struct lys_module *module = get_module_schema(module_name);
+    if (module == NULL) {
         cli_print(cli, "  ERROR: module `%s` not found, \n"
                        "  please make sure to set the correct search dir for yang,\n"
-                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode",module_name);
+                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode", module_name);
         return CLI_ERROR;
-    } else if (module->compiled == NULL){
-        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n",module_name);
+    } else if (module->compiled == NULL) {
+        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n", module_name);
         return CLI_ERROR;
-    } else if (module->compiled->data == NULL){
-        if (module->parsed == NULL){
-            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n",module_name);
+    } else if (module->compiled->data == NULL) {
+        if (module->parsed == NULL) {
+            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n", module_name);
             return CLI_ERROR;
-        } else if (module->parsed->augments != NULL){
+        } else if (module->parsed->augments != NULL) {
             cli_print(cli, "  WARN: module `%s` is loaded but not parsed as it's augmenting `%s`\n"
-                           "  please run yang generate for the augmented module",module_name,module->parsed->augments->node.name);
+                           "  please run yang generate for the augmented module", module_name,
+                      module->parsed->augments->node.name);
             return CLI_ERROR;
         }
     }
 
-    unregister_commands_schema(module->compiled->data,cli );
+    unregister_commands_schema(module->compiled->data, cli);
 }
 
 int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -178,32 +178,45 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
         return CLI_OK;
     }
     char *module_name = (char *) argv[0];
-    const struct lys_module *module =get_module_schema(module_name) ;
-    if (module == NULL){
+    const struct lys_module *module = get_module_schema(module_name);
+    if (module == NULL) {
         cli_print(cli, "  ERROR: module `%s` not found, \n"
                        "  please make sure to set the correct search dir for yang,\n"
-                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode",module_name);
+                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode", module_name);
         return CLI_ERROR;
-    } else if (module->compiled == NULL){
-        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n",module_name);
+    } else if (module->compiled == NULL) {
+        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n", module_name);
         return CLI_ERROR;
-    } else if (module->compiled->data == NULL){
-        if (module->parsed == NULL){
-            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n",module_name);
+    } else if (module->compiled->data == NULL) {
+        if (module->parsed == NULL) {
+            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n", module_name);
             return CLI_ERROR;
-        } else if (module->parsed->augments != NULL){
-            cli_print(cli, "  WARN: module `%s` is loaded but not parsed as it's augmenting `%s`\n"
-                           "  please run yang generate for the augmented module",module_name,module->parsed->augments->node.name);
-            return CLI_ERROR;
+        } else if (module->parsed->augments != NULL) {
+            struct lysp_import *imported_modules = module->parsed->imports;
+
+            // load impoted recursivly
+            LY_ARRAY_COUNT_TYPE i;
+            LY_ARRAY_FOR(imported_modules,i){
+                cli_print(cli, "  INFO: module `%s` importing`%s` module\n"
+                               "  loading `%s` as well", module_name,
+                          imported_modules[i].name,imported_modules[i].name);
+                const char *new_argv = {imported_modules[i].name};
+                cmd_yang2cmd_generate(cli, c, cmd, (char**)&new_argv, argc);
+            }
+            return CLI_OK;
+
         }
+        return CLI_OK;
     }
 
+    // if the module is already registered remove it first
+    unregister_commands_schema(module->compiled->data,cli);
+
     register_commands_schema(module->compiled->data, cli);
-    cli_print(cli, "  commands for yang module `%s` generated successfully", module_name);
+    cli_print(cli, "  yang commands generated successfully");
     return CLI_OK;
 
 }
-
 
 
 int cmd_yang_searchdir_set(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {

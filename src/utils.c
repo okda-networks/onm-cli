@@ -5,7 +5,7 @@
 #include "utils.h"
 
 
-unsigned int str2int_hash(char *str) {
+unsigned int str2int_hash(char *str){
     unsigned long hash = 5381;
     int c;
 
