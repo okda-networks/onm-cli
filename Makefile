@@ -1,5 +1,5 @@
 CC = gcc
-commands_src = src/commands/cmd.c src/commands/yang_cmd.c src/commands/yang_cmd_generator.c
+commands_src = src/commands/cmd.c src/commands/yang_cmd.c src/commands/yang_cmd_loader.c
 src = src/onm_main.c src/cli.c src/onm_yang.c src/utils.c $(commands_src)
 LIB_PATH = -L/usr/local/lib/
 

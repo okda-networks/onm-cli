@@ -42,7 +42,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     }
 
 
-    int mode = str2int_hash((char *) cmd);
+    int mode = str2int_hash((char *) cmd,NULL);
     cli_push_configmode(cli, mode, (char *) cmd);
     return CLI_OK;
 }
@@ -71,7 +71,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     else
         cli_print(cli, "  failed to fine yang module");
 
-    int mode = str2int_hash((char *) cmd);
+    int mode = str2int_hash((char *) cmd,NULL);
     cli_push_configmode(cli, mode, (char *) cmd);
     return CLI_OK;
 }

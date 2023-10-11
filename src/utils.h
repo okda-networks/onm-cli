@@ -9,7 +9,7 @@
 #include <ctype.h>
 #include <string.h>
 
-unsigned int str2int_hash(char *str);
+unsigned int str2int_hash(char *str, ...) ;
 void str2fun_name(char *str);
 char * create_func_name(char*name1,char*name2,char*name3);
 

@@ -4,7 +4,7 @@
 
 #include "../utils.h"
 #include "cmd.h"
-#include "yang_cmd_generator.h"
+#include "yang_cmd_loader.h"
 
 
 #ifdef __GNUC__
@@ -76,9 +76,6 @@ int onm_commands_init(struct cli_def *cli) {
                          "frr", cmd_frr, PRIVILEGE_UNPRIVILEGED,
                          MODE_CONFIG, "frr subsystem config");
 
-    cli_register_command(cli, NULL, NULL,
-                         "router", cmd_frr_router, PRIVILEGE_UNPRIVILEGED,
-                         MODE_FRR, "frr subsystem config");
 
     // initialize yang-cmd generator commands
     yang_cmd_generator_init(cli);

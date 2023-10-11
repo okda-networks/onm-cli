@@ -5,7 +5,7 @@
 /*
  * cli commands generator functions
  * */
-#include "yang_cmd_generator.h"
+#include "yang_cmd_loader.h"
 #include "yang_cmd.h"
 #include "../utils.h"
 
@@ -24,7 +24,7 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     if (y_node->parent == NULL)
         mode = MODE_CONFIG;
     else
-        mode = str2int_hash((char *) y_node->parent->name);
+        mode = str2int_hash((char *) y_node->parent->name,NULL);
     cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_container, PRIVILEGE_UNPRIVILEGED, mode,
                          help);
 }
@@ -43,7 +43,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     if (y_node->parent == NULL)
         mode = MODE_CONFIG;
     else
-        mode = str2int_hash((char *) y_node->parent->name);
+        mode = str2int_hash((char *) y_node->parent->name,NULL);
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
                                                  PRIVILEGE_PRIVILEGED, mode, help);
     cli_register_optarg(c, "value", CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
@@ -59,7 +59,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     if (y_node->parent == NULL)
         mode = MODE_CONFIG;
     else
-        mode = str2int_hash((char *) y_node->parent->name);
+        mode = str2int_hash((char *) y_node->parent->name,NULL);
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
                                                  PRIVILEGE_PRIVILEGED, mode, help);
 
@@ -120,11 +120,11 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
 }
 
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
-    printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
+    printf("DEBUG:commands.c: unregistering schema for  `%s`\n", schema->name);
     struct lysc_node *child = NULL;
     LYSC_TREE_DFS_BEGIN(schema, child) {
             if (schema != NULL)
-                cli_unregister_command(cli,schema->name);
+                cli_unregister_command(cli,child->name);
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
@@ -210,10 +210,10 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
     }
 
     // if the module is already registered remove it first
-    unregister_commands_schema(module->compiled->data,cli);
+//    unregister_commands_schema(module->compiled->data, cli);
 
     register_commands_schema(module->compiled->data, cli);
-    cli_print(cli, "  yang commands generated successfully");
+    cli_print(cli, "  yang commands generated successfully for module=%s",module_name);
     return CLI_OK;
 
 }

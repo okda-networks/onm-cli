@@ -461,7 +461,7 @@ struct cli_command *cli_register_command(struct cli_def *cli, struct cli_command
     c->command_type = CLI_REGULAR_COMMAND;
     c->callback = callback;
     c->next = NULL;
-    c->cmd_model = c_model;
+
     if (!(c->command = strdup(command))) {
         free(c);
         return NULL;
@@ -474,7 +474,7 @@ struct cli_command *cli_register_command(struct cli_def *cli, struct cli_command
         free(c);
         return NULL;
     }
-
+    c->cmd_model = c_model;
     return cli_register_command_core(cli, parent, c);
 }
 
@@ -486,7 +486,6 @@ static void cli_free_command(struct cli_def *cli, struct cli_command *cmd) {
         cli_free_command(cli, c);
         c = p;
     }
-
     free(cmd->command);
     if (cmd->help) free(cmd->help);
     if (cmd->optargs) cli_unregister_all_optarg(cmd);
@@ -518,6 +517,8 @@ static void cli_free_command(struct cli_def *cli, struct cli_command *cmd) {
             cmd->next->previous = cmd->previous;
         }
     }
+    // we don't want to free the command model.
+    cmd->cmd_model = NULL;
     free(cmd);
 }
 
@@ -530,6 +531,7 @@ int cli_int_unregister_command_core(struct cli_def *cli, const char *command, in
     for (c = cli->commands; c;) {
         p = c->next;
         if (strcmp(c->command, command) == 0 && c->command_type == command_type) {
+
             cli_free_command(cli, c);
             return CLI_OK;
         }
