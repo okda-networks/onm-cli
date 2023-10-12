@@ -104,6 +104,7 @@ enum command_types {
 struct cli_command {
   char *command;
   char *full_command_name;
+  char *command_hash;
   int (*callback)(struct cli_def *cli,struct cli_command *c, const char *, char **, int);
   void* cmd_model;
   unsigned int unique_len;
@@ -199,8 +200,8 @@ struct cli_def *cli_init(void);
 int cli_done(struct cli_def *cli);
 struct cli_command *cli_register_command(struct cli_def *cli, struct cli_command *parent,void* c_model, const char *command,
                                          int (*callback)(struct cli_def *cli,struct cli_command *c, const char *, char **, int),
-                                         int privilege, int mode, const char *help);
-int cli_unregister_command(struct cli_def *cli, const char *command);
+                                         int privilege, int mode,char* command_hash, const char *help);
+int cli_unregister_command(struct cli_def *cli, const char *command,char* command_hash);
 int cli_run_command(struct cli_def *cli, const char *command);
 int cli_loop(struct cli_def *cli, int sockfd);
 int cli_file(struct cli_def *cli, FILE *fh, int privilege, int mode);

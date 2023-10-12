@@ -17,6 +17,6 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
 
 int cmd_yang_path(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
+struct lysc_node * get_root_module_name(struct lysc_node *node);
 
 #endif //ONMCLI_YANG_COMMANDS_H

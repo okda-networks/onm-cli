@@ -19,14 +19,20 @@
  */
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure setting for %s", y_node->name);
+    sprintf(help, "configure setting for %s (%s)", y_node->name, y_node->module->name);
     unsigned int mode;
+    const struct lys_module *y_module = lysc_owner_module(y_node);
+    char *cmd_hash = strdup(y_module->name);;
     if (y_node->parent == NULL)
         mode = MODE_CONFIG;
     else
-        mode = str2int_hash((char *) y_node->parent->name,NULL);
-    cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_container, PRIVILEGE_UNPRIVILEGED, mode,
-                         help);
+        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
+
+
+    cli_register_command(cli, NULL, y_node, y_node->name,
+                         cmd_yang_container, PRIVILEGE_UNPRIVILEGED,
+                         mode, cmd_hash, help);
+    return 0;
 }
 
 /**
@@ -38,14 +44,18 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
  */
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure %s", y_node->name);
+    sprintf(help, "configure setting for %s (%s)", y_node->name, y_node->module->name);
     unsigned int mode;
+    const struct lys_module *y_module = lysc_owner_module(y_node);
+    char *cmd_hash = strdup(y_module->name);;
     if (y_node->parent == NULL)
         mode = MODE_CONFIG;
     else
-        mode = str2int_hash((char *) y_node->parent->name,NULL);
+        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
+
+
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
-                                                 PRIVILEGE_PRIVILEGED, mode, help);
+                                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
     cli_register_optarg(c, "value", CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
                         y_node->dsc, NULL, NULL, NULL);
 
@@ -54,14 +64,19 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
 
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure %s", y_node->name);
+    sprintf(help, "configure setting for %s (%s)", y_node->name, y_node->module->name);
     unsigned int mode;
+    const struct lys_module *y_module = lysc_owner_module(y_node);
+    char *cmd_hash = strdup(y_module->name);;
     if (y_node->parent == NULL)
         mode = MODE_CONFIG;
     else
-        mode = str2int_hash((char *) y_node->parent->name,NULL);
+        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
+
+
+
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
-                                                 PRIVILEGE_PRIVILEGED, mode, help);
+                                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
 
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
@@ -119,12 +134,25 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
 
 }
 
+static void unregister_node_routine(struct cli_def *cli, struct lysc_node *schema) {
+    if (schema->flags & LYS_CONFIG_R) {
+        return;
+    }
+
+    const struct lys_module *y_module = lysc_owner_module(schema);
+    cli_unregister_command(cli, strdup(schema->name), (char *) y_module->name);
+}
+
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     printf("DEBUG:commands.c: unregistering schema for  `%s`\n", schema->name);
     struct lysc_node *child = NULL;
+
     LYSC_TREE_DFS_BEGIN(schema, child) {
-            if (schema != NULL)
-                cli_unregister_command(cli,child->name);
+
+
+            unregister_node_routine(cli,child);
+
+
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
@@ -187,30 +215,22 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
     } else if (module->compiled == NULL) {
         cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n", module_name);
         return CLI_ERROR;
-    } else if (module->compiled->data == NULL) {
-        if (module->parsed == NULL) {
-            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n", module_name);
-            return CLI_ERROR;
-        } else if (module->parsed->augments != NULL) {
-            struct lysp_import *imported_modules = module->parsed->imports;
-
-            // load impoted recursivly
-            LY_ARRAY_COUNT_TYPE i;
-            LY_ARRAY_FOR(imported_modules,i){
-                cli_print(cli, "  INFO: module `%s` importing`%s` module\n"
-                               "  loading `%s` as well", module_name,
-                          imported_modules[i].name,imported_modules[i].name);
-                const char *new_argv = {imported_modules[i].name};
-                cmd_yang2cmd_generate(cli, c, cmd, (char**)&new_argv, argc);
-            }
-            return CLI_OK;
-
-        }
-        return CLI_OK;
     }
 
+    // load all imported modules and register commands if any has
+    struct lysp_import *imported_modules = module->parsed->imports;
+    LY_ARRAY_COUNT_TYPE i;
+    LY_ARRAY_FOR(imported_modules,i) {
+        cli_print(cli, "  INFO: module `%s` importing`%s` module\n"
+                       "  loading `%s` as well", module_name,
+                  imported_modules[i].name, imported_modules[i].name);
+        const char *new_argv = {imported_modules[i].name};
+        cmd_yang2cmd_generate(cli, c, cmd, (char **) &new_argv, argc);
+    }
+    if (module->compiled->data == NULL)
+        return CLI_OK;
     // if the module is already registered remove it first
-//    unregister_commands_schema(module->compiled->data, cli);
+   unregister_commands_schema(module->compiled->data, cli);
 
     register_commands_schema(module->compiled->data, cli);
     cli_print(cli, "  yang commands generated successfully for module=%s",module_name);
@@ -269,33 +289,33 @@ int cmd_yang_list_searchdirs(struct cli_def *cli, struct cli_command *c, const c
 int yang_cmd_generator_init(struct cli_def *cli) {
     struct cli_command *yang_cmd = cli_register_command(cli, NULL, NULL,
                                                         "yang", NULL, PRIVILEGE_PRIVILEGED,
-                                                        MODE_EXEC, "yang settings");
+                                                        MODE_EXEC, NULL, "yang settings");
     if (yang_cmd == NULL)
         printf("failed\n");
     struct cli_command *yang_set_cmd = cli_register_command(cli, yang_cmd, NULL,
                                                             "set", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                            MODE_EXEC, "set yang settings");
+                                                            MODE_EXEC, NULL, "set yang settings");
     struct cli_command *yang_unset_cmd = cli_register_command(cli, yang_cmd, NULL,
                                                               "unset", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                              MODE_EXEC, "unset yang settings");
+                                                              MODE_EXEC, NULL, "unset yang settings");
     cli_register_command(cli, yang_set_cmd, NULL,
                          "searchdir", cmd_yang_searchdir_set, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, "set yang search dir: yang set searchdir <path/to/modules>");
+                         MODE_EXEC, NULL, "set yang search dir: yang set searchdir <path/to/modules>");
     cli_register_command(cli, yang_unset_cmd, NULL,
                          "searchdir", cmd_yang_searchdir_unset, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, "unset yang search dir: yang set searchdir <path/to/modules>");
+                         MODE_EXEC, NULL, "unset yang search dir: yang set searchdir <path/to/modules>");
 
     cli_register_command(cli, yang_cmd, NULL,
                          "list-seachdir", cmd_yang_list_searchdirs, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, "list yang serachdirs");
+                         MODE_EXEC, NULL, "list yang serachdirs");
 
     cli_register_command(cli, yang_cmd, NULL,
                          "load-module", cmd_yang2cmd_generate, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, "load yang module to onm_cli:yang load-module <module-name>");
+                         MODE_EXEC, NULL, "load yang module to onm_cli:yang load-module <module-name>");
 
     cli_register_command(cli, yang_cmd, NULL,
                          "remove-module", cmd_yang2cmd_remove, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, "remove yang module from onm_cli:yang remove-module <module-name>");
+                         MODE_EXEC, NULL, "remove yang module from onm_cli:yang remove-module <module-name>");
 
     return 0;
 }

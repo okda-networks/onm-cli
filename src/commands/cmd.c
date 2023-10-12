@@ -74,7 +74,7 @@ int onm_commands_init(struct cli_def *cli) {
 
     cli_register_command(cli, NULL, NULL,
                          "frr", cmd_frr, PRIVILEGE_UNPRIVILEGED,
-                         MODE_CONFIG, "frr subsystem config");
+                         MODE_CONFIG,NULL,  "frr subsystem config");
 
 
     // initialize yang-cmd generator commands
