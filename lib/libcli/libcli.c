@@ -594,7 +594,6 @@ int cli_int_unregister_command_core(struct cli_def *cli, const char *command, in
 
             } else if (c->command_hash != NULL){
                 if (strcmp(c->command_hash, command_hash) == 0){
-                           command,command_hash,c->command,c->command_hash);
                     cli_free_command(cli, c);
                     return CLI_OK;
                 }
@@ -3709,7 +3708,7 @@ static void cli_int_parse_optargs(struct cli_def *cli, struct cli_pipeline_stage
                 (optarg->mode != MODE_ANY))
                 continue;
             if (optarg->flags & CLI_CMD_DO_NOT_RECORD) continue;
-            if (optarg->flags & CLI_CMD_ARGUMENT) {
+            if ((optarg->flags & CLI_CMD_ARGUMENT) || (optarg->flags & CLI_CMD_TRANSIENT_MODE)) {
                 cli_error(cli, "Incomplete command, missing required argument '%s' for command '%s'", optarg->name,
                           cmd->command);
                 stage->status = CLI_MISSING_ARGUMENT;

@@ -67,8 +67,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             cli_print(cli, "  key is missing for command %s\n", cmd);
             return CLI_INCOMPLETE_COMMAND;
         }
-        cli_print(cli, "  configuring %s %s\n", cmd, argv[0]);
-        return CLI_OK;
+
     }
 
     struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
@@ -82,11 +81,13 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     else
         cli_print(cli, "  failed to fine yang module");
 
-
+    char *mod_str = malloc(sizeof (cmd) + sizeof(argv[0]) +2);
+    sprintf(mod_str,"%s[%s]",(char*)cmd, argv[0]);
     const struct lys_module *y_module = lysc_owner_module(ne);
 
     int mode = str2int_hash(strdup(y_module->name),strdup(ne->name),NULL);
-    cli_push_configmode(cli, mode, (char *) cmd);
+
+    cli_push_configmode(cli, mode, mod_str);
     return CLI_OK;
 }
 

@@ -69,7 +69,7 @@ int winsock_init() {
 }
 #endif
 
-int cmd_test(struct cli_def *cli, const char *command, char *argv[], int argc) {
+int cmd_test(struct cli_def *cli, UNUSED(struct cli_command *c), const char *command, char *argv[], int argc) {
   int i;
   cli_print(cli, "called %s with \"%s\"", __func__, command);
   cli_print(cli, "%d arguments:", argc);
@@ -78,7 +78,7 @@ int cmd_test(struct cli_def *cli, const char *command, char *argv[], int argc) {
   return CLI_OK;
 }
 
-int cmd_set(struct cli_def *cli, UNUSED(const char *command), char *argv[], int argc) {
+int cmd_set(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const char *command), char *argv[], int argc) {
   if (argc < 2 || strcmp(argv[0], "?") == 0) {
     cli_print(cli, "Specify a variable to set");
     return CLI_OK;
@@ -110,7 +110,7 @@ int cmd_set(struct cli_def *cli, UNUSED(const char *command), char *argv[], int 
   return CLI_OK;
 }
 
-int cmd_config_int(struct cli_def *cli, UNUSED(const char *command), char *argv[], int argc) {
+int cmd_config_int(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const char *command), char *argv[], int argc) {
   if (argc < 1) {
     cli_print(cli, "Specify an interface to configure");
     return CLI_OK;
@@ -127,23 +127,23 @@ int cmd_config_int(struct cli_def *cli, UNUSED(const char *command), char *argv[
   return CLI_OK;
 }
 
-int cmd_config_int_exit(struct cli_def *cli, UNUSED(const char *command), UNUSED(char *argv[]), UNUSED(int argc)) {
+int cmd_config_int_exit(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const char *command), UNUSED(char *argv[]), UNUSED(int argc)) {
   cli_set_configmode(cli, MODE_CONFIG, NULL);
   return CLI_OK;
 }
 
-int cmd_show_regular(struct cli_def *cli, UNUSED(const char *command), char *argv[], int argc) {
+int cmd_show_regular(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const char *command), char *argv[], int argc) {
   cli_print(cli, "cli_regular() has run %u times", regular_count);
   return CLI_OK;
 }
 
-int cmd_debug_regular(struct cli_def *cli, UNUSED(const char *command), char *argv[], int argc) {
+int cmd_debug_regular(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const char *command), char *argv[], int argc) {
   debug_regular = !debug_regular;
   cli_print(cli, "cli_regular() debugging is %s", debug_regular ? "enabled" : "disabled");
   return CLI_OK;
 }
 
-int cmd_context(struct cli_def *cli, UNUSED(const char *command), UNUSED(char *argv[]), UNUSED(int argc)) {
+int cmd_context(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const char *command), UNUSED(char *argv[]), UNUSED(int argc)) {
   struct my_context *myctx = (struct my_context *)cli_get_context(cli);
   cli_print(cli, "User context has a value of %d and message saying %s", myctx->value, myctx->message);
   return CLI_OK;
@@ -180,7 +180,7 @@ void pc(UNUSED(struct cli_def *cli), const char *string) {
 #define MODE_POLYGON_TRIANGLE 20
 #define MODE_POLYGON_RECTANGLE 21
 
-int cmd_perimeter(struct cli_def *cli, const char *command, char *argv[], int argc) {
+int cmd_perimeter(struct cli_def *cli, UNUSED(struct cli_command *c), const char *command, char *argv[], int argc) {
   struct cli_optarg_pair *optargs = cli_get_all_found_optargs(cli);
   int i = 1, numSides = 0;
   int perimeter = 0;
@@ -329,7 +329,7 @@ int check1_validator(struct cli_def *cli, UNUSED(const char *name), UNUSED(const
   return CLI_OK;
 }
 
-int cmd_deep_dive(struct cli_def *cli, const char *command, char *argv[], int argc) {
+int cmd_deep_dive(struct cli_def *cli, UNUSED(struct cli_command *c), const char *command, char *argv[], int argc) {
   cli_print(cli, "Raw commandline was <%s>", cli->pipeline->cmdline);
   return CLI_OK;
 }
@@ -348,7 +348,7 @@ int int_validator(struct cli_def *cli, const char *name, const char *value) {
   return rc;
 }
 
-int cmd_string(struct cli_def *cli, const char *command, char *argv[], int argc) {
+int cmd_string(struct cli_def *cli,UNUSED(struct cli_command *c), const char *command, char *argv[], int argc) {
   int i;
   cli_print(cli, "Raw commandline was <%s>", cli->pipeline->cmdline);
   cli_print(cli, "Value for text argument is <%s>", cli_get_optarg_value(cli, "text", NULL));
@@ -359,7 +359,7 @@ int cmd_string(struct cli_def *cli, const char *command, char *argv[], int argc)
   }
   return CLI_OK;
 }
-int cmd_long_name(struct cli_def *cli, const char *command, char *argv[], int argc) {
+int cmd_long_name(struct cli_def *cli,UNUSED(struct cli_command *c), const char *command, char *argv[], int argc) {
   int i;
   cli_print(cli, "Raw commandline was <%s>", cli->pipeline->cmdline);
   cli_print(cli, "Value for text argument is <%s>", cli_get_optarg_value(cli, "text", NULL));
@@ -393,29 +393,29 @@ void run_child(int x) {
 
   // set 60 second idle timeout
   cli_set_idle_timeout_callback(cli, 60, idle_timeout);
-  cli_register_command(cli, NULL, "test", cmd_test, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
-  cli_register_command(cli, NULL, "simple", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
-  cli_register_command(cli, NULL, "simon", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
-  cli_register_command(cli, NULL, "set", cmd_set, PRIVILEGE_PRIVILEGED, MODE_EXEC, NULL);
-  c = cli_register_command(cli, NULL, "show", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
-  cli_register_command(cli, c, "regular", cmd_show_regular, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+  cli_register_command(cli, NULL, NULL,"test", cmd_test, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,NULL);
+  cli_register_command(cli, NULL,NULL, "simple", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,NULL);
+  cli_register_command(cli, NULL, NULL,"simon", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,NULL);
+  cli_register_command(cli, NULL, NULL,"set", cmd_set, PRIVILEGE_PRIVILEGED, MODE_EXEC, NULL,NULL);
+  c = cli_register_command(cli, NULL,NULL, "show", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL, NULL);
+  cli_register_command(cli, c, NULL,"regular", cmd_show_regular, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
                        "Show the how many times cli_regular has run");
-  cli_register_command(cli, c, "counters", cmd_test, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+  cli_register_command(cli, c,NULL, "counters", cmd_test, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
                        "Show the counters that the system uses");
-  cli_register_command(cli, c, "junk", cmd_test, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
-  cli_register_command(cli, NULL, "interface", cmd_config_int, PRIVILEGE_PRIVILEGED, MODE_CONFIG,
+  cli_register_command(cli, c, NULL,"junk", cmd_test, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,NULL);
+  cli_register_command(cli, NULL, NULL,"interface", cmd_config_int, PRIVILEGE_PRIVILEGED, MODE_CONFIG,NULL,
                        "Configure an interface");
-  cli_register_command(cli, NULL, "exit", cmd_config_int_exit, PRIVILEGE_PRIVILEGED, MODE_CONFIG_INT,
+  cli_register_command(cli, NULL,NULL, "exit", cmd_config_int_exit, PRIVILEGE_PRIVILEGED, MODE_CONFIG_INT,NULL,
                        "Exit from interface configuration");
-  cli_register_command(cli, NULL, "address", cmd_test, PRIVILEGE_PRIVILEGED, MODE_CONFIG_INT, "Set IP address");
-  c = cli_register_command(cli, NULL, "debug", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL);
-  cli_register_command(cli, c, "regular", cmd_debug_regular, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+  cli_register_command(cli, NULL,NULL, "address", cmd_test, PRIVILEGE_PRIVILEGED, MODE_CONFIG_INT, NULL,"Set IP address");
+  c = cli_register_command(cli, NULL,NULL, "debug", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL, NULL);
+  cli_register_command(cli, c,NULL, "regular", cmd_debug_regular, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
                        "Enable cli_regular() callback debugging");
 
   // Register some commands/subcommands to demonstrate opt/arg and buildmode operations
 
   c = cli_register_command(
-      cli, NULL, "perimeter", cmd_perimeter, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+      cli, NULL, NULL,"perimeter", cmd_perimeter, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
       "Calculate perimeter of polygon\nhas embedded "
       "newline\nand_a_really_long_line_that_is_much_longer_than_80_columns_to_show_that_wrap_case");
   o = cli_register_optarg(c, "transparent", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
@@ -466,7 +466,7 @@ void run_child(int x) {
   cli_register_optarg(c, "side_4", CLI_CMD_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_POLYGON_RECTANGLE,
                       "Specify side 4 length", NULL, side_length_validator, NULL);
 
-  c = cli_register_command(cli, NULL, "string", cmd_string, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+  c = cli_register_command(cli, NULL,NULL, "string", cmd_string, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
                            "string input argument testing");
 
   cli_register_optarg(c, "buildmode", CLI_CMD_OPTIONAL_FLAG | CLI_CMD_ALLOW_BUILDMODE, PRIVILEGE_UNPRIVILEGED,
@@ -475,14 +475,14 @@ void run_child(int x) {
 
   // Set user context and its command
   cli_set_context(cli, (void *)&myctx);
-  cli_register_command(cli, NULL, "context", cmd_context, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+  cli_register_command(cli, NULL, NULL, "context", cmd_context, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
                        "Test a user-specified context");
 
   struct cli_command *d1, *d2, *d3;
 
-  d1 = cli_register_command(cli, NULL, "deep", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, "top level deep dive cmd");
-  d2 = cli_register_command(cli, d1, "dive", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, "mid level dep dive cmd");
-  d3 = cli_register_command(cli, d2, "cmd", cmd_deep_dive, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+  d1 = cli_register_command(cli, NULL,NULL, "deep", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,"top level deep dive cmd");
+  d2 = cli_register_command(cli, d1, NULL,"dive", NULL, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL, "mid level dep dive cmd");
+  d3 = cli_register_command(cli, d2, NULL,"cmd", cmd_deep_dive, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
                             "bottom level dep dive cmd");
   o = cli_register_optarg(d3, "howdeep", CLI_CMD_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, "Specify how deep", NULL,
                           int_validator, NULL);
@@ -490,7 +490,7 @@ void run_child(int x) {
                           "Specify how long", NULL, int_validator, NULL);
 
   c = cli_register_command(
-      cli, NULL, "serioously_long_cammand_to_test_with", cmd_long_name, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,
+      cli, NULL,NULL, "serioously_long_cammand_to_test_with", cmd_long_name, PRIVILEGE_UNPRIVILEGED, MODE_EXEC,NULL,
       "show long command name with "
       "newline\nand_a_really_long_line_that_is_much_longer_than_80_columns_to_show_that_wrap_case");
 
