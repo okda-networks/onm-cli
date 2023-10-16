@@ -19,7 +19,7 @@
  */
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure setting for %s (%s)", y_node->name, y_node->module->name);
+    sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
     unsigned int mode;
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = strdup(y_module->name);;
@@ -44,7 +44,7 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
  */
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure setting for %s (%s)", y_node->name, y_node->module->name);
+    sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
     unsigned int mode;
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = strdup(y_module->name);;
@@ -56,7 +56,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
-    cli_register_optarg(c, "value", CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
+    cli_register_optarg(c, "value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
                         y_node->dsc, NULL, NULL, NULL);
 
     return 0;
@@ -64,7 +64,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
 
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure setting for %s (%s)", y_node->name, y_node->module->name);
+    sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
     unsigned int mode;
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = strdup(y_module->name);;
@@ -82,7 +82,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lysc_node *child;
     LYSC_TREE_DFS_BEGIN(child_list, child) {
             if (child->flags & LYS_KEY) {
-                cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, mode,
+                cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
                                     child->dsc, NULL, NULL, NULL);
                 break;
             }
