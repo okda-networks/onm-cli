@@ -27,6 +27,7 @@ int unset_yang_searchdir(const char *dir);
 const char *const *get_yang_searchdirs();
 
 const struct lys_module *get_module_schema(char *module_name);
+struct ly_ctx* get_yang_context();
 
 
 #endif //ONMCLI_ONM_YANG_H

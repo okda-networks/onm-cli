@@ -282,8 +282,25 @@ int cmd_yang_list_searchdirs(struct cli_def *cli, struct cli_command *c, const c
         cli_print(cli, "  [+] %s", *dir_list);
         ++dir_list;
     }
+}
+
+int cmd_yang_list_modules(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    if (argc == 1) {
+        if (strcmp(argv[0], "?") == 0) {
+            cli_print(cli, "  <cr>");
+            return CLI_MISSING_ARGUMENT;
+        }
+    }
+    unsigned int index = 0;
+    struct lys_module *mod;
+    struct ly_ctx *ctx = get_yang_context();
 
 
+    while ((mod = (struct lys_module *)ly_ctx_get_module_iter(ctx, &index))) {
+        if(mod != NULL)
+            cli_print(cli,"[+] %s",mod->name);
+    }
+    return CLI_OK;
 }
 
 int yang_cmd_generator_init(struct cli_def *cli) {
@@ -316,6 +333,10 @@ int yang_cmd_generator_init(struct cli_def *cli) {
     cli_register_command(cli, yang_cmd, NULL,
                          "remove-module", cmd_yang2cmd_remove, PRIVILEGE_PRIVILEGED,
                          MODE_EXEC, NULL, "remove yang module from onm_cli:yang remove-module <module-name>");
+
+    cli_register_command(cli, yang_cmd, NULL,
+                         "list-modules", cmd_yang_list_modules, PRIVILEGE_PRIVILEGED,
+                         MODE_EXEC, NULL, "list all the loaded yang modules.");
 
     return 0;
 }

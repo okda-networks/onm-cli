@@ -12,7 +12,6 @@
 static struct ly_ctx *ctx;
 
 
-
 // Libyang utils functions
 
 int set_yang_searchdir(const char *dir) {
@@ -38,6 +37,10 @@ const struct lys_module *get_module_schema(char *module_name) {
     return module;
 
 
+}
+
+struct ly_ctx* get_yang_context(){
+    return ctx;
 }
 
 int onm_yang_init() {
