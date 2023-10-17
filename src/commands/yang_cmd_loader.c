@@ -62,6 +62,26 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     return 0;
 }
 
+int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
+    char help[100];
+    sprintf(help, "configure %s (%s) [leaf-list]", y_node->name, y_node->module->name);
+    unsigned int mode;
+    const struct lys_module *y_module = lysc_owner_module(y_node);
+
+    char *cmd_hash = strdup(y_module->name);;
+    if (y_node->parent == NULL)
+        mode = MODE_CONFIG;
+    else
+        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
+
+    struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf_list,
+                                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
+    cli_register_optarg(c, "value(s)", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
+                        y_node->dsc, NULL, NULL, NULL);
+
+    return 0;
+}
+
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
@@ -72,8 +92,6 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
         mode = MODE_CONFIG;
     else
         mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
-
-
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
@@ -88,8 +106,6 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             }
         LYSC_TREE_DFS_END(child_list->next, child);
     }
-
-
     return 0;
 }
 
@@ -110,7 +126,10 @@ static void register_node_routine(struct cli_def *cli, struct lysc_node *schema)
             printf("TRACE: register CLI command for list: %s\r\n", schema->name);
             register_cmd_list(cli, schema);
             break;
-            // Add cases for other node types as needed
+        case LYS_LEAFLIST:
+            printf("TRACE: register CLI command for leaf-list: %s\r\n", schema->name);
+            register_cmd_leaf_list(cli, schema);
+            break;
         default:
             return;
     }

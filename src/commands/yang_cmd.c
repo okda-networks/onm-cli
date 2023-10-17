@@ -5,15 +5,24 @@
 #include "yang_cmd.h"
 #include "../utils.h"
 
-struct lysc_node *get_root_module_name(struct lysc_node *node) {
-    struct lysc_node *root = node;
+int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    // Traverse up the module hierarchy until we reach the root node
-    while (root->parent != NULL) {
-        root = root->parent;
+    if (argc == 0) {
+        cli_print(cli, "ERROR: please enter value(s) for %s", cmd);
+        return CLI_MISSING_ARGUMENT;
     }
 
-    return root;
+    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
+    char xpath[100];
+
+    lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
+
+    if (ne != NULL)
+        cli_print(cli, "  xpath=%s\r\n", xpath);
+    else
+        cli_print(cli, "  failed to find yang module\r\n");
+    return CLI_OK;
+
 }
 
 int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -34,7 +43,7 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     if (ne != NULL)
         cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s[%s=%s]\r\n", ne->module->name, ne->name,
-                  xpath,cmd,argv[0]);
+                  xpath, cmd, argv[0]);
     else
         cli_print(cli, "  failed to find yang module\r\n");
     return CLI_OK;
@@ -42,16 +51,16 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 }
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
+    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli, "  %s", c->help);
+            cli_print(cli, "  %s", ne->dsc);
             return CLI_INCOMPLETE_COMMAND;
         }
-        cli_print(cli, "  unknown args\n");
+        cli_print(cli, "  unknown argument\n");
         return CLI_ERROR_ARG;
     }
-    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
+
     const struct lys_module *y_module = lysc_owner_module(ne);
 
 
