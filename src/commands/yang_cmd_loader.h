@@ -9,6 +9,6 @@
 #include <libyang/log.h>
 #include "../../lib/libcli/libcli.h"
 #include "../onm_yang.h"
-int yang_cmd_generator_init(struct cli_def *cli);
+int yang_cmd_loader_init(struct cli_def *cli);
 
 #endif //ONMCLI_YANG_CMD_GENERATOR_H

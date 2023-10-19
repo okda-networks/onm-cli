@@ -78,7 +78,7 @@ int onm_commands_init(struct cli_def *cli) {
 
 
     // initialize yang-cmd generator commands
-    yang_cmd_generator_init(cli);
+    yang_cmd_loader_init(cli);
 
 
 }

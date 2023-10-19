@@ -33,7 +33,6 @@ const struct lys_module *get_module_schema(char *module_name) {
     printf("DEBUG:onm_yang.c: get schema for module=%s\n",module_name);
 
     const struct lys_module *module = ly_ctx_load_module(ctx, module_name, NULL, NULL);
-//    const struct lys_module *module1 = ly_ctx_load_module(ctx, "ietf-interfaces", NULL, NULL);
     return module;
 
 

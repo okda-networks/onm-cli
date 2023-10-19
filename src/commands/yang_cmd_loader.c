@@ -6,108 +6,12 @@
  * cli commands generator functions
  * */
 #include "yang_cmd_loader.h"
-#include "yang_cmd.h"
 #include "../utils.h"
+#include "yang_core/yang_core.h"
 
 
-/**
- * register command in cli for a container node
- * @param name
- * @param parent_name
- * @param cli
- * @return
- */
-int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100];
-    sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
-    unsigned int mode;
-    const struct lys_module *y_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
 
 
-    cli_register_command(cli, NULL, y_node, y_node->name,
-                         cmd_yang_container, PRIVILEGE_UNPRIVILEGED,
-                         mode, cmd_hash, help);
-    return 0;
-}
-
-/**
- * register command in cli for a leaf node
- * @param name
- * @param parent_name
- * @param cli
- * @return
- */
-int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100];
-    sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
-    unsigned int mode;
-    const struct lys_module *y_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
-
-
-    struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
-                                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
-    cli_register_optarg(c, "value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
-                        y_node->dsc, NULL, NULL, NULL);
-
-    return 0;
-}
-
-int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100];
-    sprintf(help, "configure %s (%s) [leaf-list]", y_node->name, y_node->module->name);
-    unsigned int mode;
-    const struct lys_module *y_module = lysc_owner_module(y_node);
-
-    char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
-
-    struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf_list,
-                                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
-    cli_register_optarg(c, "value(s)", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
-                        y_node->dsc, NULL, NULL, NULL);
-
-    return 0;
-}
-
-int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100];
-    sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
-    unsigned int mode;
-    const struct lys_module *y_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
-
-    struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
-                                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
-
-    const struct lysc_node *child_list = lysc_node_child(y_node);
-    const struct lysc_node *child;
-    LYSC_TREE_DFS_BEGIN(child_list, child) {
-            if (child->flags & LYS_KEY) {
-                cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
-                                    child->dsc, NULL, NULL, NULL);
-                break;
-            }
-        LYSC_TREE_DFS_END(child_list->next, child);
-    }
-    return 0;
-}
 
 static void register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
     if (schema->flags & LYS_CONFIG_R) {
@@ -322,7 +226,7 @@ int cmd_yang_list_modules(struct cli_def *cli, struct cli_command *c, const char
     return CLI_OK;
 }
 
-int yang_cmd_generator_init(struct cli_def *cli) {
+int yang_cmd_loader_init(struct cli_def *cli) {
     struct cli_command *yang_cmd = cli_register_command(cli, NULL, NULL,
                                                         "yang", NULL, PRIVILEGE_PRIVILEGED,
                                                         MODE_EXEC, NULL, "yang settings");
