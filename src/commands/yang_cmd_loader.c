@@ -6,7 +6,6 @@
  * cli commands generator functions
  * */
 #include "yang_cmd_loader.h"
-#include "../utils.h"
 #include "yang_core/yang_core.h"
 
 
