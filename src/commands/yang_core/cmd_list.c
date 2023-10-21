@@ -22,7 +22,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 
     if (y_node != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", y_node->module->name, y_node->name, xpath);
+        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", y_node->module->name, y_node->name,
+                  xpath);
     else
         cli_print(cli, "  failed to fine yang module");
 
@@ -35,16 +36,6 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     return CLI_OK;
 }
 
-struct lysc_node * get_root_module_name(struct lysc_node *node) {
-    struct lysc_node *root = node;
-
-    // Traverse up the module hierarchy until we reach the root node
-    while (root->parent != NULL) {
-        root = root->parent;
-    }
-
-    return root;
-}
 
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
@@ -60,13 +51,12 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
-    LYSC_TREE_DFS_BEGIN(child_list, child) {
+    LY_LIST_FOR(child_list, child) {
         if (child->flags & LYS_KEY) {
-            cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
-                                child->dsc, NULL, NULL, NULL);
+            cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED,
+                                mode, child->dsc, NULL, NULL, NULL);
             break;
         }
-        LYSC_TREE_DFS_END(child_list->next, child);
     }
     return 0;
 }

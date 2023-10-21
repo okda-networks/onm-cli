@@ -8,13 +8,18 @@
 #include "yang_cmd_loader.h"
 #include "yang_core/yang_core.h"
 
+enum register_node_routine_signals{
+    REG_NO_SIG=0,
+    REG_SKIP_NEXT_SIG,
+    REG_DEF_SIG,
+    REG_OK_SIG
+};
 
 
 
-
-static void register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
+static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
     if (schema->flags & LYS_CONFIG_R) {
-        return;
+        return REG_NO_SIG;
     }
     switch (schema->nodetype) {
         case LYS_CONTAINER:
@@ -33,10 +38,14 @@ static void register_node_routine(struct cli_def *cli, struct lysc_node *schema)
             printf("TRACE: register CLI command for leaf-list: %s\r\n", schema->name);
             register_cmd_leaf_list(cli, schema);
             break;
+        case LYS_CHOICE:
+            printf("TRACE: register CLI command for choice: %s\r\n", schema->name);
+            register_cmd_choice(cli, schema);
+            return REG_SKIP_NEXT_SIG;
         default:
-            return;
+            return REG_DEF_SIG;
     }
-    return;
+    return REG_OK_SIG;
 }
 
 /**
@@ -48,8 +57,12 @@ static void register_node_routine(struct cli_def *cli, struct lysc_node *schema)
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
     struct lysc_node *child = NULL;
+    int signal;
     LYSC_TREE_DFS_BEGIN(schema, child) {
-            register_node_routine(cli, child);
+            signal = register_node_routine(cli, child);
+            if (signal == REG_SKIP_NEXT_SIG)
+                LYSC_TREE_DFS_continue =1;
+
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);

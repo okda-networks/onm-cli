@@ -7,6 +7,7 @@
 
 #include <libyang/libyang.h>
 #include <libyang/parser_data.h>
+#include <libyang/tree.h>
 #include <libyang/log.h>
 #include "../../../lib/libcli/libcli.h"
 #include "../../onm_yang.h"
@@ -20,13 +21,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node);
 
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node);
 
-int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
-
-int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
+int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node);
 
 
 #endif //ONMCLI_YANG_CORE_H
