@@ -2,7 +2,7 @@
 // Created by ali on 10/19/23.
 //
 
-#include "../../utils.h"
+#include "y_utils.h"
 #include "yang_core.h"
 
 int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -15,37 +15,45 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         return CLI_MISSING_ARGUMENT;
     }
 
-    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
-    char xpath[100];
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    char xpath[256];
 
-    lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
 
 
-    if (ne != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", ne->module->name, ne->name, xpath);
+    if (y_node != NULL)
+        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", y_node->module->name, y_node->name, xpath);
     else
         cli_print(cli, "  failed to fine yang module");
 
     char *mod_str = malloc(sizeof(cmd) + sizeof(argv[0]) + 2);
     sprintf(mod_str, "%s[%s]", (char *) cmd, argv[0]);
-    const struct lys_module *y_module = lysc_owner_module(ne);
 
-    int mode = str2int_hash(strdup(y_module->name), strdup(ne->name), NULL);
+    int mode = y_get_next_mode(y_node);
 
     cli_push_configmode(cli, mode, mod_str);
     return CLI_OK;
+}
+
+struct lysc_node * get_root_module_name(struct lysc_node *node) {
+    struct lysc_node *root = node;
+
+    // Traverse up the module hierarchy until we reach the root node
+    while (root->parent != NULL) {
+        root = root->parent;
+    }
+
+    return root;
 }
 
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
     unsigned int mode;
-    const struct lys_module *y_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
+    const struct lys_module *y_root_module = lysc_owner_module(y_node);
+
+    char *cmd_hash = strdup(y_root_module->name);;
+    mode = y_get_curr_mode(y_node);
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);

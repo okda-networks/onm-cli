@@ -61,24 +61,20 @@ static void unregister_node_routine(struct cli_def *cli, struct lysc_node *schem
     if (schema->flags & LYS_CONFIG_R) {
         return;
     }
-
-    const struct lys_module *y_module = lysc_owner_module(schema);
-    cli_unregister_command(cli, strdup(schema->name), (char *) y_module->name);
+    const struct lys_module *y_owner_module = lysc_owner_module(schema);
+    cli_unregister_command(cli, strdup(schema->name), (char *) strdup(y_owner_module->name));
 }
 
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
-    printf("DEBUG:commands.c: unregistering schema for  `%s`\n", schema->name);
+
     struct lysc_node *child = NULL;
 
     LYSC_TREE_DFS_BEGIN(schema, child) {
-
-
+            printf("DEBUG:commands.c: unregistering command for  `%s`\n", child->name);
             unregister_node_routine(cli,child);
-
-
         LYSC_TREE_DFS_END(schema->next, child);
     }
-    printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
+    printf("DEBUG:commands.c: schema `%s` unregistered successfully\r\n", schema->name);
 
 }
 

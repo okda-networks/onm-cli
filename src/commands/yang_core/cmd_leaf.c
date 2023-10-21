@@ -2,7 +2,7 @@
 // Created by ali on 10/19/23.
 //
 
-#include "../../utils.h"
+#include "y_utils.h"
 #include "yang_core.h"
 
 int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -13,9 +13,9 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
     }
 
     struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
-    char xpath[100];
+    char xpath[256];
 
-    lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
+    lysc_path(ne, LYSC_PATH_DATA, xpath, 256);
 
     if (ne != NULL)
         cli_print(cli, "  xpath=%s\r\n", xpath);
@@ -35,14 +35,18 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         return CLI_MISSING_ARGUMENT;
     }
 
-    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
+
+
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+
+
     char xpath[100];
 
-    lysc_path(ne, LYSC_PATH_DATA, xpath, 100);
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 100);
 
 
-    if (ne != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s[%s=%s]\r\n", ne->module->name, ne->name,
+    if (y_node != NULL)
+        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s[%s=%s]\r\n", y_node->module->name, y_node->name,
                   xpath, cmd, argv[0]);
     else
         cli_print(cli, "  failed to find yang module\r\n");
@@ -58,10 +62,8 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_module = lysc_owner_module(y_node);
 
     char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
+    mode = y_get_curr_mode(y_node);
+
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf_list,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
@@ -80,11 +82,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     unsigned int mode;
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = strdup(y_module->name);;
-    if (y_node->parent == NULL)
-        mode = MODE_CONFIG;
-    else
-        mode = str2int_hash(strdup(y_module->name), strdup(y_node->parent->name), NULL);
-
+    mode = y_get_curr_mode(y_node);
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
