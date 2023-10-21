@@ -22,6 +22,6 @@
 
 
 
-int onm_commands_init(struct cli_def *cli);
+int default_commands_init(struct cli_def *cli);
 
 #endif //ONMCLI_COMMANDS_H

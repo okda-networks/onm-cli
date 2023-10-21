@@ -3,8 +3,7 @@
 //
 
 #include "../utils.h"
-#include "cmd.h"
-#include "yang_cmd_loader.h"
+#include "default_cmd.h"
 
 
 #ifdef __GNUC__
@@ -65,7 +64,7 @@ int check_auth(const char *username, const char *password) {
 }
 
 
-int onm_commands_init(struct cli_def *cli) {
+int default_commands_init(struct cli_def *cli) {
     printf("INFO:commands.c: initializing commands\n");
 
 
@@ -74,11 +73,7 @@ int onm_commands_init(struct cli_def *cli) {
 
     cli_register_command(cli, NULL, NULL,
                          "frr", cmd_frr, PRIVILEGE_UNPRIVILEGED,
-                         MODE_CONFIG,NULL,  "frr subsystem config");
-
-
-    // initialize yang-cmd generator commands
-    yang_cmd_loader_init(cli);
+                         MODE_CONFIG, NULL, "frr subsystem config");
 
 
 }

@@ -2,7 +2,8 @@
 // Created by ali on 10/4/23.
 //
 #include "cli.h"
-#include "commands/cmd.h"
+#include "commands/default_cmd.h"
+#include "commands/yang_cmd_loader.h"
 #include "VERSION.h"
 
 
@@ -31,7 +32,8 @@ int onm_cli_init() {
 
     cli_set_idle_timeout_callback(cli, CLI_TIMEOUT, idle_timeout);
 
-    onm_commands_init(cli);
+    default_commands_init(cli);
+    yang_cmd_loader_init(cli);
     return 0;
 
 
