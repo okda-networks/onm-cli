@@ -150,7 +150,7 @@ struct cli_optarg {
   int privilege;
   unsigned int unique_len;
   int (*get_completions)(struct cli_def *, const char *, const char *, struct cli_comphelp *);
-  int (*validator)(struct cli_def *, const char *, const char *);
+  int (*validator)(struct cli_def *, const char *, const char *,void *);
   int (*transient_mode)(struct cli_def *, const char *, const char *);
   struct cli_optarg *next;
 };
@@ -249,7 +249,7 @@ struct cli_optarg *cli_register_optarg(struct cli_command *cmd, const char *name
                                        const char *help,
                                        int (*get_completions)(struct cli_def *cli, const char *, const char *,
                                                               struct cli_comphelp *),
-                                       int (*validator)(struct cli_def *cli, const char *, const char *),
+                                       int (*validator)(struct cli_def *cli, const char *, const char *,void*),
                                        int (*transient_mode)(struct cli_def *, const char *, const char *));
 int cli_optarg_addhelp(struct cli_optarg *optarg, const char *helpname, const char *helptext);
 char *cli_find_optarg_value(struct cli_def *cli, char *name, char *find_after);

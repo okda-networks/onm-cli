@@ -4,6 +4,7 @@
 
 #include "y_utils.h"
 #include "yang_core.h"
+#include "data_validators.h"
 
 int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
@@ -84,10 +85,13 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     char *cmd_hash = strdup(y_module->name);;
     mode = y_get_curr_mode(y_node);
 
+
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
-    cli_register_optarg(c, "value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
-                        y_node->dsc, NULL, NULL, NULL);
+
+
+    cli_register_optarg(c, "cmd-value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
+                        y_node->dsc, NULL, yang_data_validator, NULL);
 
     return 0;
 }

@@ -55,7 +55,6 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
         if (child->flags & LYS_KEY) {
             cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED,
                                 mode, child->dsc, NULL, NULL, NULL);
-            break;
         }
     }
     return 0;

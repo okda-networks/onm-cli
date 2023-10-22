@@ -149,7 +149,7 @@ struct cli_filter_cmds {
 
 
 // Forward defines of *INTERNAL* library function as static here
-static int cli_search_flags_validator(struct cli_def *cli, const char *word, const char *value);
+static int cli_search_flags_validator(struct cli_def *cli, const char *word, const char *value, void* cmd_model);
 
 static int cli_match_filter_init(struct cli_def *cli, int argc, char **argv, struct cli_filter *filt);
 
@@ -215,7 +215,7 @@ cli_int_buildmode_unset_cback(struct cli_def *cli, struct cli_command *c, const 
 static int cli_int_buildmode_unset_completor(struct cli_def *cli, const char *name, const char *word,
                                              struct cli_comphelp *comphelp);
 
-static int cli_int_buildmode_unset_validator(struct cli_def *cli, const char *name, const char *value);
+static int cli_int_buildmode_unset_validator(struct cli_def *cli, const char *name, const char *value, void * cmd_model);
 
 static int cli_int_execute_buildmode(struct cli_def *cli);
 
@@ -2064,7 +2064,7 @@ struct cli_match_filter_state {
     } match;
 };
 
-int cli_search_flags_validator(struct cli_def *cli, const char *word, const char *value) {
+int cli_search_flags_validator(struct cli_def *cli, const char *word, const char *value,void * cmd_model) {
     // Valid search flags starts with a hyphen, then any number of i, v, or e characters.
 
     if ((*value++ == '-') && (*value) && (strspn(value, "vie") == strlen(value))) return CLI_OK;
@@ -2364,7 +2364,7 @@ struct cli_optarg *cli_register_optarg(struct cli_command *cmd, const char *name
                                        const char *help,
                                        int (*get_completions)(struct cli_def *cli, const char *, const char *,
                                                               struct cli_comphelp *),
-                                       int (*validator)(struct cli_def *cli, const char *, const char *),
+                                       int (*validator)(struct cli_def *cli, const char *, const char *, void * cmd_model),
                                        int (*transient_mode)(struct cli_def *cli, const char *, const char *)) {
     struct cli_optarg *optarg = NULL;
     struct cli_optarg *lastopt = NULL;
@@ -2941,7 +2941,7 @@ int cli_int_buildmode_unset_completor(struct cli_def *cli, const char *name, con
     return CLI_OK;
 }
 
-int cli_int_buildmode_unset_validator(struct cli_def *cli, const char *name, const char *value) {
+int cli_int_buildmode_unset_validator(struct cli_def *cli, const char *name, const char *value,void * cmd_model) {
     struct cli_optarg_pair *optarg_pair;
 
     if (!name || !*name) {
@@ -3471,7 +3471,7 @@ static void cli_int_parse_optargs(struct cli_def *cli, struct cli_pipeline_stage
     char *value;
     int num_candidates = 0;
     int is_last_word = 0;
-    int (*validator)(struct cli_def *, const char *name, const char *value);
+    int (*validator)(struct cli_def *, const char *name, const char *value, void* cmd_model);
 
     if (cli->buildmode)
         cli->found_optargs = cli->buildmode->found_optargs;
@@ -3523,7 +3523,7 @@ static void cli_int_parse_optargs(struct cli_def *cli, struct cli_pipeline_stage
              * required.
              */
             if (oaptr->flags & CLI_CMD_SPOT_CHECK && num_candidates == 0) {
-                stage->status = (*oaptr->validator)(cli, NULL, NULL);
+                stage->status = (*oaptr->validator)(cli, NULL, NULL,cmd->cmd_model);
                 if (stage->status != CLI_OK) {
                     stage->error_word = stage->words[word_idx];
                     cli_reprompt(cli);
@@ -3535,7 +3535,7 @@ static void cli_int_parse_optargs(struct cli_def *cli, struct cli_pipeline_stage
                 num_candidates = 1;
                 break;
             } else if (stage->words[word_idx] && (oaptr->flags & CLI_CMD_OPTIONAL_FLAG) &&
-                       ((oaptr->validator && (oaptr->validator(cli, oaptr->name, stage->words[word_idx]) == CLI_OK)) ||
+                       ((oaptr->validator && (oaptr->validator(cli, oaptr->name, stage->words[word_idx],cmd->cmd_model) == CLI_OK)) ||
                         (!oaptr->validator && !strcmp(oaptr->name, stage->words[word_idx])))) {
                 candidates[0] = oaptr;
                 num_candidates = 1;
@@ -3628,7 +3628,7 @@ static void cli_int_parse_optargs(struct cli_def *cli, struct cli_pipeline_stage
          * mode check or enter build mode.
          */
 
-        if (!validator || (*validator)(cli, oaptr->name, value) == CLI_OK) {
+        if (!validator || (*validator)(cli, oaptr->name, value,cmd->cmd_model) == CLI_OK) {
             if (oaptr->flags & CLI_CMD_DO_NOT_RECORD) {
                 // We want completion and validation, but then leave this 'value' to be seen - used *only* by buildmode as
                 // argv[0] with argc=1
