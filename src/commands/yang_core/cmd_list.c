@@ -4,6 +4,7 @@
 
 #include "y_utils.h"
 #include "yang_core.h"
+#include "data_validators.h"
 
 int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
@@ -54,7 +55,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     LY_LIST_FOR(child_list, child) {
         if (child->flags & LYS_KEY) {
             cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED,
-                                mode, child->dsc, NULL, NULL, NULL);
+                                mode, child->dsc, NULL, yang_data_validator, NULL);
         }
     }
     return 0;

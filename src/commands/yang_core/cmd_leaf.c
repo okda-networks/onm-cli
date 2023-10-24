@@ -6,6 +6,7 @@
 #include "yang_core.h"
 #include "data_validators.h"
 
+
 int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     if (argc == 0) {
@@ -90,7 +91,12 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
 
 
-    cli_register_optarg(c, "cmd-value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
+//    uint type = ((struct lysc_node_leaf *)y_node)->type->basetype;
+//    const char * value_type = ly_data_type2str[type];
+//    char * value_name = malloc(sizeof("value")+ sizeof(value_type) + 1);
+//
+//    sprintf(value_name,"value:%s",value_type);
+    cli_register_optarg(c, "value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
                         y_node->dsc, NULL, yang_data_validator, NULL);
 
     return 0;
