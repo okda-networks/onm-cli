@@ -28,7 +28,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     else
         cli_print(cli, "  failed to fine yang module");
 
-    char *mod_str = malloc(sizeof(cmd) + sizeof(argv[0]) + 2);
+    char *mod_str = malloc(strlen(cmd) + strlen(argv[0]) + 3);
     sprintf(mod_str, "%s[%s]", (char *) cmd, argv[0]);
 
     int mode = y_get_next_mode(y_node);

@@ -190,11 +190,12 @@ struct cli_buildmode {
   int transient_mode;
   char *mode_text;
 };
+
 struct term_mode_node {
     int mode;
     const char *mode_desc;
     struct term_mode_node *prev;
-} ;
+};
 
 struct cli_def *cli_init(void);
 int cli_done(struct cli_def *cli);
