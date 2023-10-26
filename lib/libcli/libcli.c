@@ -3665,7 +3665,7 @@ static void cli_int_parse_optargs(struct cli_def *cli, struct cli_pipeline_stage
                 }
             }
         } else {
-            cli_error(cli, "%sProblem parsing command setting %s with value %s", lastchar == '\0' ? "" : "\n",
+            cli_error(cli, "%sProblem parsing command setting %s, entered value %s", lastchar == '\0' ? "" : "\n",
                       oaptr->name,
                       stage->words[value_idx]);
             cli_reprompt(cli);

@@ -28,21 +28,18 @@ int is_numeric(const char *str) {
     return 1; // Numeric
 }
 
-int validate_bool(struct cli_def *cli, const char *word, const char *value) {
-    char *value_cpy = strdup(value);
 
-    to_lower(value_cpy);
+int validate_all(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
 
-    if ((strcmp(value, "true") != 0) && (strcmp(value, "false") != 0)) {
-        cli_print(cli, "ERROR please entry ture or false");
+
+    LY_ERR err = lyd_value_validate(leaf->module->ctx, (const struct lysc_node *) leaf, value,
+                                    strlen(value), NULL, NULL, NULL);
+    if (err == LY_SUCCESS)
+        return CLI_OK;
+    else {
+        cli_print(cli, " ERROR: invalid value for %s, yang error=%s", word, ly_errmsg(leaf->module->ctx));
         return CLI_ERROR;
     }
-    return CLI_OK;
-
-}
-
-int validate_string(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
-    return CLI_OK;
 }
 
 int validate_uint(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
@@ -65,6 +62,7 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
         return CLI_ERROR;
     }
 
+
 }
 
 int yang_data_validator(struct cli_def *cli, const char *word, const char *value, void *cmd_model) {
@@ -84,8 +82,8 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
                 break;
             }
         }
-        if (leaf == NULL){
-            cli_print(cli, "WARNING: failed to get yang_node of %s, no validation will be done",word);
+        if (leaf == NULL) {
+            cli_print(cli, "WARNING: failed to get yang_node of %s, no validation will be done", word);
             return CLI_OK;
         }
 
@@ -94,12 +92,6 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
 
 
     switch (leaf->type->basetype) {
-        case LY_TYPE_BOOL:
-            ret = validate_bool(cli, word, value);
-            break;
-        case LY_TYPE_STRING:
-            ret = validate_string(cli, word, value, leaf);
-            break;
         case LY_TYPE_UINT8:
         case LY_TYPE_UINT16:
         case LY_TYPE_UINT32:
@@ -113,7 +105,7 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
             ret = validate_uint(cli, word, value, leaf);
             break;
         default:
-            ret = CLI_OK;
+            ret = validate_all(cli,word,value,leaf);
     }
 
     return ret;
