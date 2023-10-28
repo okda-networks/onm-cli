@@ -38,7 +38,7 @@ int validate_all(struct cli_def *cli, const char *word, const char *value, struc
         return CLI_OK;
     else {
         cli_print(cli, " ERROR: invalid value for %s, yang error=%s", word, ly_errmsg(leaf->module->ctx));
-        return CLI_ERROR;
+        return CLI_ERROR_ARG;
     }
 }
 
@@ -59,7 +59,7 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
         return CLI_OK;
     else {
         cli_print(cli, "ERROR out of range value, min=%d , max=%d, value=%d", min, max, num);
-        return CLI_ERROR;
+        return CLI_ERROR_ARG;
     }
 
 

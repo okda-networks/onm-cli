@@ -14,6 +14,12 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
         return CLI_MISSING_ARGUMENT;
     }
 
+
+    // libcli does not support validating mutiple values for same optarg, this is a WA to validate all values.
+    for(int i = 0; i< argc;i++)
+        if (yang_data_validator(cli,cmd,argv[i],c->cmd_model) != CLI_OK) return CLI_ERROR_ARG;
+
+
     struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
     char xpath[256];
 
@@ -38,7 +44,6 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
 
-
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
 
@@ -48,7 +53,8 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 
     if (y_node != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s[%s=%s]\r\n", y_node->module->name, y_node->name,
+        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s[%s=%s]\r\n", y_node->module->name,
+                  y_node->name,
                   xpath, cmd, argv[0]);
     else
         cli_print(cli, "  failed to find yang module\r\n");
@@ -69,13 +75,11 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf_list,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
-    cli_register_optarg(c, "value(s)", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED, mode,
+    cli_register_optarg(c, "value(s)", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD | CLI_CMD_OPTION_MULTIPLE , PRIVILEGE_PRIVILEGED, mode,
                         y_node->dsc, NULL, NULL, NULL);
 
     return 0;
 }
-
-
 
 
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
