@@ -5,14 +5,14 @@ yang_core_src = $(ycore_dir)/y_utils.c \
 	$(ycore_dir)/cmd_container.c $(ycore_dir)/cmd_choice.c\
 	$(ycore_dir)/data_validators.c
 
-commands_src = src/commands/default_cmd.c src/commands/yang_cmd_loader.c $(yang_core_src)
-src = src/onm_main.c src/cli.c src/onm_yang.c src/utils.c $(commands_src)
+commands_src = src/commands/default_cmd.c src/commands/yang_loader_cmd.c $(yang_core_src)
+src = src/onm_main.c src/onm_cli.c src/onm_yang.c src/utils.c $(commands_src)
 LIB_PATH = -L/usr/local/lib/
 
 
 
 main: $(src)
-	$(CC) -g $(src) -o onm_cli $(LIB_PATH) -lcli -lyang  --vtv-debug
+	$(CC) -g $(src) -o onmcli $(LIB_PATH) -lcli -lyang  --vtv-debug
 
 run: main
 	LD_LIBRARY_PATH=/usr/local/lib/ ./onm_cli
@@ -21,6 +21,6 @@ static_link: $(src)
 	$(CC) -g $(src) lib/libcli/libcli.c -o onm_cli -lcrypt -lyang  --vtv-debug
 
 clean:
-	rm -f onm_cli
+	rm -f onmcli
 
 include lib/Makefile

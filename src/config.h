@@ -8,7 +8,7 @@
 #define PORT 12345
 #define USERNAME "admin"
 #define PASSWORD "admin"
-#define CLI_TIMEOUT 120
+#define CLI_TIMEOUT 36000
 #define LIBYANG_LOG_DEBUG 1
 
 #endif //ONMCLI_CONFIG_H

@@ -10,7 +10,6 @@
 #include <libyang/tree.h>
 #include <libyang/log.h>
 #include "../../../lib/libcli/libcli.h"
-#include "../../onm_yang.h"
 
 
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node);

@@ -9,37 +9,16 @@
 #include "config.h"
 
 
-static struct ly_ctx *ctx;
-
-
-// Libyang utils functions
-
-int set_yang_searchdir(const char *dir) {
-    printf("INFO:onm_yang.c: setting yang search path to `%s`\n",dir);
-    ly_ctx_set_searchdir(ctx, dir);
-    return 0;
-}
-int unset_yang_searchdir(const char *dir) {
-    printf("INFO:onm_yang.c: setting yang search path to `%s`\n",dir);
-    ly_ctx_unset_searchdir(ctx, dir);
-    return 0;
-}
-
-const char * const* get_yang_searchdirs(){
-    return ly_ctx_get_searchdirs(ctx);
-}
+struct ly_ctx *yang_ctx;
 
 const struct lys_module *get_module_schema(char *module_name) {
     printf("DEBUG:onm_yang.c: get schema for module=%s\n",module_name);
-
-    const struct lys_module *module = ly_ctx_load_module(ctx, module_name, NULL, NULL);
+    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, NULL);
     return module;
-
-
 }
 
 struct ly_ctx* get_yang_context(){
-    return ctx;
+    return yang_ctx;
 }
 
 int onm_yang_init() {
@@ -53,7 +32,7 @@ int onm_yang_init() {
         return -1;
     }
 
-    ret = ly_ctx_new("yang/standard/ietf/RFC", LY_CTX_ALL_IMPLEMENTED, &ctx);
+    ret = ly_ctx_new("yang/standard/ietf/RFC", LY_CTX_ALL_IMPLEMENTED, &yang_ctx);
     if (ret > 0) {
         fprintf(stderr, "Failed to create libyang context: %d\n", ret);
         return -1;

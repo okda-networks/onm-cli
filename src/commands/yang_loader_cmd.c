@@ -5,16 +5,34 @@
 /*
  * cli commands generator functions
  * */
-#include "yang_cmd_loader.h"
+#include "yang_loader_cmd.h"
 #include "yang_core/yang_core.h"
 
-enum register_node_routine_signals{
-    REG_NO_SIG=0,
+extern struct ly_ctx *yang_ctx;
+
+enum register_node_routine_signals {
+    REG_NO_SIG = 0,
     REG_SKIP_NEXT_SIG,
     REG_DEF_SIG,
     REG_OK_SIG
 };
 
+
+
+int set_yang_searchdir(const char *dir) {
+    printf("INFO:onm_yang.c: setting yang search path to `%s`\n",dir);
+    ly_ctx_set_searchdir(yang_ctx, dir);
+    return 0;
+}
+int unset_yang_searchdir(const char *dir) {
+    printf("INFO:onm_yang.c: setting yang search path to `%s`\n",dir);
+    ly_ctx_unset_searchdir(yang_ctx, dir);
+    return 0;
+}
+
+const char * const* get_yang_searchdirs(){
+    return ly_ctx_get_searchdirs(yang_ctx);
+}
 
 
 static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
@@ -61,7 +79,7 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     LYSC_TREE_DFS_BEGIN(schema, child) {
             signal = register_node_routine(cli, child);
             if (signal == REG_SKIP_NEXT_SIG)
-                LYSC_TREE_DFS_continue =1;
+                LYSC_TREE_DFS_continue = 1;
 
         LYSC_TREE_DFS_END(schema->next, child);
     }
@@ -83,7 +101,7 @@ int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
 
     LYSC_TREE_DFS_BEGIN(schema, child) {
             printf("DEBUG:commands.c: unregistering command for  `%s`\n", child->name);
-            unregister_node_routine(cli,child);
+            unregister_node_routine(cli, child);
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` unregistered successfully\r\n", schema->name);
@@ -101,7 +119,8 @@ int cmd_yang2cmd_remove(struct cli_def *cli, struct cli_command *c, const char *
     }
 
     char *module_name = (char *) argv[0];
-    const struct lys_module *module = get_module_schema(module_name);
+    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, NULL);
+
     if (module == NULL) {
         cli_print(cli, "  ERROR: module `%s` not found, \n"
                        "  please make sure to set the correct search dir for yang,\n"
@@ -137,7 +156,8 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
         return CLI_OK;
     }
     char *module_name = (char *) argv[0];
-    const struct lys_module *module = get_module_schema(module_name);
+    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, NULL);
+
     if (module == NULL) {
         cli_print(cli, "  ERROR: module `%s` not found, \n"
                        "  please make sure to set the correct search dir for yang,\n"
@@ -151,7 +171,7 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
     // load all imported modules and register commands if any has
     struct lysp_import *imported_modules = module->parsed->imports;
     LY_ARRAY_COUNT_TYPE i;
-    LY_ARRAY_FOR(imported_modules,i) {
+    LY_ARRAY_FOR(imported_modules, i) {
         cli_print(cli, "  INFO: module `%s` importing`%s` module\n"
                        "  loading `%s` as well", module_name,
                   imported_modules[i].name, imported_modules[i].name);
@@ -161,10 +181,10 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
     if (module->compiled->data == NULL)
         return CLI_OK;
     // if the module is already registered remove it first
-   unregister_commands_schema(module->compiled->data, cli);
+    unregister_commands_schema(module->compiled->data, cli);
 
     register_commands_schema(module->compiled->data, cli);
-    cli_print(cli, "  yang commands generated successfully for module=%s",module_name);
+    cli_print(cli, "  yang commands generated successfully for module=%s", module_name);
     return CLI_OK;
 
 }
@@ -224,12 +244,11 @@ int cmd_yang_list_modules(struct cli_def *cli, struct cli_command *c, const char
     }
     unsigned int index = 0;
     struct lys_module *mod;
-    struct ly_ctx *ctx = get_yang_context();
 
 
-    while ((mod = (struct lys_module *)ly_ctx_get_module_iter(ctx, &index))) {
-        if(mod != NULL)
-            cli_print(cli,"[+] %s",mod->name);
+    while ((mod = (struct lys_module *) ly_ctx_get_module_iter(yang_ctx, &index))) {
+        if (mod != NULL)
+            cli_print(cli, "[+] %s", mod->name);
     }
     return CLI_OK;
 }

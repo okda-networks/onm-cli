@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 
 #include "config.h"
-#include "cli.h"
+#include "onm_cli.h"
 #include "onm_yang.h"
 
 #define GET_NEW_MODE_STR(current_mod, new_mode) \

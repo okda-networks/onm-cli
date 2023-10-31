@@ -3,11 +3,6 @@
 //
 
 #include "data_validators.h"
-#include <libyang/libyang.h>
-#include <libyang/parser_data.h>
-#include <libyang/tree.h>
-#include <libyang/log.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -30,7 +25,6 @@ int is_numeric(const char *str) {
 
 
 int validate_all(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
-
 
     LY_ERR err = lyd_value_validate(leaf->module->ctx, (const struct lysc_node *) leaf, value,
                                     strlen(value), NULL, NULL, NULL);
