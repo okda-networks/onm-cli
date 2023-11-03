@@ -31,7 +31,7 @@ int validate_all(struct cli_def *cli, const char *word, const char *value, struc
     if (err == LY_SUCCESS)
         return CLI_OK;
     else {
-        cli_print(cli, " ERROR: invalid value for %s, yang error=%s", word, ly_errmsg(leaf->module->ctx));
+        cli_print(cli, " ERROR: invalid value for %s, err_code=%d error=%s", word, err, ly_errmsg(leaf->module->ctx));
         return CLI_ERROR_ARG;
     }
 }
@@ -58,6 +58,14 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
 
 
 }
+
+int validate_ident(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
+    const char *features[2] = {"*",NULL};
+
+    lys_set_implemented(leaf->module, features);
+    return validate_all(cli, word, value, leaf);
+}
+
 
 int yang_data_validator(struct cli_def *cli, const char *word, const char *value, void *cmd_model) {
     int ret = CLI_OK;
@@ -98,8 +106,11 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
         case LY_TYPE_INT64:
             ret = validate_uint(cli, word, value, leaf);
             break;
+        case LY_TYPE_IDENT:
+//            ret = validate_ident(cli, word, value, leaf);
+//            break;
         default:
-            ret = validate_all(cli,word,value,leaf);
+            ret = validate_all(cli, word, value, leaf);
     }
 
     return ret;

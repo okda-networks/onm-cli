@@ -74,6 +74,7 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
  */
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
+
     struct lysc_node *child = NULL;
     int signal;
     LYSC_TREE_DFS_BEGIN(schema, child) {
@@ -117,9 +118,9 @@ int cmd_yang2cmd_remove(struct cli_def *cli, struct cli_command *c, const char *
         cli_print(cli, "  specify yang module name to generate commands from");
         return CLI_OK;
     }
-
+    const char *all_features[] = {"*", NULL};
     char *module_name = (char *) argv[0];
-    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, NULL);
+    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, all_features);
 
     if (module == NULL) {
         cli_print(cli, "  ERROR: module `%s` not found, \n"
@@ -155,8 +156,9 @@ int cmd_yang2cmd_generate(struct cli_def *cli, struct cli_command *c, const char
         cli_print(cli, "  specify yang module name to generate commands from");
         return CLI_OK;
     }
+    const char *all_features[] = {"*", NULL};
     char *module_name = (char *) argv[0];
-    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, NULL);
+    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, all_features);
 
     if (module == NULL) {
         cli_print(cli, "  ERROR: module `%s` not found, \n"
