@@ -8,4 +8,5 @@
 #include <libyang/tree_schema.h>
 int y_get_curr_mode(struct lysc_node * y_node);
 int y_get_next_mode(struct lysc_node * y_node);
+const char * creat_help_for_identity_type(struct lysc_node *y_node);
 #endif //ONMCLI_Y_UTILS_H

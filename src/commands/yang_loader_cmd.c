@@ -12,8 +12,8 @@ extern struct ly_ctx *yang_ctx;
 
 enum register_node_routine_signals {
     REG_NO_SIG = 0,
-    REG_SKIP_NEXT_SIG,
-    REG_DEF_SIG,
+    REG_SKIP_NEXT_SIG,  // skip the next node
+    REG_NODE_UnKNOWN_SIG, // node unknown was not registered
     REG_OK_SIG
 };
 
@@ -61,7 +61,7 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
             register_cmd_choice(cli, schema);
             return REG_SKIP_NEXT_SIG;
         default:
-            return REG_DEF_SIG;
+            return REG_NODE_UnKNOWN_SIG;
     }
     return REG_OK_SIG;
 }
@@ -81,7 +81,6 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
             signal = register_node_routine(cli, child);
             if (signal == REG_SKIP_NEXT_SIG)
                 LYSC_TREE_DFS_continue = 1;
-
         LYSC_TREE_DFS_END(schema->next, child);
     }
     printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);

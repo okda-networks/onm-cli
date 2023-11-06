@@ -54,8 +54,14 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lysc_node *child;
     LY_LIST_FOR(child_list, child) {
         if (child->flags & LYS_KEY) {
+            const char *optarg_help;
+            LY_DATA_TYPE type = ((struct lysc_node_leaf *) child)->type->basetype;
+            if (type == LY_TYPE_IDENT)
+                optarg_help = creat_help_for_identity_type((struct lysc_node *)child);
+            else
+                optarg_help = child->dsc;
             cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED,
-                                mode, child->dsc, NULL, yang_data_validator, NULL);
+                                mode, optarg_help, NULL, yang_data_validator, NULL);
         }
     }
     return 0;
