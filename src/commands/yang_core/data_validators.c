@@ -25,7 +25,7 @@ int is_numeric(const char *str) {
 
 
 int validate_all(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
-
+    ly_err_clean(leaf->module->ctx, NULL);
     LY_ERR err = lyd_value_validate(leaf->module->ctx, (const struct lysc_node *) leaf, value,
                                     strlen(value), NULL, NULL, NULL);
     if (err == LY_SUCCESS)
@@ -60,7 +60,7 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
 }
 
 int validate_ident(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
-    const char *features[2] = {"*",NULL};
+    const char *features[2] = {"*", NULL};
 
     lys_set_implemented(leaf->module, features);
     return validate_all(cli, word, value, leaf);
