@@ -5,23 +5,22 @@
 
 #define CONFIG_MODE 1
 
+
 int y_get_curr_mode(struct lysc_node *y_node) {
     unsigned int mode;
-    const struct lys_module *y_root_module = lysc_owner_module(y_node);
     if (y_node->parent == NULL)
         mode = CONFIG_MODE;
-    else{
+    else {
         char xpath[256];
-        lysc_path(y_node->parent, LYSC_PATH_DATA, xpath, 256);
+        lysc_path(y_node->parent, LYSC_PATH_LOG, xpath, 256);
         mode = str2int_hash(xpath, NULL);
     }
-
     return mode;
 }
 
 int y_get_next_mode(struct lysc_node *y_node) {
     char xpath[256];
-    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+    lysc_path(y_node, LYSC_PATH_LOG, xpath, 256);
     unsigned int mode = str2int_hash(xpath, NULL);
     return mode;
 }
@@ -34,7 +33,6 @@ size_t calculate_identities_length(struct lysc_ident *identity) {
     }
     LY_ARRAY_COUNT_TYPE i;
 
-//    length += strlen("[+] ") + strlen(identity->name) + 1; // +1 for newline
 
     LY_ARRAY_FOR(identity->derived, i) {
         length += strlen(" [+] ") + strlen(identity->derived[i]->name) + 1;
@@ -51,9 +49,6 @@ void add_identities_recursive(struct lysc_ident *identity, char *help) {
     }
     LY_ARRAY_COUNT_TYPE i;
 
-//    strcat(help, "[+] ");
-//    strcat(help, identity->name);
-//    strcat(help, "\n");
 
     LY_ARRAY_FOR(identity->derived, i) {
         strcat(help, " [+] ");
@@ -68,7 +63,7 @@ void add_identities_recursive(struct lysc_ident *identity, char *help) {
 const char *creat_help_for_identity_type(struct lysc_node *y_node) {
     const char *y_dsc = y_node->dsc;
 
-    struct lysc_type_identityref *y_id_ref = (struct lysc_type_identityref *)((struct lysc_node_leaf *)y_node)->type;
+    struct lysc_type_identityref *y_id_ref = (struct lysc_type_identityref *) ((struct lysc_node_leaf *) y_node)->type;
 //    if (y_id_ref==NULL)
 //        return y_node->dsc;
     struct lysc_ident **identities = y_id_ref->bases;
@@ -82,7 +77,7 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
         help_len += calculate_identities_length(identities[i]); // Calculate additional length
     }
 
-    char *help = (char *)malloc(help_len);
+    char *help = (char *) malloc(help_len);
     if (!help) {
         perror("Memory allocation failed");
         return NULL;
@@ -93,10 +88,6 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
     strcat(help, "\nAvailable options:\n");
 
     LY_ARRAY_FOR(identities, i) {
-//        strcat(help, "[+] ");
-//        strcat(help, identities[i]->name);
-//        strcat(help, "\n");
-
         add_identities_recursive(identities[i], help);
     }
     return help;

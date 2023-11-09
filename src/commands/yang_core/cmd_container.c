@@ -18,6 +18,16 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
         return CLI_ERROR_ARG;
     }
 
+    char xpath[256];
+
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+
+
+    if (y_node != NULL)
+        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", y_node->module->name, y_node->name,
+                  xpath);
+    else
+        cli_print(cli, "  failed to fine yang module");
 
     int mode = y_get_next_mode(y_node);
     cli_push_configmode(cli, mode, (char *) cmd);

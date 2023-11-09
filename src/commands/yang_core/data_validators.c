@@ -37,13 +37,17 @@ int validate_all(struct cli_def *cli, const char *word, const char *value, struc
 }
 
 int validate_uint(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
+
     if (!is_numeric(value)) {
         cli_print(cli, "ERROR please entry numeric value");
         return CLI_ERROR;
     }
     struct lysc_type_num *num_t = (struct lysc_type_num *) leaf->type;
-    if (num_t->range == NULL)
+    if (num_t->range == NULL) {
+        cli_print(cli, "hooooooooooooon");
         return CLI_OK;
+    }
+
 
     int num = atoi(value);
     int min = num_t->range->parts->min_u64;
@@ -59,19 +63,11 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
 
 }
 
-int validate_ident(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
-    const char *features[2] = {"*", NULL};
-
-    lys_set_implemented(leaf->module, features);
-    return validate_all(cli, word, value, leaf);
-}
-
 
 int yang_data_validator(struct cli_def *cli, const char *word, const char *value, void *cmd_model) {
     int ret = CLI_OK;
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
     struct lysc_node_leaf *leaf;
-
     // the value might be leaf value or list key leaf value, need to be handled.
     if (y_node->nodetype == LYS_LEAF)
         leaf = (struct lysc_node_leaf *) y_node;
@@ -89,8 +85,14 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
             return CLI_OK;
         }
 
-    } else
+    } else if (y_node->nodetype == LYS_CASE) {
+        // if choice's case we need to get its child
+        const struct lysc_node *child = lysc_node_child(y_node);
+        leaf = (struct lysc_node_leaf *) child;
+    } else {
+
         return CLI_OK;
+    }
 
 
     switch (leaf->type->basetype) {

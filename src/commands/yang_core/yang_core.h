@@ -22,5 +22,8 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node);
 
 int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node);
 
+int register_commands_schema(struct lysc_node *schema, struct cli_def *cli);
+
+int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli);
 
 #endif //ONMCLI_YANG_CORE_H

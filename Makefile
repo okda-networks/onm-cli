@@ -3,7 +3,7 @@ ycore_dir = src/commands/yang_core
 yang_core_src = $(ycore_dir)/y_utils.c \
 	$(ycore_dir)/cmd_list.c $(ycore_dir)/cmd_leaf.c\
 	$(ycore_dir)/cmd_container.c $(ycore_dir)/cmd_choice.c\
-	$(ycore_dir)/data_validators.c
+	$(ycore_dir)/data_validators.c $(ycore_dir)/y_cmd_generator.c
 
 commands_src = src/commands/default_cmd.c src/commands/yang_loader_cmd.c $(yang_core_src)
 src = src/onm_main.c src/onm_cli.c src/onm_yang.c src/utils.c $(commands_src)
