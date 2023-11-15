@@ -6,6 +6,8 @@
 #include "y_utils.h"
 #include "yang_core.h"
 
+// global data tree.
+extern struct lyd_node *root_data, *parent_data;
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
@@ -18,16 +20,29 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
         return CLI_ERROR_ARG;
     }
 
+    // for container we need to confirm if the parent is null then this is the first child of the root
+    // if it's not null then add the container to the current parent.
     char xpath[256];
+    int ret;
+    if (root_data == NULL){
+        lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+        ret = lyd_new_path(NULL, y_node->module->ctx, xpath, NULL, 0, &root_data);
+    }
 
-    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+    else{
+        snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
+        ret = lyd_new_path(parent_data, y_node->module->ctx, xpath,
+                            NULL,LYD_NEW_PATH_UPDATE,&parent_data);
+    }
 
 
-    if (y_node != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s", y_node->module->name, y_node->name,
-                  xpath);
-    else
-        cli_print(cli, "  failed to fine yang module");
+
+    if (ret != LY_SUCCESS) {
+        fprintf(stderr, "Failed to create the data tree\n");
+        print_ly_err(ly_err_first(y_node->module->ctx));
+        return CLI_ERROR;
+    }
+
 
     int mode = y_get_next_mode(y_node);
     cli_push_configmode(cli, mode, (char *) cmd);

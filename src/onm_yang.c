@@ -10,6 +10,7 @@
 
 
 struct ly_ctx *yang_ctx;
+struct lyd_node *root_data,*parent_data;
 
 const struct lys_module *get_module_schema(char *module_name) {
     printf("DEBUG:onm_yang.c: get schema for module=%s\n", module_name);

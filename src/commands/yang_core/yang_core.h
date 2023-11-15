@@ -7,10 +7,13 @@
 
 #include <libyang/libyang.h>
 #include <libyang/parser_data.h>
+#include <libyang/tree_data.h>
+#include <libyang/printer_data.h>
 #include <libyang/tree.h>
 #include <libyang/log.h>
 #include "../../../lib/libcli/libcli.h"
 
+//char *xpath_predicates[10];
 
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node);
 

@@ -5,6 +5,9 @@
 #include "yang_core.h"
 #include "data_validators.h"
 
+// global data tree.
+extern struct lyd_node *data_tree;
+
 int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     if (argc == 0) {

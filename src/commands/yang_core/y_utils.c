@@ -6,6 +6,13 @@
 #define CONFIG_MODE 1
 
 
+void print_ly_err(const struct ly_err_item *err) {
+    while (err) {
+        fprintf(stderr, "libyang error: %s\n", err->msg);
+        err = err->next;
+    }
+}
+
 int y_get_curr_mode(struct lysc_node *y_node) {
     unsigned int mode;
     if (y_node->parent == NULL)

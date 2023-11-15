@@ -6,6 +6,9 @@
 #include "yang_core.h"
 #include "data_validators.h"
 
+// global data tree.
+extern struct lyd_node *root_data, *parent_data;
+
 
 int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
@@ -13,7 +16,6 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
         cli_print(cli, "ERROR: please enter value(s) for %s", cmd);
         return CLI_MISSING_ARGUMENT;
     }
-
 
     // libcli does not support validating mutiple values for same optarg, this is a WA to validate all values.
     for (int i = 0; i < argc; i++)
@@ -44,18 +46,22 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
+    // get the relative path for leaf to append value to data tree (example ietf-ip:ipv4)
+    char relative_xpath[256];
+    snprintf(relative_xpath, 256, "%s:%s", y_node->module->name, y_node->name);
 
-    char xpath[100];
+    int ret = lyd_new_path2(parent_data, y_node->module->ctx, relative_xpath,
+                            argv[0], 0, 0, LYD_NEW_PATH_UPDATE, NULL,
+                            NULL);
 
-    lysc_path(y_node, LYSC_PATH_DATA, xpath, 100);
-
-
-    if (y_node != NULL)
-        cli_print(cli, "  this command is for module=%s , node=%s, xpath=%s[%s=%s]\r\n", y_node->module->name,
-                  y_node->name,
-                  xpath, cmd, argv[0]);
-    else
-        cli_print(cli, "  failed to find yang module\r\n");
+    if (ret != LY_SUCCESS) {
+        cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
+        print_ly_err(ly_err_first(y_node->module->ctx));
+        return CLI_ERROR;
+    }
+    char *result;
+    lyd_print_mem(&result, root_data, LYD_XML, 0);
+    cli_print(cli, result, NULL);
     return CLI_OK;
 
 }
