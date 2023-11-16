@@ -24,7 +24,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     // if it's not null then add the container to the current parent.
     char xpath[256];
     int ret;
-    if (root_data == NULL){
+    if (parent_data == NULL){
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
         ret = lyd_new_path(NULL, y_node->module->ctx, xpath, NULL, 0, &root_data);
     }
@@ -40,6 +40,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     if (ret != LY_SUCCESS) {
         fprintf(stderr, "Failed to create the data tree\n");
         print_ly_err(ly_err_first(y_node->module->ctx));
+        cli_print(cli,"failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }
 

@@ -59,9 +59,7 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         print_ly_err(ly_err_first(y_node->module->ctx));
         return CLI_ERROR;
     }
-    char *result;
-    lyd_print_mem(&result, root_data, LYD_XML, 0);
-    cli_print(cli, result, NULL);
+
     return CLI_OK;
 
 }

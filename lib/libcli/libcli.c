@@ -720,8 +720,8 @@ struct cli_def *cli_init() {
                          "Show available commands");
     cli_register_command(cli, 0, NULL, "quit", cli_quit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL, "Disconnect");
     cli_register_command(cli, 0, NULL, "logout", cli_quit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL, "Disconnect");
-    cli_register_command(cli, 0, NULL, "exit", cli_exit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL,
-                         "Exit from current mode");
+//    cli_register_command(cli, 0, NULL, "exit", cli_exit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL,
+//                         "Exit from current mode");
     cli_register_command(cli, 0, NULL, "history", cli_history, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL,
                          "Show a list of previously run commands");
     cli_register_command(cli, 0, NULL, "enable", cli_enable, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,

@@ -12,7 +12,7 @@
 #define UNUSED(d) d
 #endif
 
-
+extern struct lyd_node *root_data,*parent_data;
 /*
  * Forward Declarations for cli default commands
  * */
@@ -63,6 +63,14 @@ int check_auth(const char *username, const char *password) {
     return CLI_OK;
 }
 
+int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    // we need to shift the parent_data backward with each exit call.
+    if (parent_data != NULL){
+        parent_data = (struct lyd_node *)parent_data->parent;
+    }
+
+    return cli_exit(cli, c, cmd, argv,  argc);
+}
 
 int default_commands_init(struct cli_def *cli) {
     printf("INFO:commands.c: initializing commands\n");
@@ -70,10 +78,15 @@ int default_commands_init(struct cli_def *cli) {
 
     cli_set_auth_callback(cli, check_auth);
 
+    cli_register_command(cli, NULL, NULL,
+                         "exit", cmd_exit2, PRIVILEGE_UNPRIVILEGED,
+                         MODE_ANY, NULL, "exit to prev mode");
 
     cli_register_command(cli, NULL, NULL,
                          "frr", cmd_frr, PRIVILEGE_UNPRIVILEGED,
                          MODE_CONFIG, NULL, "frr subsystem config");
+
+
 
 
 }
