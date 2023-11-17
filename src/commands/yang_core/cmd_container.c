@@ -5,6 +5,7 @@
 
 #include "y_utils.h"
 #include "yang_core.h"
+#include "data_factory.h"
 
 // global data tree.
 extern struct lyd_node *root_data, *parent_data;
@@ -20,18 +21,8 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
         return CLI_ERROR_ARG;
     }
 
-    // for container, we need to check, if the parent is null, then this is the first child of the root
-    // if it's not then add the container to the current parent.
-    char xpath[256];
-    int ret;
-    if (parent_data == NULL) {
-        lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-        ret = lyd_new_path2(NULL, y_node->module->ctx, xpath,NULL,0,0,0,&root_data,&parent_data);
-    } else {
-        snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-        ret = lyd_new_path(parent_data, y_node->module->ctx, xpath,
-                           NULL, LYD_NEW_PATH_UPDATE, &parent_data);
-    }
+
+    int ret = add_data_node(y_node, c, argv[0]);
 
 
     if (ret != LY_SUCCESS) {

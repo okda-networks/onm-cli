@@ -4,7 +4,7 @@
 
 #ifndef ONMCLI_Y_UTILS_H
 #define ONMCLI_Y_UTILS_H
-#include "../../utils.h"
+#include "src/utils.h"
 #include <libyang/tree_schema.h>
 void print_ly_err(const struct ly_err_item *err);
 int y_get_curr_mode(struct lysc_node * y_node);

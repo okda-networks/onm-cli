@@ -5,9 +5,10 @@
 #include "y_utils.h"
 #include "yang_core.h"
 #include "data_validators.h"
+#include "data_factory.h"
 
 // global data tree.
-extern struct lyd_node *root_data,*parent_data;
+extern struct lyd_node *root_data, *parent_data;
 
 int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
@@ -20,26 +21,15 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    char xpath[256],xpath_list_etx[128];
 
 
-    int ret;
-    if (parent_data == NULL){
-        lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-        sprintf(xpath_list_etx,"[%s='%s']",c->optargs->name,argv[0]);
-        strcat(xpath,xpath_list_etx);
-        ret = lyd_new_path(root_data, y_node->module->ctx, xpath, NULL, 0, &parent_data);
-    }
+    int ret = add_data_node(y_node, c, argv[0]);
 
-    else{
-        snprintf(xpath, 256, "%s:%s[%s='%s']", y_node->module->name, y_node->name,c->optargs->name,argv[0]);
-        ret = lyd_new_path(parent_data, y_node->module->ctx, xpath, NULL, 0, &parent_data);
-    }
 
     if (ret != LY_SUCCESS) {
         fprintf(stderr, "Failed to create the data tree\n");
         print_ly_err(ly_err_first(y_node->module->ctx));
-        cli_print(cli,"failed to execute command, error with adding the data node.");
+        cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }
 
@@ -72,7 +62,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             const char *optarg_help;
             LY_DATA_TYPE type = ((struct lysc_node_leaf *) child)->type->basetype;
             if (type == LY_TYPE_IDENT)
-                optarg_help = creat_help_for_identity_type((struct lysc_node *)child);
+                optarg_help = creat_help_for_identity_type((struct lysc_node *) child);
             else
                 optarg_help = child->dsc;
             cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED,

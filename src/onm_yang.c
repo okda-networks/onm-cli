@@ -33,10 +33,6 @@ struct ly_ctx *get_yang_context() {
 int onm_yang_init() {
     printf("INFO:onm_yang.c:initializing onm yang context\n");
     int ret;
-//    ret = lyd_new_any(NULL,NULL,"all",NULL,0,LYD_ANYDATA_XML,0,&root_data);
-//    if (ret != LY_SUCCESS){
-//        print_ly_err(ly_err_first(yang_ctx));
-//    }
     if (LIBYANG_LOG_DEBUG == 1)
         ly_log_level(LY_LLDBG);
     char cwd[1024];

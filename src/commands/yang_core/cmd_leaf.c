@@ -5,6 +5,7 @@
 #include "y_utils.h"
 #include "yang_core.h"
 #include "data_validators.h"
+#include "data_factory.h"
 
 // global data tree.
 extern struct lyd_node *root_data, *parent_data;
@@ -46,13 +47,8 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
-    // get the relative path for leaf to append value to data tree (example ietf-ip:ipv4)
-    char relative_xpath[256];
-    snprintf(relative_xpath, 256, "%s:%s", y_node->module->name, y_node->name);
+    int ret = add_data_node(y_node,c,argv[0]);
 
-    int ret = lyd_new_path2(parent_data, y_node->module->ctx, relative_xpath,
-                            argv[0], 0, 0, LYD_NEW_PATH_UPDATE, NULL,
-                            NULL);
 
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);

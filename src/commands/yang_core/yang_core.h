@@ -11,7 +11,7 @@
 #include <libyang/printer_data.h>
 #include <libyang/tree.h>
 #include <libyang/log.h>
-#include "../../../lib/libcli/libcli.h"
+#include "lib/libcli/libcli.h"
 
 //char *xpath_predicates[10];
 
