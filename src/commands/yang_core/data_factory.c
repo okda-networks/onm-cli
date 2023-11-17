@@ -37,8 +37,8 @@ int add_data_node(struct lysc_node *y_node, struct cli_command *c, char *value) 
             break;
 
         case LYS_LEAF:
+        case LYS_LEAFLIST:
             snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-
             ret = lyd_new_path2(parent_data, y_node->module->ctx, xpath,
                                 value, 0, 0, LYD_NEW_PATH_UPDATE, NULL,
                                 NULL);

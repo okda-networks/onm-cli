@@ -17,21 +17,20 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
         cli_print(cli, "ERROR: please enter value(s) for %s", cmd);
         return CLI_MISSING_ARGUMENT;
     }
-
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    int ret;
     // libcli does not support validating mutiple values for same optarg, this is a WA to validate all values.
-    for (int i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++){
         if (yang_data_validator(cli, cmd, argv[i], c->cmd_model) != CLI_OK) return CLI_ERROR_ARG;
+        ret = add_data_node(y_node,c,argv[i]);
+        if (ret != LY_SUCCESS) {
+            cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
+            print_ly_err(ly_err_first(y_node->module->ctx));
+            return CLI_ERROR;
+        }
+    }
 
 
-    struct lysc_node *ne = (struct lysc_node *) c->cmd_model;
-    char xpath[256];
-
-    lysc_path(ne, LYSC_PATH_DATA, xpath, 256);
-
-    if (ne != NULL)
-        cli_print(cli, "  xpath=%s\r\n", xpath);
-    else
-        cli_print(cli, "  failed to find yang module\r\n");
     return CLI_OK;
 
 }
