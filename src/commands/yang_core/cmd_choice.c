@@ -6,7 +6,7 @@
 #include "data_validators.h"
 
 // global data tree.
-extern struct lyd_node *data_tree;
+extern struct lyd_node *root_data, *parent_data;
 
 int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
@@ -34,33 +34,61 @@ void replace_space(char *str) {
 
 int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    if (argc == 0) {
-        cli_print(cli, "ERROR: please enter value for %s", cmd);
-        return CLI_MISSING_ARGUMENT;
-    } else if (argc > 1) {
-        cli_print(cli, "ERROR: please enter one value for %s", cmd);
-        return CLI_MISSING_ARGUMENT;
-    }
+
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    char xpath[256];
+    char xpath[256]= {'\0'};
 
-    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-
-
-    if (y_node != NULL)
-        cli_print(cli, "  xpath=%s", xpath);
-    else
-        cli_print(cli, "  failed to fine yang module");
     struct lysc_node *y_node_child = (struct lysc_node *) lysc_node_child(y_node);
 
-    // if the node is leaf return, else set the config mode.
+    int ret;
+    // if the case node is leaf/leaf-list parse the value, else set the next config mode.
     if (y_node_child->nodetype == LYS_LEAF || y_node_child->nodetype == LYS_LEAFLIST) {
+        if (argc == 0) {
+            cli_print(cli, "ERROR: please enter value for %s", cmd);
+            return CLI_MISSING_ARGUMENT;
+        } else if (argc > 1) {
+            cli_print(cli, "ERROR: please enter one value for %s", cmd);
+            return CLI_MISSING_ARGUMENT;
+        }
+
+        if (parent_data == NULL) {
+            lysc_path(y_node_child, LYSC_PATH_DATA, xpath, 256);
+            ret = lyd_new_path(parent_data, y_node_child->module->ctx, xpath, argv[0], 0, NULL);
+        } else {
+            snprintf(xpath, 256, "%s:%s", y_node_child->module->name, y_node_child->name);
+            ret = lyd_new_path2(parent_data, y_node_child->module->ctx, xpath,
+                                argv[0], 0, 0, LYD_NEW_PATH_UPDATE, NULL,
+                                NULL);
+        }
+
+
+        if (ret != LY_SUCCESS) {
+            cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node_child->name);
+            print_ly_err(ly_err_first(y_node_child->module->ctx));
+            return CLI_ERROR;
+        }
 
         return CLI_OK;
     }
 
+    // the case is container then set the parent_date and  configmode
+    if (parent_data == NULL) {
+        lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+        ret = lyd_new_path2(NULL, y_node->module->ctx, xpath,NULL,0,0,0,&root_data,&parent_data);
+    } else {
+        snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
+        ret = lyd_new_path(parent_data, y_node->module->ctx, xpath,
+                           NULL, LYD_NEW_PATH_UPDATE, &parent_data);
+    }
 
+
+    if (ret != LY_SUCCESS) {
+        fprintf(stderr, "Failed to create the data tree\n");
+        print_ly_err(ly_err_first(y_node->module->ctx));
+        cli_print(cli, "failed to execute command, error with adding the data node.");
+        return CLI_ERROR;
+    }
     char *mod_str = malloc(sizeof("choice[%s]") + sizeof(y_node->name));
     sprintf(mod_str, "choice[%s]", (char *) y_node->name);
 
@@ -94,8 +122,6 @@ int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
 
     LY_LIST_FOR((struct lysc_node *) y_choice->cases, y_case) {
         sprintf(help, "configure %s (%s) [case]", y_case->name, y_case->module->name);
-
-
 
 
         struct cli_command *case_cmd = cli_register_command(cli, choice_cmd, (void *) y_case, y_case->name,

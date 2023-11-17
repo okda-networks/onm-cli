@@ -44,7 +44,6 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
     }
     struct lysc_type_num *num_t = (struct lysc_type_num *) leaf->type;
     if (num_t->range == NULL) {
-        cli_print(cli, "hooooooooooooon");
         return CLI_OK;
     }
 
