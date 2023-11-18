@@ -42,7 +42,7 @@ size_t calculate_identities_length(struct lysc_ident *identity) {
 
 
     LY_ARRAY_FOR(identity->derived, i) {
-        length += strlen(" [+] ") + strlen(identity->derived[i]->name) + 1;
+        length += strlen(" [+] ") + strlen(identity->derived[i]->module->name) + strlen(identity->derived[i]->name) + 2;
         // Recursively calculate derived identities
         length += calculate_identities_length(identity->derived[i]);
     }
@@ -58,8 +58,10 @@ void add_identities_recursive(struct lysc_ident *identity, char *help) {
 
 
     LY_ARRAY_FOR(identity->derived, i) {
+        char * id_str = malloc(strlen(identity->derived[i]->name) + strlen(identity->derived[i]->module->name)+2);
+        sprintf(id_str,"%s:%s",identity->derived[i]->module->name,identity->derived[i]->name);
         strcat(help, " [+] ");
-        strcat(help, identity->derived[i]->name);
+        strcat(help, id_str);
         strcat(help, "\n");
 
         // Recursively call to print derived identities
@@ -80,7 +82,8 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
     size_t help_len = strlen(y_dsc) + strlen("Available options:\n");
 
     LY_ARRAY_FOR(identities, i) {
-        help_len += strlen("[+] ") + strlen(identities[i]->name) + 1; // +1 for newline
+        help_len += strlen("[+] ") + strlen(identities[i]->module->name) + strlen(identities[i]->name) +
+                    2; // +2 for newline and ":"
         help_len += calculate_identities_length(identities[i]); // Calculate additional length
     }
 

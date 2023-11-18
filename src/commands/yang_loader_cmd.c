@@ -205,8 +205,8 @@ int cmd_yang_compile(struct cli_def *cli, struct cli_command *c, const char *cmd
 }
 
 int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    if (root_data==NULL){
-        cli_print(cli,"no new config yet!");
+    if (root_data == NULL) {
+        cli_print(cli, "no new config yet!");
         return CLI_ERROR;
     }
     char *result;
@@ -223,8 +223,8 @@ int yang_cmd_loader_init(struct cli_def *cli) {
         printf("failed\n");
 
     struct cli_command *print = cli_register_command(cli, NULL, NULL,
-                                                            "print", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                            MODE_ANY, NULL, "print the candidate/running config");
+                                                     "print", NULL, PRIVILEGE_UNPRIVILEGED,
+                                                     MODE_ANY, NULL, "print the candidate/running config");
 
     struct cli_command *yang_set_cmd = cli_register_command(cli, yang_cmd, NULL,
                                                             "set", NULL, PRIVILEGE_UNPRIVILEGED,
@@ -273,7 +273,6 @@ int yang_cmd_loader_init(struct cli_def *cli) {
     cli_register_command(cli, print, NULL,
                          "cdb-running-config", NULL, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "print cdp running config");
-
 
 
     return 0;
