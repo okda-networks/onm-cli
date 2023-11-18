@@ -66,6 +66,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         mod_str_len += strlen(argv[i]) + 2;
     }
     mod_str = malloc(mod_str_len);
+    memset(mod_str,0,mod_str_len);
     strcat(mod_str,(char *) cmd);
     for (int i = 0; i < argc; i++) {
         strcat(mod_str,"[");
