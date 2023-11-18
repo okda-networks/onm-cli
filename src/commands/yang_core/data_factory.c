@@ -87,19 +87,6 @@ int add_data_node(struct lysc_node *y_node, struct cli_command *c, char *value) 
                                    NULL, LYD_NEW_PATH_UPDATE, &parent_data);
             }
             break;
-        case LYS_LIST:
-            // if node is list we need to add predicate [%s='%s']
-            if (parent_data == NULL) {
-                lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-                sprintf(xpath_list_etx, "[%s='%s']", c->optargs->name, value);
-                strcat(xpath, xpath_list_etx);
-                ret = lyd_new_path(root_data, y_node->module->ctx, xpath, NULL, 0, &parent_data);
-            } else {
-                snprintf(xpath, 256, "%s:%s[%s='%s']", y_node->module->name, y_node->name, c->optargs->name, value);
-                ret = lyd_new_path(parent_data, y_node->module->ctx, xpath, NULL, 0, &parent_data);
-            }
-            break;
-
         case LYS_LEAF:
         case LYS_LEAFLIST:
             snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);

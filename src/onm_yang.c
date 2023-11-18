@@ -41,7 +41,7 @@ int onm_yang_init() {
         return -1;
     }
 
-    ret = ly_ctx_new("yang/standard/ietf/RFC", LY_CTX_EXPLICIT_COMPILE, &yang_ctx);
+    ret = ly_ctx_new("yang/standard/ietf/RFC", LY_CTX_LEAFREF_EXTENDED|LY_CTX_EXPLICIT_COMPILE, &yang_ctx);
     if (ret > 0) {
         fprintf(stderr, "Failed to create libyang context: %d\n", ret);
         return -1;
