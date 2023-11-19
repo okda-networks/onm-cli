@@ -4,6 +4,7 @@
 
 #include "src/utils.h"
 #include "default_cmd.h"
+#include "src/onm_sysrepo.h"
 
 
 #ifdef __GNUC__
@@ -72,6 +73,21 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     return cli_exit(cli, c, cmd, argv,  argc);
 }
 
+int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    // commit changes.
+    if (root_data == NULL){
+        cli_print(cli," no modification to commit!");
+        return CLI_OK;
+    }
+    if (sysrepo_commit(root_data)!=EXIT_SUCCESS){
+        cli_print(cli," ERROR: failed to commit changes!");
+        return CLI_ERROR;
+    }
+    cli_print(cli, " changes applied successfully!");
+    return CLI_OK;
+}
+
+
 int default_commands_init(struct cli_def *cli) {
     printf("INFO:commands.c: initializing commands\n");
 
@@ -86,7 +102,8 @@ int default_commands_init(struct cli_def *cli) {
                          "frr", cmd_frr, PRIVILEGE_UNPRIVILEGED,
                          MODE_CONFIG, NULL, "frr subsystem config");
 
-
-
+    cli_register_command(cli, NULL, NULL,
+                         "commit", cmd_commit, PRIVILEGE_UNPRIVILEGED,
+                         MODE_ANY, NULL, "commit changes to sysrepo cdb");
 
 }

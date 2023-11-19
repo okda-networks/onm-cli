@@ -38,13 +38,13 @@ int onm_yang_init() {
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         perror("yang:getcwd:");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     ret = ly_ctx_new("yang/standard/ietf/RFC", LY_CTX_LEAFREF_EXTENDED|LY_CTX_EXPLICIT_COMPILE, &yang_ctx);
     if (ret > 0) {
         fprintf(stderr, "Failed to create libyang context: %d\n", ret);
-        return -1;
+        return EXIT_FAILURE;
     }
-    return 0;
+    return EXIT_SUCCESS;
 }

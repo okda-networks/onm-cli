@@ -7,6 +7,7 @@
 #include "yang_core.h"
 #include "data_factory.h"
 
+
 // global data tree.
 extern struct lyd_node *root_data, *parent_data;
 

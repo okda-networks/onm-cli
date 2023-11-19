@@ -10,6 +10,7 @@
 #include "config.h"
 #include "onm_cli.h"
 #include "onm_yang.h"
+#include "onm_sysrepo.h"
 
 #define GET_NEW_MODE_STR(current_mod, new_mode) \
     strcat((char*)current_mod, strcat(":", new_mode))
@@ -68,12 +69,18 @@ int sock_accept(int sockfd) {
 int main() {
     int ret ;
     ret = onm_cli_init();
-    if (ret<0){
+    if (ret != EXIT_SUCCESS){
         printf("ERROR: failed to initialize cli: existing...\n");
         return -1;
     }
     ret = onm_yang_init();
-    if (ret<0){
+    if (ret != EXIT_SUCCESS){
+        printf("ERROR: failed to initialize yang context: existing...\n");
+        return -1;
+    }
+
+    ret = sysrepo_init();
+    if (ret != EXIT_SUCCESS){
         printf("ERROR: failed to initialize yang context: existing...\n");
         return -1;
     }

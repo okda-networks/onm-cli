@@ -2,6 +2,7 @@
 // Created by ali on 11/17/23.
 //
 #include "data_factory.h"
+#include "src/onm_sysrepo.h"
 
 extern struct lyd_node *root_data, *parent_data;
 
@@ -56,12 +57,17 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
 int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *argv[], int argc) {
     int ret;
     char xpath[265];
+    struct ly_ctx *sysrepo_ctx = (struct ly_ctx *)sysrepo_get_ctx();
+    if (!sysrepo_ctx){
+        printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
+        return EXIT_FAILURE;
+    }
     if (parent_data == NULL) {
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
         strcat(xpath, create_list_path_predicate(y_node, argv, argc, 0));
-        ret = lyd_new_path(root_data, y_node->module->ctx, xpath, NULL, 0, &parent_data);
+        ret = lyd_new_path(root_data, sysrepo_ctx, xpath, NULL, 0, &parent_data);
     } else {
-        ret = lyd_new_path(parent_data, y_node->module->ctx, create_list_path_predicate(y_node, argv, argc, 1), NULL, 0,
+        ret = lyd_new_path(parent_data, sysrepo_ctx, create_list_path_predicate(y_node, argv, argc, 1), NULL, 0,
                            &parent_data);
     }
     return ret;
@@ -71,26 +77,30 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
 int add_data_node(struct lysc_node *y_node, struct cli_command *c, char *value) {
     int ret;
     char xpath[256], xpath_list_etx[128];
-
+    struct ly_ctx *sysrepo_ctx = (struct ly_ctx *)sysrepo_get_ctx();
+    if (!sysrepo_ctx){
+        printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
+        return EXIT_FAILURE;
+    }
     switch (y_node->nodetype) {
         case LYS_CONTAINER:
             // for container, we need to check, if the parent is null, then this is the first child of the root
             // if it's not then add the container to the current parent.
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-                ret = lyd_new_path2(NULL, y_node->module->ctx,
+                ret = lyd_new_path2(NULL, sysrepo_ctx,
                                     xpath, NULL, 0, 0,
                                     0, &root_data, &parent_data);
             } else {
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-                ret = lyd_new_path(parent_data, y_node->module->ctx, xpath,
+                ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
                                    NULL, LYD_NEW_PATH_UPDATE, &parent_data);
             }
             break;
         case LYS_LEAF:
         case LYS_LEAFLIST:
             snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-            ret = lyd_new_path2(parent_data, y_node->module->ctx, xpath,
+            ret = lyd_new_path2(parent_data, sysrepo_ctx, xpath,
                                 value, 0, 0, LYD_NEW_PATH_UPDATE, NULL,
                                 NULL);
             break;

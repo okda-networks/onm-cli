@@ -42,7 +42,7 @@ int onm_cli_init() {
 
     default_commands_init(cli);
     yang_cmd_loader_init(cli);
-    return 0;
+    return EXIT_SUCCESS;
 
 
 }

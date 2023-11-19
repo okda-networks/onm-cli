@@ -35,9 +35,6 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         if (strcmp(argv[0], "?") == 0) {
             cli_print(cli, "  <cr>");
             return CLI_OK;
-        } else {
-            cli_print(cli, "  ERROR: unknown argument %s",argv[0]);
-            return CLI_ERROR;
         }
     }
 
