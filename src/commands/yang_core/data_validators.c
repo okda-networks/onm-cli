@@ -28,6 +28,7 @@ int validate_all(struct cli_def *cli, const char *word, const char *value, struc
     ly_err_clean(leaf->module->ctx, NULL);
     LY_ERR err = lyd_value_validate(leaf->module->ctx, (const struct lysc_node *) leaf, value,
                                     strlen(value), NULL, NULL, NULL);
+    // LY_EINCOMPLETE returned by libyang for leafref as value is unresolved, it's not failed.
     if (err == LY_SUCCESS || err == LY_EINCOMPLETE)
         return CLI_OK;
     else {
