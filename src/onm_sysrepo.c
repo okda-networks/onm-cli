@@ -53,6 +53,7 @@ int sysrepo_commit(struct lyd_node *data_tree){
 
     if (sr_apply_changes(session, 0) != SR_ERR_OK) {
         fprintf(stderr, "Failed to commit changes to Sysrepo\n");
+        sr_discard_changes(session);
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
