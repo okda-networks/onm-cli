@@ -13,7 +13,8 @@
 #define UNUSED(d) d
 #endif
 
-extern struct lyd_node *root_data,*parent_data;
+extern struct lyd_node *root_data, *parent_data;
+
 /*
  * Forward Declarations for cli default commands
  * */
@@ -66,21 +67,21 @@ int check_auth(const char *username, const char *password) {
 
 int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     // we need to shift the parent_data backward with each exit call.
-    if (parent_data != NULL){
-        parent_data = (struct lyd_node *)parent_data->parent;
+    if (parent_data != NULL) {
+        parent_data = (struct lyd_node *) parent_data->parent;
     }
 
-    return cli_exit(cli, c, cmd, argv,  argc);
+    return cli_exit(cli, c, cmd, argv, argc);
 }
 
 int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     // commit changes.
-    if (root_data == NULL){
-        cli_print(cli," no modification to commit!");
+    if (root_data == NULL) {
+        cli_print(cli, " no modification to commit!");
         return CLI_OK;
     }
-    if (sysrepo_commit(root_data)!=EXIT_SUCCESS){
-        cli_print(cli," ERROR: failed to commit changes!");
+    if (sysrepo_commit(root_data) != EXIT_SUCCESS) {
+        cli_print(cli, " ERROR: failed to commit changes!");
         return CLI_ERROR;
     }
     cli_print(cli, " changes applied successfully!");

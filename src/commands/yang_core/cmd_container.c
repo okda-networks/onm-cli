@@ -13,22 +13,32 @@ extern struct lyd_node *root_data, *parent_data;
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    int ret;
+
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
             cli_print(cli, "  %s", y_node->dsc);
             return CLI_INCOMPLETE_COMMAND;
+        } else if (strcmp(argv[0], "delete") == 0) {
+            ret = delete_data_node(y_node,NULL);
+            if (ret != LY_SUCCESS) {
+                fprintf(stderr, "Failed to delete the data tree\n");
+                print_ly_err(ly_err_first(y_node->module->ctx));
+                cli_print(cli, "failed to execute command, error with deleting the data node.");
+                return CLI_ERROR;
+            } else
+                return CLI_OK;
         }
         cli_print(cli, "  unknown argument\n");
         return CLI_ERROR_ARG;
     }
 
 
-    int ret = add_data_node(y_node, c, argv[0]);
+    ret = add_data_node(y_node, argv[0]);
 
 
     if (ret != LY_SUCCESS) {
         fprintf(stderr, "Failed to create the data tree\n");
-        print_ly_err(ly_err_first(y_node->module->ctx));
         cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }

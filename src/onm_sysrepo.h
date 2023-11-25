@@ -9,7 +9,10 @@
 
 const struct ly_ctx *sysrepo_get_ctx();
 
+sr_session_ctx_t *sysrepo_get_session();
+
 int sysrepo_release_ctx();
+
 
 int sysrepo_commit(struct lyd_node *data_tree);
 

@@ -10,7 +10,7 @@ void my_log_cb(sr_log_level_t level, const char *message) {
     printf("Sysrepo log [%d]: %s\n", level, message);
 }
 
-int sysrepo_connect(){
+int sysrepo_connect() {
     if (sr_connect(SR_CONN_DEFAULT, &connection) != SR_ERR_OK) {
         fprintf(stderr, "Failed to connect to Sysrepo\n");
         return EXIT_FAILURE;
@@ -18,7 +18,7 @@ int sysrepo_connect(){
     return EXIT_SUCCESS;
 }
 
-int sysrepo_disconnect(){
+int sysrepo_disconnect() {
     if (sr_connect(SR_CONN_DEFAULT, &connection) != SR_ERR_OK) {
         fprintf(stderr, "Failed to disconnect from Sysrepo\n");
         return EXIT_FAILURE;
@@ -26,29 +26,36 @@ int sysrepo_disconnect(){
     return EXIT_SUCCESS;
 }
 
-int sysrepo_start_session(){
+int sysrepo_start_session() {
     // Start a new session
-    if (sr_session_start(connection, SR_DS_RUNNING,  &session) != SR_ERR_OK) {
+    if (sr_session_start(connection, SR_DS_RUNNING, &session) != SR_ERR_OK) {
         fprintf(stderr, "Failed to start a new Sysrepo session\n");
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }
 
-const struct ly_ctx * sysrepo_get_ctx(){
+const struct ly_ctx *sysrepo_get_ctx() {
     return sr_acquire_context(connection);
 }
 
-int sysrepo_release_ctx(){
+sr_session_ctx_t *sysrepo_get_session() {
+    return session;
+}
+
+int sysrepo_release_ctx() {
     sr_release_context(connection);
     return EXIT_SUCCESS;
 }
 
-int sysrepo_commit(struct lyd_node *data_tree){
+int sysrepo_commit(struct lyd_node *data_tree) {
 
-    if (sr_edit_batch(session, data_tree, "merge") != SR_ERR_OK) {
-        fprintf(stderr, "Failed to write the data to Sysrepo\n");
-        return EXIT_FAILURE;
+    // check if there is already changes in session, if not add change and apply,
+    if (sr_has_changes(session) == 0) {
+        if (sr_edit_batch(session, data_tree, "merge") != SR_ERR_OK) {
+            fprintf(stderr, "Failed to write the data to Sysrepo\n");
+            return EXIT_FAILURE;
+        }
     }
 
     if (sr_apply_changes(session, 0) != SR_ERR_OK) {
@@ -56,10 +63,11 @@ int sysrepo_commit(struct lyd_node *data_tree){
         sr_discard_changes(session);
         return EXIT_FAILURE;
     }
+
     return EXIT_SUCCESS;
 }
 
-int sysrepo_init(){
+int sysrepo_init() {
     sr_log_stderr(SR_LL_DBG);
 
     // Register logging callback

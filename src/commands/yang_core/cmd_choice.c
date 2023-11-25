@@ -40,7 +40,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     // add data node
     int ret;
-    ret = add_data_node(y_node_child, c, argv[0]);
+    ret = add_data_node(y_node_child,  argv[0]);
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node_child->name);
         print_ly_err(ly_err_first(y_node_child->module->ctx));

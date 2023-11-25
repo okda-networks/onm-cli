@@ -20,9 +20,9 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int ret;
     // libcli does not support validating mutiple values for same optarg, this is a WA to validate all values.
-    for (int i = 0; i < argc; i++){
+    for (int i = 0; i < argc; i++) {
         if (yang_data_validator(cli, cmd, argv[i], c->cmd_model) != CLI_OK) return CLI_ERROR_ARG;
-        ret = add_data_node(y_node,c,argv[i]);
+        ret = add_data_node(y_node, argv[i]);
         if (ret != LY_SUCCESS) {
             cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
             print_ly_err(ly_err_first(y_node->module->ctx));
@@ -45,8 +45,17 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         return CLI_MISSING_ARGUMENT;
     }
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    int ret = 0;
+    if (strcmp(argv[0], "delete") == 0) {
+        ret = delete_data_node(y_node, NULL);
+        if (ret != LY_SUCCESS) {
+            cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
+            print_ly_err(ly_err_first(y_node->module->ctx));
+            return CLI_ERROR;
+        }
+    }
 
-    int ret = add_data_node(y_node,c,argv[0]);
+    ret = add_data_node(y_node, argv[0]);
 
 
     if (ret != LY_SUCCESS) {

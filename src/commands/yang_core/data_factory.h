@@ -11,6 +11,7 @@
 #include <libyang/tree.h>
 #include <libyang/log.h>
 #include "lib/libcli/libcli.h"
-int add_data_node(struct lysc_node *y_node, struct cli_command *c, char *value);
+int add_data_node(struct lysc_node *y_node, char *value);
 int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *argv[], int argc);
+int delete_data_node(struct lysc_node *y_node, char *value);
 #endif //ONMCLI_DATA_FACTORY_H
