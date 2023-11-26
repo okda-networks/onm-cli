@@ -71,13 +71,27 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
         predicate_str = create_list_path_predicate(y_node, argv, argc, 0);
         strcat(xpath, predicate_str);
-        ret = lyd_new_path(root_data, sysrepo_ctx, xpath, NULL, 0, &parent_data);
+        struct lyd_node *new_parent;
+        lyd_find_path(root_data, xpath, 0, &new_parent);
+        if (new_parent == NULL)
+            ret = lyd_new_path(root_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &parent_data);
+        else
+            parent_data = new_parent;
     } else {
         predicate_str = create_list_path_predicate(y_node, argv, argc, 1);
-        ret = lyd_new_path(parent_data, sysrepo_ctx, predicate_str, NULL, 0,
-                           &parent_data);
+        struct lyd_node *new_parent;
+        lyd_find_path(parent_data, predicate_str, 0, &new_parent);
+        if (new_parent == NULL)
+            ret = lyd_new_path(parent_data, sysrepo_ctx, predicate_str, NULL, LYD_NEW_PATH_UPDATE,
+                               &parent_data);
+        else
+            parent_data = new_parent;
     }
+
     free(predicate_str);
+    if (ret != LY_SUCCESS) {
+        print_ly_err(ly_err_first(sysrepo_ctx));
+    }
     return ret;
 }
 
@@ -98,7 +112,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     }
     switch (y_node->nodetype) {
         case LYS_CONTAINER:
-            // for container, we need to check, if the parent is null, then this is the first child of the root
+            // for container, we need to check, if the parent is null, then this is the first container of the root
             // if it's not then add the container to the current parent.
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
@@ -109,12 +123,19 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             } else {
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
                 // if we add node we should move parent pointer to next container.
-                if (edit_type == EDIT_DATA_ADD)
-                    ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
-                                       NULL, LYD_NEW_PATH_UPDATE, &parent_data);
-                else {
+                if (edit_type == EDIT_DATA_ADD) {
+                    // check if the node is already in the tree, if not create a new one.
+                    struct lyd_node *new_parent = NULL;
+                    ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
+                    if (new_parent == NULL)
+                        ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
+                                            NULL, LYD_NEW_PATH_UPDATE, &parent_data);
+                    else
+                        parent_data = new_parent;
+
+
+                } else {
                     // first check if node is already created
-                    printf("lyd_find_path =============== xpath=%s",xpath);
                     ret = lyd_find_path(parent_data, xpath, 0, out_node);
                     // node does not exist create a new one
                     if (out_node == NULL)
@@ -123,7 +144,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
                 }
             }
-
             break;
         case LYS_LEAF:
         case LYS_LEAFLIST:
@@ -135,9 +155,9 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
 
     }
-    if (ret != LY_SUCCESS) {
+    if (ret != LY_SUCCESS)
         print_ly_err(ly_err_first(sysrepo_ctx));
-    }
+
 
     return ret;
 }

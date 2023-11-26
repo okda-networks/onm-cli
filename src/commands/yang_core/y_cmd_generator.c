@@ -19,23 +19,23 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
     }
     switch (schema->nodetype) {
         case LYS_CONTAINER:
-            printf("TRACE: register CLI command for container: %s\r\n", schema->name);
+//            printf("TRACE: register CLI command for container: %s\r\n", schema->name);
             register_cmd_container(cli, schema);
             break;
         case LYS_LEAF:
-            printf("TRACE: register CLI command for leaf: %s\r\n", schema->name);
+//            printf("TRACE: register CLI command for leaf: %s\r\n", schema->name);
             register_cmd_leaf(cli, schema);
             break;
         case LYS_LIST:
-            printf("TRACE: register CLI command for list: %s\r\n", schema->name);
+//            printf("TRACE: register CLI command for list: %s\r\n", schema->name);
             register_cmd_list(cli, schema);
             break;
         case LYS_LEAFLIST:
-            printf("TRACE: register CLI command for leaf-list: %s\r\n", schema->name);
+//            printf("TRACE: register CLI command for leaf-list: %s\r\n", schema->name);
             register_cmd_leaf_list(cli, schema);
             break;
         case LYS_CHOICE:
-            printf("TRACE: register CLI command for choice: %s\r\n", schema->name);
+//            printf("TRACE: register CLI command for choice: %s\r\n", schema->name);
             register_cmd_choice(cli, schema);
             return REG_SKIP_NEXT_SIG;
         default:
