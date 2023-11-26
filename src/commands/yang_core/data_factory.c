@@ -67,26 +67,21 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
         printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
     }
-    if (parent_data == NULL) {
+    struct lyd_node *curr_parent,*new_parent;
+    // set current parent and xpath based on the list location in the tree.
+    if (parent_data == NULL){
+        curr_parent = root_data;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-        predicate_str = create_list_path_predicate(y_node, argv, argc, 0);
-        strcat(xpath, predicate_str);
-        struct lyd_node *new_parent;
-        lyd_find_path(root_data, xpath, 0, &new_parent);
-        if (new_parent == NULL)
-            ret = lyd_new_path(root_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &parent_data);
-        else
-            parent_data = new_parent;
-    } else {
-        predicate_str = create_list_path_predicate(y_node, argv, argc, 1);
-        struct lyd_node *new_parent;
-        lyd_find_path(parent_data, predicate_str, 0, &new_parent);
-        if (new_parent == NULL)
-            ret = lyd_new_path(parent_data, sysrepo_ctx, predicate_str, NULL, LYD_NEW_PATH_UPDATE,
-                               &parent_data);
-        else
-            parent_data = new_parent;
+        strcat(xpath, create_list_path_predicate(y_node, argv, argc, 0));
+    } else{
+        curr_parent = parent_data;
+        strcat(xpath, create_list_path_predicate(y_node, argv, argc, 1));
     }
+    ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
+    if (new_parent == NULL)
+        ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &parent_data);
+    else
+        parent_data = new_parent;
 
     free(predicate_str);
     if (ret != LY_SUCCESS) {
@@ -116,9 +111,12 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             // if it's not then add the container to the current parent.
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-                ret = lyd_new_path2(NULL, sysrepo_ctx,
-                                    xpath, NULL, 0, 0,
-                                    0, &root_data, &parent_data);
+                ret = lyd_new_path(parent_data,sysrepo_ctx,xpath,NULL,LYD_NEW_PATH_UPDATE,&parent_data);
+                root_data = parent_data;
+
+//                ret = lyd_new_path2(NULL, sysrepo_ctx,
+//                                    xpath, NULL, 0, 0,
+//                                    0, &root_data, &parent_data);
 
             } else {
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
