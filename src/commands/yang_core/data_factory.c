@@ -67,13 +67,13 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
         printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
     }
-    struct lyd_node *curr_parent,*new_parent;
+    struct lyd_node *curr_parent, *new_parent;
     // set current parent and xpath based on the list location in the tree.
-    if (parent_data == NULL){
+    if (parent_data == NULL) {
         curr_parent = root_data;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
         strcat(xpath, create_list_path_predicate(y_node, argv, argc, 0));
-    } else{
+    } else {
         curr_parent = parent_data;
         strcat(xpath, create_list_path_predicate(y_node, argv, argc, 1));
     }
@@ -106,42 +106,29 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
         return EXIT_FAILURE;
     }
     switch (y_node->nodetype) {
-        case LYS_CONTAINER:
-            // for container, we need to check, if the parent is null, then this is the first container of the root
-            // if it's not then add the container to the current parent.
+        case LYS_CONTAINER: {
+            struct lyd_node *new_parent = NULL;
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-                ret = lyd_new_path(parent_data,sysrepo_ctx,xpath,NULL,LYD_NEW_PATH_UPDATE,&parent_data);
-                root_data = parent_data;
-
-//                ret = lyd_new_path2(NULL, sysrepo_ctx,
-//                                    xpath, NULL, 0, 0,
-//                                    0, &root_data, &parent_data);
-
             } else {
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-                // if we add node we should move parent pointer to next container.
-                if (edit_type == EDIT_DATA_ADD) {
-                    // check if the node is already in the tree, if not create a new one.
-                    struct lyd_node *new_parent = NULL;
-                    ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
-                    if (new_parent == NULL)
-                        ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
-                                            NULL, LYD_NEW_PATH_UPDATE, &parent_data);
-                    else
-                        parent_data = new_parent;
-
-
-                } else {
-                    // first check if node is already created
-                    ret = lyd_find_path(parent_data, xpath, 0, out_node);
-                    // node does not exist create a new one
-                    if (out_node == NULL)
-                        ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
-                                           NULL, LYD_NEW_PATH_UPDATE, out_node);
-
-                }
             }
+
+            // check if the node exist in the tree, if not create new node in the tree.
+            ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
+            if (new_parent == NULL) {
+                ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
+            }
+
+            // if the edit is add operation then update the parent_node, else which is delete then just set the out node.
+            if (edit_type == EDIT_DATA_ADD)
+                parent_data = new_parent;
+            else
+                *out_node = new_parent;
+
+            root_data = root_data ? root_data : parent_data;
+        }
+
             break;
         case LYS_LEAF:
         case LYS_LEAFLIST:
@@ -177,26 +164,6 @@ void get_xpath(struct lysc_node *y_node, char xpath[]) {
 }
 
 int delete_data_node(struct lysc_node *y_node, char *value) {
-//    int ret;
-//
-//    char xpath[1024];
-//    memset(xpath, '\0', 1024);
-//    get_xpath(y_node, xpath);
-//    printf("======== xpath=%s\n", xpath);
-//
-//    sr_session_ctx_t *session = sysrepo_get_session();
-//    if (session == NULL) {
-//        printf("delete_data_node: failed to get sr_session\n");
-//        return EXIT_FAILURE;
-//    }
-//
-//    ret = sr_delete_item(session, xpath, 0);
-//    if (ret != SR_ERR_OK) {
-//        printf("delete_data_node: sr_delete_item failed\n");
-//        return EXIT_FAILURE;
-//    }
-//    return EXIT_SUCCESS;
-
     int ret;
     struct lyd_node *n;
     ret = edit_node_data_tree(y_node, value, EDIT_DATA_DEL, &n);
@@ -207,7 +174,6 @@ int delete_data_node(struct lysc_node *y_node, char *value) {
     memset(xpath, '\0', 1024);
 
     lyd_path(n, LYD_PATH_STD, xpath, 1024);
-    printf("======== xpath=%s\n", xpath);
     lyd_free_tree(n);
 
     sr_session_ctx_t *session = sysrepo_get_session();
