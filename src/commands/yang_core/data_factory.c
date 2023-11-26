@@ -29,7 +29,7 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
 
     // Allocate memory for the string
     char *predicate_str = (char *) malloc(total_len);
-    memset(predicate_str,'\0',total_len);
+    memset(predicate_str, '\0', total_len);
     if (!predicate_str) {
         perror("Memory allocation failed");
         return NULL;
@@ -60,7 +60,7 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
 int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *argv[], int argc) {
     int ret;
     char xpath[265];
-    char * predicate_str;
+    char *predicate_str;
     memset(xpath, '\0', 256);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
     if (!sysrepo_ctx) {
@@ -113,17 +113,16 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
                                        NULL, LYD_NEW_PATH_UPDATE, &parent_data);
                 else {
-                    struct lyd_node *test_n;
-                    ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
-                                       NULL, LYD_NEW_PATH_UPDATE, &test_n);
-//                    ret = lyd_new_path2(parent_data, sysrepo_ctx, xpath,
-//                                  NULL, 0, 0, 0, NULL,
-//                                  out_node);
+                    // first check if node is already created
+                    printf("lyd_find_path =============== xpath=%s",xpath);
+                    ret = lyd_find_path(parent_data, xpath, 0, out_node);
+                    // node does not exist create a new one
+                    if (out_node == NULL)
+                        ret = lyd_new_path(parent_data, sysrepo_ctx, xpath,
+                                           NULL, LYD_NEW_PATH_UPDATE, out_node);
+
                 }
-
-
             }
-
 
             break;
         case LYS_LEAF:
@@ -160,37 +159,11 @@ void get_xpath(struct lysc_node *y_node, char xpath[]) {
 }
 
 int delete_data_node(struct lysc_node *y_node, char *value) {
-    int ret;
-
-    char xpath[1024];
-    memset(xpath, '\0', 1024);
-    get_xpath(y_node, xpath);
-    printf("======== xpath=%s\n", xpath);
-
-    sr_session_ctx_t *session = sysrepo_get_session();
-    if (session == NULL) {
-        printf("delete_data_node: failed to get sr_session\n");
-        return EXIT_FAILURE;
-    }
-
-    ret = sr_delete_item(session, xpath, 0);
-    if (ret != SR_ERR_OK) {
-        printf("delete_data_node: sr_delete_item failed\n");
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-
-
-//    struct lyd_node *n;
-//    ret = edit_node_data_tree(y_node, value, EDIT_DATA_DEL, &n);
-//    if (ret != LY_SUCCESS)
-//        return ret;
+//    int ret;
 //
 //    char xpath[1024];
 //    memset(xpath, '\0', 1024);
-//
-//    lyd_path(n, LYD_PATH_STD, xpath, 1024);
-//    lyd_free_tree(n);
+//    get_xpath(y_node, xpath);
 //    printf("======== xpath=%s\n", xpath);
 //
 //    sr_session_ctx_t *session = sysrepo_get_session();
@@ -205,5 +178,31 @@ int delete_data_node(struct lysc_node *y_node, char *value) {
 //        return EXIT_FAILURE;
 //    }
 //    return EXIT_SUCCESS;
+
+    int ret;
+    struct lyd_node *n;
+    ret = edit_node_data_tree(y_node, value, EDIT_DATA_DEL, &n);
+    if (ret != LY_SUCCESS)
+        return ret;
+
+    char xpath[1024];
+    memset(xpath, '\0', 1024);
+
+    lyd_path(n, LYD_PATH_STD, xpath, 1024);
+    printf("======== xpath=%s\n", xpath);
+    lyd_free_tree(n);
+
+    sr_session_ctx_t *session = sysrepo_get_session();
+    if (session == NULL) {
+        printf("delete_data_node: failed to get sr_session\n");
+        return EXIT_FAILURE;
+    }
+
+    ret = sr_delete_item(session, xpath, 0);
+    if (ret != SR_ERR_OK) {
+        printf("delete_data_node: sr_delete_item failed\n");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 
 }
