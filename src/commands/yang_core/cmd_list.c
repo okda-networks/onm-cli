@@ -7,8 +7,6 @@
 #include "data_validators.h"
 #include "data_factory.h"
 
-// global data tree.
-extern struct lyd_node *root_data, *parent_data;
 
 int get_keys_count(struct lysc_node *y_node) {
     int count = 0;

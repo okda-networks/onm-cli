@@ -120,12 +120,13 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
 
-            // if the edit is add operation then update the parent_node, else which is delete then just set the out node.
+            // if the edit operation is 'add', then update the parent_node, else (which is 'delete' operation) then just set the out node.
             if (edit_type == EDIT_DATA_ADD)
                 parent_data = new_parent;
             else
                 *out_node = new_parent;
 
+            // if root is null then this node is the first in tree,
             root_data = root_data ? root_data : parent_data;
         }
 

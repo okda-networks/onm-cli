@@ -8,9 +8,6 @@
 #include "data_factory.h"
 
 
-// global data tree.
-extern struct lyd_node *root_data, *parent_data;
-
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int ret;

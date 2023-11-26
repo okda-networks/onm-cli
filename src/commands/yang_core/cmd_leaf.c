@@ -7,9 +7,6 @@
 #include "data_validators.h"
 #include "data_factory.h"
 
-// global data tree.
-extern struct lyd_node *root_data, *parent_data;
-
 
 int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
