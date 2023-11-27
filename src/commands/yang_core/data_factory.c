@@ -139,7 +139,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                                 out_node);
             break;
 
-
     }
     if (ret != LY_SUCCESS)
         print_ly_err(ly_err_first(sysrepo_ctx));

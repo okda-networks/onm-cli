@@ -44,13 +44,13 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int ret = 0;
     if (strcmp(argv[0], "delete") == 0) {
-        printf("hereeee\n");
         ret = delete_data_node(y_node, NULL);
         if (ret != LY_SUCCESS) {
             cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
             print_ly_err(ly_err_first(y_node->module->ctx));
             return CLI_ERROR;
         }
+        return CLI_OK;
     }
 
     ret = add_data_node(y_node, argv[0]);
