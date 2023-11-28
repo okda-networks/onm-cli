@@ -58,7 +58,6 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         ret = delete_data_node(y_node, NULL);
         if (ret != LY_SUCCESS) {
             cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
-            print_ly_err(ly_err_first(y_node->module->ctx));
             return CLI_ERROR;
         }
         return CLI_OK;
@@ -69,7 +68,6 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
-        print_ly_err(ly_err_first(y_node->module->ctx));
         return CLI_ERROR;
     }
 

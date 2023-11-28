@@ -6,9 +6,9 @@
 #define CONFIG_MODE 1
 
 
-void print_ly_err(const struct ly_err_item *err) {
+void print_ly_err(const struct ly_err_item *err, char *component) {
     while (err) {
-        fprintf(stderr, "libyang error: %s\n", err->msg);
+        fprintf(stderr, "ERROR:%s:libyang error: %s\n",component, err->msg);
         err = err->next;
     }
 }

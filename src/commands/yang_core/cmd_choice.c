@@ -26,17 +26,24 @@ int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd,
 int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    struct lysc_node *y_node_child = (struct lysc_node *) lysc_node_child(y_node);
+    struct lysc_node *y_case_n;
+
+    // case might be leaf or container, leaf we get the child for container the child is null and we use y_node
+    y_case_n = (struct lysc_node *) lysc_node_child(y_node);
+    if (y_case_n == NULL)
+        y_case_n = y_node;
+
+
     int ret;
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
             cli_print(cli, "  <cr>");
             return CLI_OK;
         }
-        if (strcmp(argv[0], "delete") == 0){
-            ret = delete_data_node(y_node_child,argv[0]);
+        if (strcmp(argv[0], "delete") == 0) {
+            ret = delete_data_node(y_case_n, argv[0]);
             if (ret != LY_SUCCESS) {
-                cli_print(cli, "Failed to delete the yang data node '%s'\n", y_node_child->name);
+                cli_print(cli, "Failed to delete the yang data node '%s'\n", y_case_n->name);
                 return CLI_ERROR;
             }
             return CLI_OK;
@@ -44,15 +51,14 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     // add data node
-
-    ret = add_data_node(y_node_child, argv[0]);
+    ret = add_data_node(y_case_n, argv[0]);
     if (ret != LY_SUCCESS) {
-        cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node_child->name);
+        cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
         return CLI_ERROR;
     }
 
     // if the case node is leaf/leaf-list parse the value, else set the next config mode.
-    if (y_node_child->nodetype == LYS_LEAF || y_node_child->nodetype == LYS_LEAFLIST) {
+    if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
         if (argc == 0) {
             cli_print(cli, "ERROR: please enter value for %s", cmd);
             return CLI_MISSING_ARGUMENT;
@@ -68,10 +74,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     sprintf(mod_str, "choice[%s]", (char *) y_node->name);
 
     int mode;
-    if (y_node_child != NULL)
-        mode = y_get_next_mode(y_node_child);
-    else
-        mode = y_get_next_mode(y_node);
+    mode = y_get_next_mode(y_case_n);
 
     cli_push_configmode(cli, mode, mod_str);
 
@@ -106,14 +109,13 @@ int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
 
         LY_LIST_FOR(case_child_list, case_child) {
             if (case_child->nodetype == LYS_LEAF) {
-                cli_register_optarg(case_cmd, case_child->name, CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD,
-                                    PRIVILEGE_PRIVILEGED,
-                                    mode, case_child->dsc, NULL, yang_data_validator, NULL);
-            } else {
+                struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
+                                                           CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD,
+                                                           PRIVILEGE_PRIVILEGED,
+                                                           mode, case_child->dsc, NULL, yang_data_validator, NULL);
+                cli_optarg_addhelp(o, "delete", "delete node from config");
+            } else
                 register_commands_schema(case_child, cli);
-            }
-
-
         }
     }
 

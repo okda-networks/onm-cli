@@ -85,7 +85,7 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
 
     free(predicate_str);
     if (ret != LY_SUCCESS) {
-        print_ly_err(ly_err_first(sysrepo_ctx));
+        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c");
     }
     return ret;
 }
@@ -106,6 +106,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
         return EXIT_FAILURE;
     }
     switch (y_node->nodetype) {
+        case LYS_CASE:
         case LYS_CONTAINER: {
             struct lyd_node *new_parent = NULL;
             if (parent_data == NULL) {
@@ -133,14 +134,13 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             break;
         case LYS_LEAF:
         case LYS_LEAFLIST:
-            if (y_node->nodetype== LYS_LEAFLIST)
-                snprintf(xpath, 256, "%s:%s[.='%s']", y_node->module->name, y_node->name,value);
+            if (y_node->nodetype == LYS_LEAFLIST)
+                snprintf(xpath, 256, "%s:%s[.='%s']", y_node->module->name, y_node->name, value);
             else
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-            ret = lyd_find_path(parent_data, xpath, 0, out_node);
-            if (ret != LY_SUCCESS && ret != LY_ENOTFOUND )
-                break;
 
+            // check if node already exist in data_tree, if not creat a new node.
+            ret = lyd_find_path(parent_data, xpath, 0, out_node);
             if (out_node == NULL) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, value, LYD_NEW_PATH_UPDATE,
                                    out_node);
@@ -149,7 +149,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
     }
     if (ret != LY_SUCCESS)
-        print_ly_err(ly_err_first(sysrepo_ctx));
+        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c");
 
 
     return ret;

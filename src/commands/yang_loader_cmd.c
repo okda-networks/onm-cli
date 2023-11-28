@@ -7,6 +7,8 @@
  * */
 #include "yang_loader_cmd.h"
 #include "yang_core/yang_core.h"
+#include "src/onm_sysrepo.h"
+#include "yang_core/y_utils.h"
 
 extern struct ly_ctx *yang_ctx;
 extern struct lyd_node *root_data;
@@ -215,6 +217,29 @@ int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const cha
     return CLI_OK;
 }
 
+int cmd_sysrepo_load_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
+    if (argc == 1) {
+        if (strcmp(argv[0], "?") == 0) {
+            cli_print(cli, " <cr>");
+            return CLI_MISSING_ARGUMENT;
+        } else {
+            cli_print(cli, " unknown argument %s", argv[0]);
+            return CLI_ERROR_ARG;
+        }
+    }
+    struct lys_module *mod;
+    unsigned int index = 0;
+
+
+    while ((mod = (struct lys_module *) ly_ctx_get_module_iter(sysrepo_ctx, &index))) {
+        if (mod != NULL)
+            mod2cmd_generate(cli, mod);
+    }
+
+    return CLI_OK;
+}
+
 int yang_cmd_loader_init(struct cli_def *cli) {
     struct cli_command *yang_cmd = cli_register_command(cli, NULL, NULL,
                                                         "yang", NULL, PRIVILEGE_PRIVILEGED,
@@ -261,6 +286,14 @@ int yang_cmd_loader_init(struct cli_def *cli) {
     cli_register_command(cli, yang_cmd, NULL,
                          "compile", cmd_yang_compile, PRIVILEGE_PRIVILEGED,
                          MODE_EXEC, NULL, "compile loaded modules, use ");
+
+    struct cli_command *sysrepo_cmd = cli_register_command(cli, yang_cmd, NULL,
+                                                           "sysrepo", NULL, PRIVILEGE_PRIVILEGED,
+                                                           MODE_EXEC, NULL, "sysrepo commands");
+
+    cli_register_command(cli, sysrepo_cmd, NULL,
+                         "load-modules", cmd_sysrepo_load_module, PRIVILEGE_PRIVILEGED,
+                         MODE_EXEC, NULL, "load and compile all yang modules from sysrepo: yang sysrepo load-modules");
 
 
     cli_register_command(cli, print, NULL,

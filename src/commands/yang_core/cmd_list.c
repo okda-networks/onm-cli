@@ -53,7 +53,6 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     ret = add_data_node_list(y_node, c, argv, argc);
     if (ret != LY_SUCCESS) {
         fprintf(stderr, "Failed to create the data tree\n");
-        print_ly_err(ly_err_first(y_node->module->ctx));
         cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }

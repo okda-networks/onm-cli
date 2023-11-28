@@ -63,6 +63,9 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
 
 
 int yang_data_validator(struct cli_def *cli, const char *word, const char *value, void *cmd_model) {
+    // if this is delete request skip validation.
+    if (strcmp(value,"delete")==0)
+        return CLI_OK;
     int ret = CLI_OK;
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
     struct lysc_node_leaf *leaf;
