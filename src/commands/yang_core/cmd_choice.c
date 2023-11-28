@@ -27,20 +27,27 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     struct lysc_node *y_node_child = (struct lysc_node *) lysc_node_child(y_node);
-
+    int ret;
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
             cli_print(cli, "  <cr>");
             return CLI_OK;
         }
+        if (strcmp(argv[0], "delete") == 0){
+            ret = delete_data_node(y_node_child,argv[0]);
+            if (ret != LY_SUCCESS) {
+                cli_print(cli, "Failed to delete the yang data node '%s'\n", y_node_child->name);
+                return CLI_ERROR;
+            }
+            return CLI_OK;
+        }
     }
 
     // add data node
-    int ret;
+
     ret = add_data_node(y_node_child, argv[0]);
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node_child->name);
-        print_ly_err(ly_err_first(y_node_child->module->ctx));
         return CLI_ERROR;
     }
 

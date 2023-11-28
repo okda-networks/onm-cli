@@ -59,8 +59,6 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
         cli_print(cli, "ERROR out of range value, min=%d , max=%d, value=%d", min, max, num);
         return CLI_ERROR_ARG;
     }
-
-
 }
 
 

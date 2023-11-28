@@ -133,10 +133,18 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             break;
         case LYS_LEAF:
         case LYS_LEAFLIST:
-            snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-            ret = lyd_new_path2(parent_data, sysrepo_ctx, xpath,
-                                value, 0, 0, LYD_NEW_PATH_UPDATE, NULL,
-                                out_node);
+            if (y_node->nodetype== LYS_LEAFLIST)
+                snprintf(xpath, 256, "%s:%s[.='%s']", y_node->module->name, y_node->name,value);
+            else
+                snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
+            ret = lyd_find_path(parent_data, xpath, 0, out_node);
+            if (ret != LY_SUCCESS && ret != LY_ENOTFOUND )
+                break;
+
+            if (out_node == NULL) {
+                ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, value, LYD_NEW_PATH_UPDATE,
+                                   out_node);
+            }
             break;
 
     }
@@ -175,7 +183,6 @@ int delete_data_node(struct lysc_node *y_node, char *value) {
 
     lyd_path(n, LYD_PATH_STD, xpath, 1024);
     lyd_free_tree(n);
-
     sr_session_ctx_t *session = sysrepo_get_session();
     if (session == NULL) {
         printf("delete_data_node: failed to get sr_session\n");
