@@ -1,10 +1,23 @@
 //
 // Created by ali on 11/19/23.
 //
+#include <signal.h>
 #include "onm_sysrepo.h"
+
 
 static sr_conn_ctx_t *connection = NULL;
 static sr_session_ctx_t *session = NULL;
+
+// FWD decleration for disconnect
+int sysrepo_disconnect();
+
+void cleanup_handler(int signo) {
+    printf("Received signal %d. Cleaning up...\n", signo);
+    sysrepo_disconnect();
+
+
+    exit(EXIT_SUCCESS);
+}
 
 void my_log_cb(sr_log_level_t level, const char *message) {
     printf("Sysrepo log [%d]: %s\n", level, message);
@@ -19,11 +32,13 @@ int sysrepo_connect() {
 }
 
 int sysrepo_disconnect() {
-    if (sr_connect(SR_CONN_DEFAULT, &connection) != SR_ERR_OK) {
+    if (sr_disconnect(connection) != SR_ERR_OK) {
         fprintf(stderr, "Failed to disconnect from Sysrepo\n");
         return EXIT_FAILURE;
     }
+    fprintf(stdout, "disconnect from sysrepo successfully\n");
     return EXIT_SUCCESS;
+
 }
 
 int sysrepo_start_session() {
@@ -87,6 +102,16 @@ int sysrepo_init() {
 
     // Register logging callback
     sr_log_set_cb(my_log_cb);
+
+    // Set up signal handler for SIGINT (Ctrl+C)
+    if (signal(SIGINT, cleanup_handler) == SIG_ERR) {
+        perror("Unable to set up signal handler for SIGINT");
+        return EXIT_FAILURE;
+    }
+    if (signal(SIGTERM, cleanup_handler) == SIG_ERR) {
+        perror("Unable to set up signal handler");
+        return EXIT_FAILURE;
+    }
 
     if (sysrepo_connect() != EXIT_SUCCESS)
         return EXIT_FAILURE;
