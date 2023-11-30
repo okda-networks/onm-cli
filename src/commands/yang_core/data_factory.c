@@ -8,6 +8,11 @@
 
 extern struct lyd_node *root_data, *parent_data;
 
+// edit type
+enum {
+    EDIT_DATA_ADD,
+    EDIT_DATA_DEL,
+};
 
 char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc, int with_module_name) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
@@ -56,8 +61,8 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
     return predicate_str;
 }
 
-
-int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *argv[], int argc) {
+int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, int edit_type,
+                             struct lyd_node **out_node) {
     int ret;
     char xpath[265];
     char *predicate_str;
@@ -72,16 +77,23 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
     if (parent_data == NULL) {
         curr_parent = root_data;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-        strcat(xpath, create_list_path_predicate(y_node, argv, argc, 0));
+        predicate_str = create_list_path_predicate(y_node, argv, argc, 0);
+        strcat(xpath, predicate_str);
     } else {
         curr_parent = parent_data;
-        strcat(xpath, create_list_path_predicate(y_node, argv, argc, 1));
+        predicate_str = create_list_path_predicate(y_node, argv, argc, 1);
+        strcat(xpath, predicate_str);
     }
+
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
     if (new_parent == NULL)
-        ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &parent_data);
-    else
+        ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
+    if(edit_type== EDIT_DATA_ADD)
         parent_data = new_parent;
+    else
+        *out_node = new_parent;
+
+
 
     free(predicate_str);
     if (ret != LY_SUCCESS) {
@@ -90,11 +102,38 @@ int add_data_node_list(struct lysc_node *y_node, struct cli_command *c, char *ar
     return ret;
 }
 
-// edit type
-enum {
-    EDIT_DATA_ADD,
-    EDIT_DATA_DEL,
-};
+
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
+    int ret= edit_node_data_tree_list(y_node,argv,argc,EDIT_DATA_ADD,NULL);
+    return ret;
+}
+
+int delete_data_node_list(struct lysc_node *y_node,  char *argv[], int argc) {
+    int ret;
+    struct lyd_node *n;
+    ret = edit_node_data_tree_list(y_node,argv,argc,EDIT_DATA_DEL,&n);
+    if (ret != LY_SUCCESS)
+        return ret;
+
+    char xpath[1024];
+    memset(xpath, '\0', 1024);
+
+    lyd_path(n, LYD_PATH_STD, xpath, 1024);
+    lyd_free_tree(n);
+    sr_session_ctx_t *session = sysrepo_get_session();
+    if (session == NULL) {
+        printf("delete_data_node: failed to get sr_session\n");
+        return EXIT_FAILURE;
+    }
+
+    ret = sr_delete_item(session, xpath, 0);
+    if (ret != SR_ERR_OK) {
+        printf("delete_data_node: sr_delete_item failed\n");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 
 static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type, struct lyd_node **out_node) {
     int ret;

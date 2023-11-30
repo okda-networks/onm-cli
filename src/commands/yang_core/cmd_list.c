@@ -29,12 +29,18 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    int is_delete = 0;
 
     int key_count = get_keys_count(y_node);
-    if (argc != key_count) {
+    if (argc < key_count) {
         cli_print(cli, "ERROR: please enter %d Key(s) for the list entry of %s", key_count, cmd);
         return CLI_MISSING_ARGUMENT;
     }
+
+    // check if last arg is 'delete'
+    if (strcmp(argv[argc - 1], "delete") == 0)
+        is_delete = 1;
+
 
     // validate
     const struct lysc_node *child_list = lysc_node_child(y_node);
@@ -50,9 +56,21 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     int ret;
-    ret = add_data_node_list(y_node, c, argv, argc);
+    if (is_delete){
+        ret = delete_data_node_list(y_node,  argv, argc);
+        if (ret != LY_SUCCESS) {
+            fprintf(stderr, "Failed to delete the data tree\n");
+            cli_print(cli, "failed to execute command, error with adding the data node.");
+            return CLI_ERROR;
+        }
+        return CLI_OK;
+    }
+
+    else
+        ret = add_data_node_list(y_node,  argv, argc);
+
     if (ret != LY_SUCCESS) {
-        fprintf(stderr, "Failed to create the data tree\n");
+        fprintf(stderr, "Failed to create/delete the data tree\n");
         cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }
@@ -63,12 +81,12 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         mod_str_len += strlen(argv[i]) + 2;
     }
     mod_str = malloc(mod_str_len);
-    memset(mod_str,0,mod_str_len);
-    strcat(mod_str,(char *) cmd);
+    memset(mod_str, 0, mod_str_len);
+    strcat(mod_str, (char *) cmd);
     for (int i = 0; i < argc; i++) {
-        strcat(mod_str,"[");
-        strcat(mod_str,argv[i]);
-        strcat(mod_str,"]");
+        strcat(mod_str, "[");
+        strcat(mod_str, argv[i]);
+        strcat(mod_str, "]");
     }
 
     int mode = y_get_next_mode(y_node);
