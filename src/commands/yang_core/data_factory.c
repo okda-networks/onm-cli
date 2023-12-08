@@ -7,6 +7,12 @@
 
 
 extern struct lyd_node *root_data, *parent_data;
+struct data_tree *curr_config_root;
+struct data_tree *config_data_tree;
+
+struct data_tree * get_config_data_tree(){
+    return config_data_tree;
+}
 
 // edit type
 enum {
@@ -75,7 +81,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     struct lyd_node *curr_parent, *new_parent;
     // set current parent and xpath based on the list location in the tree.
     if (parent_data == NULL) {
-        curr_parent = root_data;
+        curr_parent = curr_config_root->node ;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
         predicate_str = create_list_path_predicate(y_node, argv, argc, 0);
         strcat(xpath, predicate_str);
@@ -88,11 +94,10 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
     if (new_parent == NULL)
         ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
-    if(edit_type== EDIT_DATA_ADD)
+    if (edit_type == EDIT_DATA_ADD)
         parent_data = new_parent;
     else
         *out_node = new_parent;
-
 
 
     free(predicate_str);
@@ -104,14 +109,14 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 
 
 int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
-    int ret= edit_node_data_tree_list(y_node,argv,argc,EDIT_DATA_ADD,NULL);
+    int ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, NULL);
     return ret;
 }
 
-int delete_data_node_list(struct lysc_node *y_node,  char *argv[], int argc) {
+int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
     int ret;
     struct lyd_node *n;
-    ret = edit_node_data_tree_list(y_node,argv,argc,EDIT_DATA_DEL,&n);
+    ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, &n);
     if (ret != LY_SUCCESS)
         return ret;
 
@@ -147,6 +152,12 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     switch (y_node->nodetype) {
         case LYS_CASE:
         case LYS_CONTAINER: {
+            // set the config_data_tree
+
+
+            // end set the config_data_tree
+
+
             struct lyd_node *new_parent = NULL;
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
@@ -167,7 +178,27 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 *out_node = new_parent;
 
             // if root is null then this node is the first in tree,
-            root_data = root_data ? root_data : parent_data;
+
+            if (config_data_tree == NULL) {
+                config_data_tree = malloc(sizeof(struct data_tree));
+                config_data_tree->node = NULL;
+                config_data_tree->prev = NULL;
+                curr_config_root = config_data_tree;
+            } else {
+
+                curr_config_root = config_data_tree;
+                while (curr_config_root != NULL) {
+                    if (curr_config_root->node->schema->name == y_node->name && y_node->parent == NULL) {
+                        goto done;
+                    }
+                    curr_config_root = curr_config_root->prev;
+                }
+                curr_config_root = malloc(sizeof (struct data_tree));
+                curr_config_root->prev = config_data_tree;
+                config_data_tree = curr_config_root;
+            }
+            done:
+            curr_config_root->node = curr_config_root->node  ? curr_config_root->node  : parent_data;
         }
 
             break;

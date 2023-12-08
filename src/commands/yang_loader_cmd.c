@@ -11,8 +11,6 @@
 #include "yang_core/y_utils.h"
 
 extern struct ly_ctx *yang_ctx;
-extern struct lyd_node *root_data;
-
 
 int set_yang_searchdir(const char *dir) {
     printf("INFO:onm_yang.c: setting yang search path to `%s`\n", dir);
@@ -206,16 +204,7 @@ int cmd_yang_compile(struct cli_def *cli, struct cli_command *c, const char *cmd
 
 }
 
-int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    if (root_data == NULL) {
-        cli_print(cli, "no new config yet!");
-        return CLI_ERROR;
-    }
-    char *result;
-    lyd_print_mem(&result, root_data, LYD_XML, 0);
-    cli_print(cli, result, NULL);
-    return CLI_OK;
-}
+
 
 int cmd_sysrepo_load_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
@@ -247,9 +236,7 @@ int yang_cmd_loader_init(struct cli_def *cli) {
     if (yang_cmd == NULL)
         printf("failed\n");
 
-    struct cli_command *print = cli_register_command(cli, NULL, NULL,
-                                                     "print", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                     MODE_ANY, NULL, "print the candidate/running config");
+
 
     struct cli_command *yang_set_cmd = cli_register_command(cli, yang_cmd, NULL,
                                                             "set", NULL, PRIVILEGE_UNPRIVILEGED,
@@ -296,16 +283,6 @@ int yang_cmd_loader_init(struct cli_def *cli) {
                          MODE_EXEC, NULL, "load and compile all yang modules from sysrepo: yang sysrepo load-modules");
 
 
-    cli_register_command(cli, print, NULL,
-                         "local-candidate-config", cmd_print_local_config, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "print the local new config data tree");
-    cli_register_command(cli, print, NULL,
-                         "cdb-candidate-config", NULL, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "print cdp candidate config");
-
-    cli_register_command(cli, print, NULL,
-                         "cdb-running-config", NULL, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "print cdp running config");
 
 
     return 0;

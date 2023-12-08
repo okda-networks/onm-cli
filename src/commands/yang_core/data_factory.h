@@ -13,6 +13,13 @@
 #include <libyang/log.h>
 #include "lib/libcli/libcli.h"
 
+struct data_tree {
+    struct lyd_node *node;
+    struct data_tree *prev;
+};
+
+struct data_tree *get_config_data_tree();
+
 int add_data_node(struct lysc_node *y_node, char *value);
 
 int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc);

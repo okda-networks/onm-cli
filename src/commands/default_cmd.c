@@ -5,6 +5,7 @@
 #include "src/utils.h"
 #include "default_cmd.h"
 #include "src/onm_sysrepo.h"
+#include "yang_core/data_factory.h"
 
 
 #ifdef __GNUC__
@@ -65,16 +66,47 @@ int check_auth(const char *username, const char *password) {
     return CLI_OK;
 }
 
+int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    if (root_data != NULL){
+        lyd_free_all(root_data);
+        root_data = NULL;
+        if (sysrepo_discard_changes() != SR_ERR_OK){
+            cli_print(cli, "failed to discard changes, sysrepo error!");
+            return CLI_ERROR;
+        }
+        cli_print(cli, "config changes discarded!");
+    } else {
+        cli_print(cli, "no config changes found!");
+    }
+    return CLI_OK;
+}
+
 int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     // we need to shift the parent_data backward with each exit call.
     if (parent_data != NULL) {
         parent_data = (struct lyd_node *) parent_data->parent;
     }
-
+    if (cli->term_mode_stack->prev != NULL && cli->term_mode_stack->prev->mode == MODE_CONFIG && root_data != NULL) {
+        cli_print(cli, "ERROR: there are uncommitted changes, please commit them or discard them before exist");
+        return CLI_ERROR;
+    }
     return cli_exit(cli, c, cmd, argv, argc);
 }
 
+int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    if (root_data == NULL) {
+        cli_print(cli, "no new config yet!");
+        return CLI_ERROR;
+    }
+    char *result;
+    lyd_print_mem(&result, root_data, LYD_XML, 0);
+    cli_print(cli, result, NULL);
+    return CLI_OK;
+}
+
 int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    struct data_tree *config_dtree= get_config_data_tree();
+
     // commit changes.
     if (root_data == NULL) {
         cli_print(cli, " no modification to commit!");
@@ -106,5 +138,25 @@ int default_commands_init(struct cli_def *cli) {
     cli_register_command(cli, NULL, NULL,
                          "commit", cmd_commit, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "commit changes to sysrepo cdb");
+
+    struct cli_command *print = cli_register_command(cli, NULL, NULL,
+                                                     "print", NULL, PRIVILEGE_UNPRIVILEGED,
+                                                     MODE_ANY, NULL, "print the candidate/running config");
+
+    cli_register_command(cli, print, NULL,
+                         "local-candidate-config", cmd_print_local_config, PRIVILEGE_UNPRIVILEGED,
+                         MODE_ANY, NULL, "print the local new config data tree");
+    cli_register_command(cli, print, NULL,
+                         "cdb-candidate-config", NULL, PRIVILEGE_UNPRIVILEGED,
+                         MODE_ANY, NULL, "print cdp candidate config");
+
+    cli_register_command(cli, print, NULL,
+                         "cdb-running-config", NULL, PRIVILEGE_UNPRIVILEGED,
+                         MODE_ANY, NULL, "print cdp running config");
+
+    cli_register_command(cli, NULL, NULL,
+                         "discard-changes", cmd_discard_changes, PRIVILEGE_UNPRIVILEGED,
+                         MODE_ANY, NULL, "discard all current changes");
+
 
 }

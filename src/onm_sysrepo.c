@@ -63,6 +63,10 @@ int sysrepo_release_ctx() {
     return EXIT_SUCCESS;
 }
 
+int sysrepo_discard_changes(){
+    return sr_discard_changes(session);
+}
+
 int sysrepo_commit(struct lyd_node *data_tree) {
     /*
      * there are two source of changes, one is the direct delete using sr_delete_item
