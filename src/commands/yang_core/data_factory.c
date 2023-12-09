@@ -6,12 +6,22 @@
 #include "y_utils.h"
 
 
-extern struct lyd_node *root_data, *parent_data;
-struct data_tree *curr_config_root;
-struct data_tree *config_data_tree;
+extern struct lyd_node *parent_data;
+struct data_tree *curr_root;
+struct data_tree *config_root_tree;
 
-struct data_tree * get_config_data_tree(){
-    return config_data_tree;
+struct data_tree *get_config_root_tree() {
+    return config_root_tree;
+}
+
+void free_data_tree_all() {
+    struct data_tree *curr_node = config_root_tree;
+    while (curr_node != NULL) {
+        lyd_free_all(curr_node->node);
+        curr_node = curr_node->prev;
+    }
+    config_root_tree = NULL;
+
 }
 
 // edit type
@@ -81,7 +91,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     struct lyd_node *curr_parent, *new_parent;
     // set current parent and xpath based on the list location in the tree.
     if (parent_data == NULL) {
-        curr_parent = curr_config_root->node ;
+        curr_parent = curr_root->node;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
         predicate_str = create_list_path_predicate(y_node, argv, argc, 0);
         strcat(xpath, predicate_str);
@@ -152,11 +162,37 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     switch (y_node->nodetype) {
         case LYS_CASE:
         case LYS_CONTAINER: {
+
             // set the config_data_tree
+            // check if this is first node in the schema, to set the root node.
+            if (y_node->parent == NULL) {
 
-
-            // end set the config_data_tree
-
+                if (config_root_tree == NULL) {
+                    config_root_tree = malloc(sizeof(struct data_tree));
+                    config_root_tree->node = NULL;
+                    config_root_tree->prev = NULL;
+                    curr_root = config_root_tree;
+                } else {
+                    // check if data for this schema already exist in the tree. and use that tree if not allocat a new one
+                    // and link it to config_data_tree
+                    curr_root = config_root_tree;
+                    while (curr_root != NULL) {
+                        if (strcmp(curr_root->node->schema->name, y_node->name) == 0 && y_node->parent == NULL) {
+                            // root data tree found, we just set parent_data to the found root and exit without creating
+                            // new path.
+                            parent_data = curr_root->node;
+                            return LY_SUCCESS;
+                        }
+                        curr_root = curr_root->prev;
+                    }
+                    // create new root_tree node and link it to the list.
+                    struct data_tree *new_root = malloc(sizeof(struct data_tree));
+                    new_root->node = NULL;
+                    new_root->prev = config_root_tree;
+                    config_root_tree = new_root;
+                    curr_root = config_root_tree;
+                }
+            }
 
             struct lyd_node *new_parent = NULL;
             if (parent_data == NULL) {
@@ -177,28 +213,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             else
                 *out_node = new_parent;
 
-            // if root is null then this node is the first in tree,
-
-            if (config_data_tree == NULL) {
-                config_data_tree = malloc(sizeof(struct data_tree));
-                config_data_tree->node = NULL;
-                config_data_tree->prev = NULL;
-                curr_config_root = config_data_tree;
-            } else {
-
-                curr_config_root = config_data_tree;
-                while (curr_config_root != NULL) {
-                    if (curr_config_root->node->schema->name == y_node->name && y_node->parent == NULL) {
-                        goto done;
-                    }
-                    curr_config_root = curr_config_root->prev;
-                }
-                curr_config_root = malloc(sizeof (struct data_tree));
-                curr_config_root->prev = config_data_tree;
-                config_data_tree = curr_config_root;
-            }
-            done:
-            curr_config_root->node = curr_config_root->node  ? curr_config_root->node  : parent_data;
+            curr_root->node = curr_root->node ? curr_root->node : parent_data;
         }
 
             break;
@@ -211,6 +226,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             // check if node already exist in data_tree, if not creat a new node.
             ret = lyd_find_path(parent_data, xpath, 0, out_node);
+
             if (out_node == NULL) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, value, LYD_NEW_PATH_UPDATE,
                                    out_node);

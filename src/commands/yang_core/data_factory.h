@@ -18,7 +18,9 @@ struct data_tree {
     struct data_tree *prev;
 };
 
-struct data_tree *get_config_data_tree();
+struct data_tree *get_config_root_tree();
+
+void free_data_tree_all();
 
 int add_data_node(struct lysc_node *y_node, char *value);
 
