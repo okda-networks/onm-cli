@@ -15,5 +15,5 @@
 #include "src/onm_yang.h"
 
 int yang_data_validator(struct cli_def *cli, const char *word, const char *value, void *cmd_model);
-
+int is_numeric(const char *str);
 #endif //ONMCLI_DATA_VALIDATORS_H

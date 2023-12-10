@@ -78,7 +78,7 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
 }
 
 int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, int edit_type,
-                             struct lyd_node **out_node) {
+                             struct lyd_node **out_node, int index) {
     int ret;
     char xpath[265];
     char *predicate_str;
@@ -118,15 +118,15 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 }
 
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
-    int ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, NULL);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc,int index) {
+    int ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, NULL, index);
     return ret;
 }
 
 int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
     int ret;
     struct lyd_node *n;
-    ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, &n);
+    ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, &n,-1);// no index use key for delete
     if (ret != LY_SUCCESS)
         return ret;
 

@@ -24,7 +24,7 @@ void free_data_tree_all();
 
 int add_data_node(struct lysc_node *y_node, char *value);
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc,int index);
 
 int delete_data_node(struct lysc_node *y_node, char *value);
 

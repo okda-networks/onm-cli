@@ -29,7 +29,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    int is_delete = 0;
+    uint8_t is_delete = 0;
+    int index = -1; // -1 indicate no index
 
     int key_count = get_keys_count(y_node);
     if (argc < key_count) {
@@ -40,6 +41,21 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     // check if last arg is 'delete'
     if (strcmp(argv[argc - 1], "delete") == 0)
         is_delete = 1;
+
+    if (lysc_is_userordered(y_node)) {
+        // if this is true then argv[key_count] is the order <index>
+        if ((key_count + 1 == argc && !is_delete) || (key_count + 2 == argc && is_delete)) {
+
+            char *endptr; // Used to detect conversion errors
+            index = (int) strtol(argv[key_count ], &endptr, 10);
+
+            // Check for conversion errors
+            if (*endptr != '\0' && *endptr != '\n') {
+                cli_print(cli, "ERROR: <index> must be numeric, entered value=%s", argv[key_count]);
+                return CLI_ERROR;
+            }
+        } // if no index we add the entry  to the end of the list.
+    }
 
 
     // validate
@@ -56,18 +72,16 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     int ret;
-    if (is_delete){
-        ret = delete_data_node_list(y_node,  argv, argc);
+    if (is_delete) {
+        ret = delete_data_node_list(y_node, argv, argc);
         if (ret != LY_SUCCESS) {
             fprintf(stderr, "Failed to delete the data tree\n");
             cli_print(cli, "failed to execute command, error with adding the data node.");
             return CLI_ERROR;
         }
         return CLI_OK;
-    }
-
-    else
-        ret = add_data_node_list(y_node,  argv, argc);
+    } else
+        ret = add_data_node_list(y_node, argv, argc,index);
 
     if (ret != LY_SUCCESS) {
         fprintf(stderr, "Failed to create/delete the data tree\n");
@@ -96,12 +110,12 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 }
 
 
-char *create_list_cmd_help(struct lysc_node *y_node) {
+char *create_list_cmd_help(struct lysc_node *y_node, uint8_t is_userordered) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
 
     // Calculate the total length needed for the string
-    size_t total_len = strlen(y_node->name) + 3; // +3 for "> ", space, and null terminator
+    size_t total_len = strlen(y_node->name) + 11; // +3 for "> ", space, and null terminator, 8 for \s<index>
 
     LY_LIST_FOR(child_list, child) {
         if (lysc_is_key(child)) {
@@ -128,17 +142,22 @@ char *create_list_cmd_help(struct lysc_node *y_node) {
         }
     }
 
+    if (is_userordered)
+        strcat(list_cmd_help, " <index>");
+
 
     return list_cmd_help;
 }
 
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
-    sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
     unsigned int mode;
-    const struct lys_module *y_root_module = lysc_owner_module(y_node);
 
+    const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = strdup(y_root_module->name);;
+
+    sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
+
     mode = y_get_curr_mode(y_node);
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
@@ -147,7 +166,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
     struct cli_optarg *o;
-    char *list_cmd_help = create_list_cmd_help(y_node);
+    char *list_cmd_help = create_list_cmd_help(y_node, lysc_is_userordered(y_node));
     o = cli_register_optarg(c, "key(s)", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD, PRIVILEGE_PRIVILEGED,
                             mode, list_cmd_help, NULL, NULL, NULL);
     LY_LIST_FOR(child_list, child) {
