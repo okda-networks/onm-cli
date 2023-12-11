@@ -107,39 +107,25 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
         ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
 
     if (index) {
-        sr_data_t *sysrepo_data;
-
-        char parent_xpath[1025] = {'\0'};
-
-       lyd_path(parent_data, LYD_PATH_STD, parent_xpath, 1024);
-        int sysrepo_err = sr_get_subtree(sysrepo_get_session(), parent_xpath, 0,
-                                      &sysrepo_data);
-        if (sysrepo_err == SR_ERR_NOT_FOUND)
-            goto update_parent;
-
-        if (sysrepo_err != SR_ERR_OK) {
-            fprintf(stderr, "ERROR: failed to fetch-data from sysrepo\n");
-            goto done;
-        }
 
         // index start from 10 and the step is 10, 10,20,30...
         int curr_indx = 10;
         struct lyd_node *next = NULL;
-        struct lyd_node *orderd_nodes = lyd_child(sysrepo_data->tree);
+        struct lyd_node *orderd_nodes = lyd_first_sibling(lyd_child(parent_data));
+
+
         LY_LIST_FOR(orderd_nodes, next) {
             if (index < curr_indx) {
-                struct lyd_node *new_parent2;
-                lyd_dup_single(new_parent,NULL,0,&new_parent2);
-                ret = lyd_insert_before(next, new_parent2);
+                ret = lyd_insert_before(next, new_parent);
                 if (ret != LY_SUCCESS)
                     goto done;
+                else
+                    break;
             }
-            index += 10;
+            curr_indx += 10;
         }
 
     }
-
-    update_parent:
     if (edit_type == EDIT_DATA_ADD)
         parent_data = new_parent;
     else
@@ -185,14 +171,26 @@ int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
     return EXIT_SUCCESS;
 }
 
+struct lyd_node *get_sysrepo_root(char *xpath) {
+    sr_data_t *sysrepo_subtree;
+    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
+    if (ret == SR_ERR_OK)
+        return sysrepo_subtree->tree;
+    if (ret == SR_ERR_NOT_FOUND)
+        return NULL;
+
+    printf("data_factory.c: error returning sysrepo data, code=%d\n", ret);
+    return NULL;
+
+}
 
 static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type, struct lyd_node **out_node) {
     int ret;
     char xpath[256];
     memset(xpath, '\0', 256);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
-    sr_session_ctx_t *session = sysrepo_get_session();
-    sr_data_t * sysrepo_subtree;
+
+
     if (!sysrepo_ctx) {
         printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
@@ -200,20 +198,47 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     switch (y_node->nodetype) {
         case LYS_CASE:
         case LYS_CONTAINER: {
-
-            // set the config_data_tree
-            // check if this is first node in the schema, to set the root node.
-            if (y_node->parent == NULL) {
-
-
-            struct lyd_node *new_parent = NULL;
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
             } else {
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
             }
+            // set the config_data_tree
+            // check if this is first node in the schema, to set the root node.
+            if (y_node->parent == NULL) {
+                if (config_root_tree == NULL) {
+                    config_root_tree = malloc(sizeof(struct data_tree));
+                    config_root_tree->node = get_sysrepo_root(xpath);
+                    config_root_tree->prev = NULL;
+                    curr_root = config_root_tree;
+                    if (config_root_tree->node  != NULL){
+                        parent_data= config_root_tree->node;
+                        return EXIT_SUCCESS;
+                    }
 
-            ret = sr_get_subtree(session,xpath,0,&sysrepo_subtree);
+                } else {
+                    // check if data for this schema already exist in the tree. and use that tree if not allocat a new one
+                    // and link it to config_data_tree
+                    curr_root = config_root_tree;
+                    while (curr_root != NULL) {
+                        if (strcmp(curr_root->node->schema->name, y_node->name) == 0 && y_node->parent == NULL) {
+                            // root data tree found, we just set parent_data to the found root and exit without creating
+                            // new path.
+                            parent_data = curr_root->node;
+                            return LY_SUCCESS;
+                        }
+                        curr_root = curr_root->prev;
+                    }
+                    // create new root_tree node and link it to the list.
+                    struct data_tree *new_root = malloc(sizeof(struct data_tree));
+                    new_root->node = NULL;
+                    new_root->prev = config_root_tree;
+                    config_root_tree = new_root;
+                    curr_root = config_root_tree;
+                }
+            }
+
+            struct lyd_node *new_parent = NULL;
 
 
             // check if the node exist in the tree, if not create new node in the tree.
@@ -222,6 +247,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
 
+            update_parent:
             // if the edit operation is 'add', then update the parent_node, else (which is 'delete' operation) then just set the out node.
             if (edit_type == EDIT_DATA_ADD)
                 parent_data = new_parent;
@@ -230,8 +256,8 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             curr_root->node = curr_root->node ? curr_root->node : parent_data;
         }
-
             break;
+
         case LYS_LEAF:
         case LYS_LEAFLIST:
             if (y_node->nodetype == LYS_LEAFLIST)
