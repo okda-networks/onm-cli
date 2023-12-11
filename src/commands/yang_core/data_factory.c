@@ -133,7 +133,6 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
                 ret = lyd_insert_before(next, new_parent2);
                 if (ret != LY_SUCCESS)
                     goto done;
-
             }
             index += 10;
         }
@@ -192,6 +191,8 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     char xpath[256];
     memset(xpath, '\0', 256);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
+    sr_session_ctx_t *session = sysrepo_get_session();
+    sr_data_t * sysrepo_subtree;
     if (!sysrepo_ctx) {
         printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
@@ -204,32 +205,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             // check if this is first node in the schema, to set the root node.
             if (y_node->parent == NULL) {
 
-                if (config_root_tree == NULL) {
-                    config_root_tree = malloc(sizeof(struct data_tree));
-                    config_root_tree->node = NULL;
-                    config_root_tree->prev = NULL;
-                    curr_root = config_root_tree;
-                } else {
-                    // check if data for this schema already exist in the tree. and use that tree if not allocat a new one
-                    // and link it to config_data_tree
-                    curr_root = config_root_tree;
-                    while (curr_root != NULL) {
-                        if (strcmp(curr_root->node->schema->name, y_node->name) == 0 && y_node->parent == NULL) {
-                            // root data tree found, we just set parent_data to the found root and exit without creating
-                            // new path.
-                            parent_data = curr_root->node;
-                            return LY_SUCCESS;
-                        }
-                        curr_root = curr_root->prev;
-                    }
-                    // create new root_tree node and link it to the list.
-                    struct data_tree *new_root = malloc(sizeof(struct data_tree));
-                    new_root->node = NULL;
-                    new_root->prev = config_root_tree;
-                    config_root_tree = new_root;
-                    curr_root = config_root_tree;
-                }
-            }
 
             struct lyd_node *new_parent = NULL;
             if (parent_data == NULL) {
@@ -237,6 +212,9 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             } else {
                 snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
             }
+
+            ret = sr_get_subtree(session,xpath,0,&sysrepo_subtree);
+
 
             // check if the node exist in the tree, if not create new node in the tree.
             ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
