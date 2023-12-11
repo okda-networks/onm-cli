@@ -30,7 +30,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     uint8_t is_delete = 0;
-    int index = -1; // -1 indicate no index
+    int index = 0; // no index
 
     int key_count = get_keys_count(y_node);
     if (argc < key_count) {
@@ -50,8 +50,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             index = (int) strtol(argv[key_count ], &endptr, 10);
 
             // Check for conversion errors
-            if (*endptr != '\0' && *endptr != '\n') {
-                cli_print(cli, "ERROR: <index> must be numeric, entered value=%s", argv[key_count]);
+            if (*endptr != '\0' && *endptr != '\n' || (index ==0) ) {
+                cli_print(cli, "ERROR: <index> must be numeric greater than 0, entered value=%s", argv[key_count]);
                 return CLI_ERROR;
             }
         } // if no index we add the entry  to the end of the list.

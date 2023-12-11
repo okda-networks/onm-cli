@@ -88,6 +88,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
         printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
     }
+
     struct lyd_node *curr_parent, *new_parent;
     // set current parent and xpath based on the list location in the tree.
     if (parent_data == NULL) {
@@ -104,12 +105,48 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
     if (new_parent == NULL)
         ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
+
+    if (index) {
+        sr_data_t *sysrepo_data;
+
+        char parent_xpath[1025] = {'\0'};
+
+       lyd_path(parent_data, LYD_PATH_STD, parent_xpath, 1024);
+        int sysrepo_err = sr_get_subtree(sysrepo_get_session(), parent_xpath, 0,
+                                      &sysrepo_data);
+        if (sysrepo_err == SR_ERR_NOT_FOUND)
+            goto update_parent;
+
+        if (sysrepo_err != SR_ERR_OK) {
+            fprintf(stderr, "ERROR: failed to fetch-data from sysrepo\n");
+            goto done;
+        }
+
+        // index start from 10 and the step is 10, 10,20,30...
+        int curr_indx = 10;
+        struct lyd_node *next = NULL;
+        struct lyd_node *orderd_nodes = lyd_child(sysrepo_data->tree);
+        LY_LIST_FOR(orderd_nodes, next) {
+            if (index < curr_indx) {
+                struct lyd_node *new_parent2;
+                lyd_dup_single(new_parent,NULL,0,&new_parent2);
+                ret = lyd_insert_before(next, new_parent2);
+                if (ret != LY_SUCCESS)
+                    goto done;
+
+            }
+            index += 10;
+        }
+
+    }
+
+    update_parent:
     if (edit_type == EDIT_DATA_ADD)
         parent_data = new_parent;
     else
         *out_node = new_parent;
 
-
+    done:
     free(predicate_str);
     if (ret != LY_SUCCESS) {
         print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c");
@@ -118,7 +155,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 }
 
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc,int index) {
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index) {
     int ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, NULL, index);
     return ret;
 }
@@ -126,7 +163,7 @@ int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc,int inde
 int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
     int ret;
     struct lyd_node *n;
-    ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, &n,-1);// no index use key for delete
+    ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, &n, 0);// no index use key for delete
     if (ret != LY_SUCCESS)
         return ret;
 
