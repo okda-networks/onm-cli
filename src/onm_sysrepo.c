@@ -85,7 +85,7 @@ int sysrepo_commit(struct lyd_node *data_tree) {
     // Check if there is data_tree to add and apply
     if (data_tree != NULL) {
         // If there are changes in the session, add the data_tree using sr_edit_batch
-        if (sr_edit_batch(session, data_tree, "merge") != SR_ERR_OK) {
+        if (sr_edit_batch(session, data_tree, "replace") != SR_ERR_OK) {
             fprintf(stderr, "Failed to add data_tree to Sysrepo changes\n");
             return EXIT_FAILURE;
         }

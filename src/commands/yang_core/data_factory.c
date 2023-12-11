@@ -124,7 +124,6 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
             }
             curr_indx += 10;
         }
-
     }
     if (edit_type == EDIT_DATA_ADD)
         parent_data = new_parent;
