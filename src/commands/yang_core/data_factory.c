@@ -195,7 +195,8 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
         return EXIT_FAILURE;
     }
     switch (y_node->nodetype) {
-        case LYS_CASE:
+        case LYS_CHOICE:
+            return LY_SUCCESS;
         case LYS_CONTAINER: {
             if (parent_data == NULL) {
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);

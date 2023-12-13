@@ -8,7 +8,7 @@
 
 
 int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
+    cli_print(cli, "DEBUG:cmd_yang_choice: %s", cmd);
     if (argc == 0) {
         cli_print(cli, "ERROR: please choose one of the available choices for %s, "
                        "use '?' to see available choices", cmd);
@@ -24,18 +24,18 @@ int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd,
 
 
 int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
+    cli_print(cli, "DEBUG:cmd_yang_case: %s", cmd);
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     struct lysc_node *y_case_n;
 
-    // case might be leaf or container, leaf we get the child for container the child is null and we use y_node
+    // case might be leaf or container, for leaf we get the child, for container the child is null and we use y_node
     y_case_n = (struct lysc_node *) lysc_node_child(y_node);
     if (y_case_n == NULL)
         y_case_n = y_node;
 
 
     int ret;
-    if (argc == 1) {
+    if (argc >= 1) {
         if (strcmp(argv[0], "?") == 0) {
             cli_print(cli, "  <cr>");
             return CLI_OK;
@@ -70,7 +70,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     // set the next config mode and string.
-    char *mod_str = malloc(sizeof("choice[%s]") + sizeof(y_node->name));
+    char *mod_str = malloc(sizeof("choice[%s]") + strlen(y_node->name));
     sprintf(mod_str, "choice[%s]", (char *) y_node->name);
 
     int mode;
@@ -81,16 +81,20 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     return CLI_OK;
 }
 
-int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
+
+int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node,struct cli_command *parent_cmd,unsigned int mode){
+    /* ragisterning the choice is the most complex function, change carefully*/
     char help[100];
-    sprintf(help, "configure %s (%s) [choice]", y_node->name, y_node->module->name);
-    unsigned int mode;
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
+
+    sprintf(help, "configure %s (%s) [choice]", y_node->name, y_node->module->name);
+
     char *cmd_hash = strdup(y_root_module->name);
+    // this can be called recursively. so we might pass the mode.
+    if (!mode)
+        mode = y_get_curr_mode(y_node);
 
-    mode = y_get_curr_mode(y_node);
-
-    struct cli_command *choice_cmd = cli_register_command(cli, NULL, y_node, y_node->name,
+    struct cli_command *choice_cmd = cli_register_command(cli, parent_cmd, y_node, y_node->name,
                                                           cmd_yang_choice, PRIVILEGE_UNPRIVILEGED,
                                                           mode, cmd_hash, help);
 
@@ -101,6 +105,7 @@ int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
         sprintf(help, "configure %s (%s) [case]", y_case->name, y_case->module->name);
 
 
+
         struct cli_command *case_cmd = cli_register_command(cli, choice_cmd, (void *) y_case, y_case->name,
                                                             cmd_yang_case, PRIVILEGE_UNPRIVILEGED,
                                                             mode, cmd_hash, help);
@@ -108,6 +113,13 @@ int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
         struct lysc_node *case_child;
 
         LY_LIST_FOR(case_child_list, case_child) {
+            // if the case-child is another choice then run recursively
+            if (case_child->nodetype == LYS_CHOICE){
+                cli_print(cli,"node=%s",case_child->name);
+                // should be called with same mode.
+                return register_cmd_choice_core(cli,case_child,case_cmd,mode);
+            }
+
             if (case_child->nodetype == LYS_LEAF) {
                 struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
                                                            CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD,
@@ -120,4 +132,8 @@ int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
     }
 
     return 0;
+}
+
+int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
+    return register_cmd_choice_core(cli,y_node,NULL,-1);
 }
