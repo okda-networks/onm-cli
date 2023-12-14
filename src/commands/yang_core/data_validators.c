@@ -40,7 +40,7 @@ int validate_all(struct cli_def *cli, const char *word, const char *value, struc
 int validate_uint(struct cli_def *cli, const char *word, const char *value, struct lysc_node_leaf *leaf) {
 
     if (!is_numeric(value)) {
-        cli_print(cli, "ERROR please entry numeric value");
+        cli_print(cli, "\nERROR please entr numeric value");
         return CLI_ERROR;
     }
     struct lysc_type_num *num_t = (struct lysc_type_num *) leaf->type;

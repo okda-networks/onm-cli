@@ -8,7 +8,6 @@
 
 
 int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_print(cli, "DEBUG:cmd_yang_choice: %s", cmd);
     if (argc == 0) {
         cli_print(cli, "ERROR: please choose one of the available choices for %s, "
                        "use '?' to see available choices", cmd);
@@ -24,9 +23,10 @@ int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd,
 
 
 int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_print(cli, "DEBUG:cmd_yang_case: %s", cmd);
+    struct cli_optarg_pair *optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     struct lysc_node *y_case_n;
+
 
     // case might be leaf or container, for leaf we get the child, for container the child is null and we use y_node
     y_case_n = (struct lysc_node *) lysc_node_child(y_node);
@@ -50,23 +50,38 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         }
     }
 
-    // add data node
+
+
+    // if the case node is leaf/leaf-list parse the value, else set the next config mode.
+    if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
+        struct lysc_node *leaf_next;
+
+        LY_LIST_FOR(y_case_n, leaf_next) {
+            // add data node
+            optargs = cli->found_optargs;
+            while (optargs != NULL) {
+                if (strcmp(optargs->name, leaf_next->name) == 0) {
+                    ret = add_data_node(leaf_next, optargs->value);
+                    if (ret != LY_SUCCESS) {
+                        cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
+                        return CLI_ERROR;
+                    }
+                    break;
+                }
+
+                optargs = optargs->next;
+            }
+        }
+
+
+        return CLI_OK;
+    }
+
+    // case is container, add data node and move to next mode
     ret = add_data_node(y_case_n, argv[0]);
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
         return CLI_ERROR;
-    }
-
-    // if the case node is leaf/leaf-list parse the value, else set the next config mode.
-    if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
-        if (argc == 0) {
-            cli_print(cli, "ERROR: please enter value for %s", cmd);
-            return CLI_MISSING_ARGUMENT;
-        } else if (argc > 1) {
-            cli_print(cli, "ERROR: please enter one value for %s", cmd);
-            return CLI_MISSING_ARGUMENT;
-        }
-        return CLI_OK;
     }
 
     // set the next config mode and string.
@@ -82,7 +97,8 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 }
 
 
-int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node,struct cli_command *parent_cmd,unsigned int mode){
+int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, struct cli_command *parent_cmd,
+                             unsigned int mode) {
     /* ragisterning the choice is the most complex function, change carefully*/
     char help[100];
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
@@ -91,7 +107,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node,struc
 
     char *cmd_hash = strdup(y_root_module->name);
     // this can be called recursively. so we might pass the mode.
-    if (!mode)
+    if (mode == -1)
         mode = y_get_curr_mode(y_node);
 
     struct cli_command *choice_cmd = cli_register_command(cli, parent_cmd, y_node, y_node->name,
@@ -105,7 +121,6 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node,struc
         sprintf(help, "configure %s (%s) [case]", y_case->name, y_case->module->name);
 
 
-
         struct cli_command *case_cmd = cli_register_command(cli, choice_cmd, (void *) y_case, y_case->name,
                                                             cmd_yang_case, PRIVILEGE_UNPRIVILEGED,
                                                             mode, cmd_hash, help);
@@ -114,15 +129,15 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node,struc
 
         LY_LIST_FOR(case_child_list, case_child) {
             // if the case-child is another choice then run recursively
-            if (case_child->nodetype == LYS_CHOICE){
-                cli_print(cli,"node=%s",case_child->name);
+            if (case_child->nodetype == LYS_CHOICE) {
                 // should be called with same mode.
-                return register_cmd_choice_core(cli,case_child,case_cmd,mode);
+                return register_cmd_choice_core(cli, case_child, case_cmd, mode);
             }
+
 
             if (case_child->nodetype == LYS_LEAF) {
                 struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
-                                                           CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD,
+                                                           CLI_CMD_ARGUMENT,
                                                            PRIVILEGE_PRIVILEGED,
                                                            mode, case_child->dsc, NULL, yang_data_validator, NULL);
                 cli_optarg_addhelp(o, "delete", "delete node from config");
@@ -135,5 +150,5 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node,struc
 }
 
 int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
-    return register_cmd_choice_core(cli,y_node,NULL,-1);
+    return register_cmd_choice_core(cli, y_node, NULL, -1);
 }
