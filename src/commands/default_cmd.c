@@ -91,7 +91,8 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
 
     struct data_tree *config_dtree = get_config_root_tree();
     if (cli->mode == MODE_CONFIG && config_dtree != NULL) {
-        cli_print(cli, "ERROR: there are uncommitted changes, please `commit-confirm` or `discard-changes` before exist!");
+        cli_print(cli,
+                  "ERROR: there are uncommitted changes, please `commit-confirm` or `discard-changes` before exist!");
         return CLI_ERROR;
     }
 
@@ -106,7 +107,13 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
 int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct data_tree *config_dtree = get_config_root_tree();
+    struct cli_optarg_pair *args = cli->found_optargs;
+    int is_xml = 1;
 
+    if (args != NULL) {
+        to_lower(args->value);
+        is_xml = strcmp(args->value, "json");
+    }
     // commit changes.
     if (config_dtree == NULL) {
         cli_print(cli, "no new config yet!");
@@ -115,7 +122,10 @@ int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const cha
     struct data_tree *curr_root = config_dtree;
     while (curr_root != NULL) {
         char *result;
-        lyd_print_mem(&result, curr_root->node, LYD_XML, 0);
+        if (is_xml == 0)
+            lyd_print_mem(&result, curr_root->node, LYD_JSON, 0);
+        else
+            lyd_print_mem(&result, curr_root->node, LYD_XML, 0);
         cli_print(cli, result, NULL);
         curr_root = curr_root->prev;
     }
@@ -146,9 +156,9 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
 
 int cmd_commit_confirm(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     int ret = cmd_commit(cli, c, cmd, argv, argc);
-    if (ret == CLI_OK){
+    if (ret == CLI_OK) {
         free_data_tree_all();
-        cli_set_configmode(cli,MODE_CONFIG,"");
+        cli_set_configmode(cli, MODE_CONFIG, "");
     }
     cli_print(cli, " commit-confirmed successfully!");
 
@@ -182,9 +192,12 @@ int default_commands_init(struct cli_def *cli) {
                                                      "print", NULL, PRIVILEGE_UNPRIVILEGED,
                                                      MODE_ANY, NULL, "print the candidate/running config");
 
-    cli_register_command(cli, print, NULL,
-                         "local-candidate-config", cmd_print_local_config, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "print the local new config data tree");
+    struct cli_command *local_config = cli_register_command(cli, print, NULL,
+                                                            "local-candidate-config", cmd_print_local_config,
+                                                            PRIVILEGE_UNPRIVILEGED,
+                                                            MODE_ANY, NULL, "print the local new config data tree");
+    cli_register_optarg(local_config, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
+                        "printed format [json|xml].", NULL, NULL, NULL);
     cli_register_command(cli, print, NULL,
                          "cdb-candidate-config", NULL, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "print cdp candidate config");

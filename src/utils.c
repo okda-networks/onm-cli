@@ -6,6 +6,14 @@
 #include <stdarg.h>
 
 
+void to_lower(char *str) {
+    while (*str) {
+        *str = tolower(*str);
+        str++;
+    }
+}
+
+
 unsigned int str2int_hash(char *str, ...) {
     unsigned long hash = 5381;
     int c;

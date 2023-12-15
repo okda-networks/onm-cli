@@ -22,9 +22,11 @@ struct data_tree *get_config_root_tree();
 
 void free_data_tree_all();
 
+struct lyd_node *get_list_nodes();
+
 int add_data_node(struct lysc_node *y_node, char *value);
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc,int index);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index);
 
 int delete_data_node(struct lysc_node *y_node, char *value);
 

@@ -2,16 +2,11 @@
 // Created by ali on 10/22/23.
 //
 
-#include "data_validators.h"
 #include <ctype.h>
 #include <string.h>
+#include "data_validators.h"
+#include "src/utils.h"
 
-void to_lower(char *str) {
-    while (*str) {
-        *str = tolower(*str);
-        str++;
-    }
-}
 
 int is_numeric(const char *str) {
     while (*str) {
