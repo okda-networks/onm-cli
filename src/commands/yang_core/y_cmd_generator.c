@@ -65,12 +65,16 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
 
 }
 
-static void unregister_node_routine(struct cli_def *cli, struct lysc_node *schema) {
-    if (schema->flags & LYS_CONFIG_R) {
+static void unregister_node_routine(struct cli_def *cli, struct lysc_node *y_node) {
+    if (y_node->flags & LYS_CONFIG_R) {
         return;
     }
-    const struct lys_module *y_owner_module = lysc_owner_module(schema);
-    cli_unregister_command(cli, strdup(schema->name), (char *) strdup(y_owner_module->name));
+    // we add "print-order" command for userordered node, we need to unregister.
+    if (lysc_is_userordered(y_node)){
+        cli_unregister_command(cli, "print-order", "print-order");
+    }
+    const struct lys_module *y_owner_module = lysc_owner_module(y_node);
+    cli_unregister_command(cli, strdup(y_node->name), (char *) strdup(y_owner_module->name));
 }
 
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {

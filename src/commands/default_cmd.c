@@ -207,6 +207,7 @@ int default_commands_init(struct cli_def *cli) {
                                                             MODE_ANY, NULL, "print the local new config data tree");
     cli_register_optarg(local_config, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
                         "printed format [json|xml].", NULL, NULL, NULL);
+
     cli_register_command(cli, print, NULL,
                          "cdb-candidate-config", NULL, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "print cdp candidate config");

@@ -64,3 +64,32 @@ char * create_func_name(char*name1,char*name2,char*name3){
 
 
 }
+
+
+int count_optargs(struct cli_optarg_pair *head) {
+    int count = 0;
+    while (head != NULL) {
+        count++;
+        head = head->next;
+    }
+    return count;
+}
+
+
+void create_argv_from_optpair(struct cli_optarg_pair *head, char ***argv, int *argc) {
+    int count = count_optargs(head);
+
+    *argv = (char **) malloc((count + 1) * sizeof(char *));  // +1 for the NULL pointer at the end
+    if (*argv == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    *argc = count;
+
+    for (int i = 0; i < count; i++) {
+        (*argv)[i] = strdup(head->value);
+        head = head->next;
+    }
+    (*argv)[count] = NULL;  // NULL-terminate the array
+}

@@ -14,7 +14,7 @@ struct data_tree *get_config_root_tree() {
     return config_root_tree;
 }
 
-void free_data_tree(struct data_tree *dtree){
+void free_data_tree(struct data_tree *dtree) {
     lyd_free_all(dtree->node);
     dtree->prev = NULL;
     free(dtree);
@@ -82,8 +82,6 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
             strcat(predicate_str, "]");
         }
     }
-
-
     return predicate_str;
 }
 
@@ -117,29 +115,29 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
         ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
 
     if (index) {
-
         // index start from 10 and the step is 10, 10,20,30...
         int curr_indx = 10;
         struct lyd_node *next = NULL;
         struct lyd_node *orderd_nodes = lyd_first_sibling(lyd_child(parent_data));
 
-
         LY_LIST_FOR(orderd_nodes, next) {
             if (index < curr_indx) {
                 ret = lyd_insert_before(next, new_parent);
-                if (ret != LY_SUCCESS)
+                if (ret != LY_SUCCESS){
+                    lyd_free_tree(new_parent);
                     goto done;
-                else
-                    break;
+                }
+                break;
+
             }
             curr_indx += 10;
         }
     }
     if (edit_type == EDIT_DATA_ADD)
         parent_data = new_parent;
-    else {
+    else
         lyd_free_tree(new_parent);
-    }
+
 
 
     done:
@@ -152,8 +150,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 
 
 int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index) {
-    int ret = edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index);
-    return ret;
+    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index);
 }
 
 int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
@@ -266,7 +263,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             }
 
             if (edit_type == EDIT_DATA_ADD)
-                lyd_change_term(new_leaf,value);
+                lyd_change_term(new_leaf, value);
             else
                 lyd_free_tree(new_leaf);
             break;
