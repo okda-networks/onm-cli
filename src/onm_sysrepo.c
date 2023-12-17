@@ -63,25 +63,32 @@ int sysrepo_release_ctx() {
     return EXIT_SUCCESS;
 }
 
-int sysrepo_discard_changes(){
+int sysrepo_discard_changes() {
     return sr_discard_changes(session);
 }
 
-int sysrepo_commit(struct lyd_node *data_tree) {
-    /*
-     * there are two source of changes, one is the direct delete using sr_delete_item
-     * and the add using the data_tree, so we need to apply both changes in one commit.
-     * */
-    // Check if there are changes in the session
-    int has_changes = sr_has_changes(session);
 
-    // If there are changes, apply them first
-    if (has_changes && sr_apply_changes(session, 0) != SR_ERR_OK) {
-        fprintf(stderr, "Failed to apply changes to Sysrepo\n");
-        sr_discard_changes(session);
-        return EXIT_FAILURE;
+int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
+    // get the respective data_node from sysrepo, and compare it with current data_node.
+    // 0 no changes, 1 there is changes.
+    char xpath[256];
+    memset(xpath, '\0', 256);
+    lyd_path(data_node, LYD_PATH_STD, xpath, 256);
+    sr_data_t *sysrepo_subtree;
+    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
+    if (ret == SR_ERR_OK) {
+        struct lyd_node *diff;
+        lyd_diff_tree(data_node, sysrepo_subtree->tree, 0, &diff);
+        if (diff == NULL)
+            return 0;
+        else
+            return 1;
     }
+    if (ret == SR_ERR_NOT_FOUND)
+        return 1;
+}
 
+int sysrepo_commit(struct lyd_node *data_tree) {
     // Check if there is data_tree to add and apply
     if (data_tree != NULL) {
         // If there are changes in the session, add the data_tree using sr_edit_batch
@@ -98,7 +105,6 @@ int sysrepo_commit(struct lyd_node *data_tree) {
 
     }
     return EXIT_SUCCESS;
-
 }
 
 int sysrepo_init() {

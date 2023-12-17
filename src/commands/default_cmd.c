@@ -88,12 +88,21 @@ int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *
 
 int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-
     struct data_tree *config_dtree = get_config_root_tree();
+
     if (cli->mode == MODE_CONFIG && config_dtree != NULL) {
-        cli_print(cli,
-                  "ERROR: there are uncommitted changes, please `commit-confirm` or `discard-changes` before exist!");
-        return CLI_ERROR;
+        struct data_tree *curr_root = config_dtree;
+        while (curr_root != NULL) {
+            // 1 indicate there is config diff between sysrepo and local candidate
+            if (sysrepo_has_uncommited_changes(curr_root->node) == 1) {
+                cli_print(cli,
+                          "ERROR: there are uncommitted changes, please `commit-confirm` or `discard-changes` before exist!");
+                return CLI_ERROR;
+            }
+            curr_root = curr_root->prev;
+        }
+        free_data_tree_all();
+        return cli_exit(cli, c, cmd, argv, argc);
     }
 
     // we need to shift the parent_data backward with each exit call.

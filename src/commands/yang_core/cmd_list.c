@@ -20,6 +20,7 @@ int get_keys_count(struct lysc_node *y_node) {
     return count;
 }
 
+
 int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     if (argc == 0) {

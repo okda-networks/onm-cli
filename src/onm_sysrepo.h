@@ -15,6 +15,8 @@ int sysrepo_release_ctx();
 
 int sysrepo_discard_changes();
 
+int sysrepo_has_uncommited_changes(struct lyd_node *data_node);
+
 int sysrepo_commit(struct lyd_node *data_tree);
 
 int sysrepo_init();
