@@ -96,7 +96,7 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
             // 1 indicate there is config diff between sysrepo and local candidate
             if (sysrepo_has_uncommited_changes(curr_root->node) == 1) {
                 cli_print(cli,
-                          "ERROR: there are uncommitted changes, please `commit-confirm` or `discard-changes` before exist!");
+                          "ERROR: there are uncommitted changes, please `commit` or `discard-changes` before exist!");
                 return CLI_ERROR;
             }
             curr_root = curr_root->prev;

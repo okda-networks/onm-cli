@@ -18,8 +18,8 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
     int ret;
 
     // check if it's delete action `<leaf-list> <value> delete`
-    if (argc ==2){
-        if (strcmp(argv[1],"delete")==0){
+    if (argc == 2) {
+        if (strcmp(argv[1], "delete") == 0) {
             ret = delete_data_node(y_node, argv[0]);
             if (ret != LY_SUCCESS) {
                 cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
@@ -44,17 +44,21 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
 }
 
 int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
-    if (argc == 0) {
-        cli_print(cli, "ERROR: please enter value for %s", cmd);
-        return CLI_MISSING_ARGUMENT;
-    } else if (argc > 1) {
-        cli_print(cli, "ERROR: please enter one value for %s", cmd);
-        return CLI_MISSING_ARGUMENT;
+    int is_delete = 0;
+    char *value;
+    struct cli_optarg_pair *optargs = cli->found_optargs;
+    // parse optargs
+    while (optargs != NULL) {
+        if (strcmp(optargs->name, "value") == 0)
+            value = optargs->value;
+        optargs = optargs->next;
     }
+    if (strcmp(value, "delete") == 0)
+        is_delete = 1;
+
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int ret;
-    if (strcmp(argv[0], "delete") == 0) {
+    if (is_delete) {
         ret = delete_data_node(y_node, NULL);
         if (ret != LY_SUCCESS) {
             cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
@@ -63,7 +67,7 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         return CLI_OK;
     }
 
-    ret = add_data_node(y_node, argv[0]);
+    ret = add_data_node(y_node, value);
 
 
     if (ret != LY_SUCCESS) {
@@ -120,13 +124,14 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     else
         optarg_help = y_node->dsc;
 
-    struct cli_optarg *o = cli_register_optarg(c, "value", CLI_CMD_ARGUMENT | CLI_CMD_DO_NOT_RECORD,
+    struct cli_optarg *o = cli_register_optarg(c, "value", CLI_CMD_ARGUMENT,
                                                PRIVILEGE_PRIVILEGED, mode,
                                                optarg_help, NULL, yang_data_validator, NULL);
+
     // add delete to arg help
     char *delete_help = malloc(strlen("delete") + strlen(y_node->name) + 2);
     sprintf(delete_help, "delete %s", y_node->name);
-    cli_optarg_addhelp(o, "delete", delete_help);
+    cli_optarg_addhelp(o, "[delete]", delete_help);
 
     return 0;
 }
