@@ -19,7 +19,7 @@ extern struct lyd_node *root_data, *parent_data;
 /*
  * Forward Declarations for cli default commands
  * */
-static int cmd_frr(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc);
+
 
 
 /*
@@ -40,15 +40,6 @@ enum {
 unsigned int regular_count = 0;
 unsigned int debug_regular = 0;
 
-int cmd_frr(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_push_configmode(cli, MODE_FRR, "frr");
-    return CLI_OK;
-}
-
-int cmd_frr_router(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_push_configmode(cli, MODE_FRR + 1, "frr-router");
-    return CLI_OK;
-}
 
 int cmd_regular_callback(struct cli_def *cli) {
     regular_count++;
@@ -144,7 +135,6 @@ int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const cha
 
 int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct data_tree *config_dtree = get_config_root_tree();
-
     // commit changes.
     if (config_dtree == NULL) {
         cli_print(cli, " no modification to commit!");
@@ -152,8 +142,8 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
     }
     struct data_tree *curr_root = config_dtree;
     while (curr_root != NULL) {
-        if (sysrepo_commit(curr_root->node) != EXIT_SUCCESS) {
-            cli_print(cli, " ERROR: failed to commit changes!");
+        if (sysrepo_commit(curr_root->node,cli) != EXIT_SUCCESS) {
+            cli_print(cli, "commit_failed: failed to commit changes!");
             return CLI_ERROR;
         }
         curr_root = curr_root->prev;
@@ -184,10 +174,6 @@ int default_commands_init(struct cli_def *cli) {
     cli_register_command(cli, NULL, NULL,
                          "exit", cmd_exit2, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "exit to prev mode");
-
-    cli_register_command(cli, NULL, NULL,
-                         "frr", cmd_frr, PRIVILEGE_UNPRIVILEGED,
-                         MODE_CONFIG, NULL, "frr subsystem config");
 
     cli_register_command(cli, NULL, NULL,
                          "commit", cmd_commit, PRIVILEGE_UNPRIVILEGED,

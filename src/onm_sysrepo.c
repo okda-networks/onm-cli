@@ -7,6 +7,7 @@
 
 static sr_conn_ctx_t *connection = NULL;
 static sr_session_ctx_t *session = NULL;
+static char msg_buffer[2048] = {'\0'};
 
 // FWD decleration for disconnect
 int sysrepo_disconnect();
@@ -19,8 +20,15 @@ void cleanup_handler(int signo) {
     exit(EXIT_SUCCESS);
 }
 
-void my_log_cb(sr_log_level_t level, const char *message) {
-    printf("Sysrepo log [%d]: %s\n", level, message);
+static void print_errs(struct cli_def *cli) {
+    const sr_error_info_t *sysrepo_err;
+    sr_session_get_error(session, &sysrepo_err);
+    if (sysrepo_err != NULL) {
+        for (int i = 0; i < sysrepo_err->err_count; i++) {
+            cli_print(cli, "ERROR:SYSREPO: %s", sysrepo_err->err[i].message);
+        }
+    }
+
 }
 
 int sysrepo_connect() {
@@ -88,16 +96,19 @@ int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
         return 1;
 }
 
-int sysrepo_commit(struct lyd_node *data_tree) {
+int sysrepo_commit(struct lyd_node *data_tree, struct cli_def *cli) {
     // Check if there is data_tree to add and apply
+
     if (data_tree != NULL) {
         // If there are changes in the session, add the data_tree using sr_edit_batch
         if (sr_edit_batch(session, data_tree, "replace") != SR_ERR_OK) {
+            print_errs(cli);
             fprintf(stderr, "Failed to add data_tree to Sysrepo changes\n");
             return EXIT_FAILURE;
         }
         // Apply the changes (if any)
         if (sr_apply_changes(session, 0) != SR_ERR_OK) {
+            print_errs(cli);
             fprintf(stderr, "Failed to commit changes to Sysrepo\n");
             sr_discard_changes(session);
             return EXIT_FAILURE;
@@ -109,9 +120,6 @@ int sysrepo_commit(struct lyd_node *data_tree) {
 
 int sysrepo_init() {
     sr_log_stderr(SR_LL_DBG);
-
-    // Register logging callback
-    sr_log_set_cb(my_log_cb);
 
     // Set up signal handler for SIGINT (Ctrl+C)
     if (signal(SIGINT, cleanup_handler) == SIG_ERR) {

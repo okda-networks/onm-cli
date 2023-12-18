@@ -70,7 +70,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     optargs = cli->found_optargs;
     create_argv_from_optpair(optargs, &argv, &argc);
     if (is_delete) {
-        ret = delete_data_node_list(y_node, argv, argc);
+        ret = delete_data_node_list(y_node, argv, argc,cli);
         if (ret != LY_SUCCESS) {
             fprintf(stderr, "Failed to delete the data tree\n");
             cli_print(cli, "failed to execute command, error with adding the data node.");
@@ -78,7 +78,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         }
         return CLI_OK;
     } else {
-        ret = add_data_node_list(y_node, argv, argc, index);
+        ret = add_data_node_list(y_node, argv, argc, index,cli);
     }
 
 

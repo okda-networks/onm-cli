@@ -31,7 +31,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     }
 
     if (is_delete) {
-        ret = delete_data_node(y_node, NULL);
+        ret = delete_data_node(y_node, NULL,cli);
         if (ret != LY_SUCCESS) {
             fprintf(stderr, "Failed to delete the data tree\n");
             cli_print(cli, "failed to execute command, error with deleting the data node.");
@@ -41,7 +41,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     }
 
     // this is add operation.
-    ret = add_data_node(y_node, NULL);
+    ret = add_data_node(y_node, NULL,cli);
     if (ret != LY_SUCCESS) {
         fprintf(stderr, "Failed to create the data tree\n");
         cli_print(cli, "failed to execute command, error with adding the data node.");

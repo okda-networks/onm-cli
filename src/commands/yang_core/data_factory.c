@@ -86,7 +86,7 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
 }
 
 int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, int edit_type,
-                             int index) {
+                             int index, struct cli_def *cli) {
     int ret;
     char xpath[265];
     char *predicate_str;
@@ -123,7 +123,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
         LY_LIST_FOR(orderd_nodes, next) {
             if (index < curr_indx) {
                 ret = lyd_insert_before(next, new_parent);
-                if (ret != LY_SUCCESS){
+                if (ret != LY_SUCCESS) {
                     lyd_free_tree(new_parent);
                     goto done;
                 }
@@ -139,23 +139,22 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
         lyd_free_tree(new_parent);
 
 
-
     done:
     free(predicate_str);
     if (ret != LY_SUCCESS) {
-        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c");
+        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
     }
     return ret;
 }
 
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index) {
-    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index, struct cli_def *cli) {
+    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index, cli);
 }
 
-int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc) {
+int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc, struct cli_def *cli) {
 
-    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, 0);// no index use key for delete
+    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, 0, cli);// no index use key for delete
 
 }
 
@@ -170,7 +169,7 @@ struct lyd_node *get_sysrepo_root_node(char *xpath) {
     return NULL;
 }
 
-static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type) {
+static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type, struct cli_def *cli) {
     int ret;
     char xpath[256];
     memset(xpath, '\0', 256);
@@ -234,7 +233,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
 
-            update_parent:
             // if the edit operation is 'add', then update the parent_node, else (which is 'delete' operation) then just set the out node.
             if (edit_type == EDIT_DATA_ADD)
                 parent_data = new_parent;
@@ -270,15 +268,15 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
     }
     if (ret != LY_SUCCESS)
-        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c");
+        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
 
 
     return ret;
 }
 
-int add_data_node(struct lysc_node *y_node, char *value) {
+int add_data_node(struct lysc_node *y_node, char *value, struct cli_def *cli) {
     // for add node we just create the node in the data tree, we don't need the lyd_node.
-    return edit_node_data_tree(y_node, value, EDIT_DATA_ADD);
+    return edit_node_data_tree(y_node, value, EDIT_DATA_ADD, cli);
 }
 
 void get_xpath(struct lysc_node *y_node, char xpath[]) {
@@ -291,6 +289,6 @@ void get_xpath(struct lysc_node *y_node, char xpath[]) {
 
 }
 
-int delete_data_node(struct lysc_node *y_node, char *value) {
-    return edit_node_data_tree(y_node, value, EDIT_DATA_DEL);
+int delete_data_node(struct lysc_node *y_node, char *value, struct cli_def *cli) {
+    return edit_node_data_tree(y_node, value, EDIT_DATA_DEL, cli);
 }

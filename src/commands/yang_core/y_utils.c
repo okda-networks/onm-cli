@@ -6,8 +6,11 @@
 #define CONFIG_MODE 1
 
 
-void print_ly_err(const struct ly_err_item *err, char *component) {
+void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {
+
     while (err) {
+        if (err->level == LY_LLERR)
+            cli_print(cli,"ERROR: YANG: %s",err->msg);
         fprintf(stderr, "ERROR:%s:libyang error: %s\n",component, err->msg);
         err = err->next;
     }

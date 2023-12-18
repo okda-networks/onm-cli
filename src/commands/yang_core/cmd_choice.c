@@ -41,7 +41,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             return CLI_OK;
         }
         if (strcmp(argv[0], "delete") == 0) {
-            ret = delete_data_node(y_case_n, argv[0]);
+            ret = delete_data_node(y_case_n, argv[0],cli);
             if (ret != LY_SUCCESS) {
                 cli_print(cli, "Failed to delete the yang data node '%s'\n", y_case_n->name);
                 return CLI_ERROR;
@@ -61,7 +61,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             optargs = cli->found_optargs;
             while (optargs != NULL) {
                 if (strcmp(optargs->name, leaf_next->name) == 0) {
-                    ret = add_data_node(leaf_next, optargs->value);
+                    ret = add_data_node(leaf_next, optargs->value,cli);
                     if (ret != LY_SUCCESS) {
                         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
                         return CLI_ERROR;
@@ -78,7 +78,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     // case is container, add data node and move to next mode
-    ret = add_data_node(y_case_n, argv[0]);
+    ret = add_data_node(y_case_n, argv[0],cli);
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
         return CLI_ERROR;

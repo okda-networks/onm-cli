@@ -6,6 +6,7 @@
 #define ONMCLI_ONM_SYSREPO_H
 
 #include <sysrepo.h>
+#include "lib/libcli/libcli.h"
 
 const struct ly_ctx *sysrepo_get_ctx();
 
@@ -17,8 +18,10 @@ int sysrepo_discard_changes();
 
 int sysrepo_has_uncommited_changes(struct lyd_node *data_node);
 
-int sysrepo_commit(struct lyd_node *data_tree);
+int sysrepo_commit(struct lyd_node *data_tree,struct cli_def *cli);
 
 int sysrepo_init();
+
+char *sysrepo_get_error_msg();
 
 #endif //ONMCLI_ONM_SYSREPO_H

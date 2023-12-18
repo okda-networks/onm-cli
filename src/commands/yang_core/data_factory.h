@@ -26,12 +26,12 @@ void free_data_tree(struct data_tree *dtree);
 
 struct lyd_node *get_list_nodes();
 
-int add_data_node(struct lysc_node *y_node, char *value);
+int add_data_node(struct lysc_node *y_node, char *value,struct cli_def *cli);
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index,struct cli_def *cli);
 
-int delete_data_node(struct lysc_node *y_node, char *value);
+int delete_data_node(struct lysc_node *y_node, char *value,struct cli_def *cli);
 
-int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc);
+int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc,struct cli_def *cli);
 
 #endif //ONMCLI_DATA_FACTORY_H
