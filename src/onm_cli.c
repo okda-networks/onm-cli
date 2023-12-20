@@ -19,7 +19,6 @@ int idle_timeout(struct cli_def *cli_) {
 
 int handle_session(int fd) {
     return cli_loop(cli, fd);
-
 }
 
 int onm_cli_init() {

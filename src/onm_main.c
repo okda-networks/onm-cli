@@ -6,11 +6,48 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <termios.h>
 
 #include "config.h"
 #include "onm_cli.h"
 #include "onm_yang.h"
 #include "onm_sysrepo.h"
+#include "onm_logger.h"
+
+
+
+
+/* Saves the original terminal attributes. */
+struct termios saved_termios;
+
+void reset_input_mode(void)
+{
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &saved_termios);
+}
+
+void set_input_mode(void)
+{
+    struct termios tattr;
+
+    /* Make sure stdin is a terminal. */
+    if (!isatty(STDIN_FILENO))
+    {
+        fprintf(stderr, "Not a terminal.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Save the terminal attributes so we can restore them later. */
+    tcgetattr(STDIN_FILENO, &saved_termios);
+    atexit(reset_input_mode);
+
+    /* Set the funny terminal modes. */
+    tcgetattr(STDIN_FILENO, &tattr);
+    tattr.c_lflag &= ~(ICANON|ECHO);       /* Clear ICANON and ECHO. */
+    tattr.c_iflag &= ~(ICRNL);             /* Clear ICRNL. */
+    tattr.c_cc[VMIN] = 1;
+    tattr.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
+}
 
 #define GET_NEW_MODE_STR(current_mod, new_mode) \
     strcat((char*)current_mod, strcat(":", new_mode))
@@ -65,29 +102,34 @@ int sock_accept(int sockfd) {
 }
 
 
-
 int main() {
-    int ret ;
+    int ret;
+
     ret = onm_cli_init();
-    if (ret != EXIT_SUCCESS){
+    if (ret != EXIT_SUCCESS) {
         printf("ERROR: failed to initialize cli: existing...\n");
         return -1;
     }
     ret = onm_yang_init();
-    if (ret != EXIT_SUCCESS){
+    if (ret != EXIT_SUCCESS) {
         printf("ERROR: failed to initialize yang context: existing...\n");
         return -1;
     }
 
     ret = sysrepo_init();
-    if (ret != EXIT_SUCCESS){
+    if (ret != EXIT_SUCCESS) {
         printf("ERROR: failed to initialize yang context: existing...\n");
         return -1;
     }
 
-    int sockfd = sock_listen();
-    while (1) {
-        int sockfdc = sock_accept(sockfd);
-        handle_session(sockfdc);
+    ret = onm_logger_init();
+    if (ret != EXIT_SUCCESS) {
+        printf("ERROR: failed to initialize logger: existing...\n");
+        return -1;
     }
+    LOG_DEBUG("CLI\n");
+    int fd = dup(STDIN_FILENO);
+    set_input_mode();
+    handle_session(fd);
+
 }
