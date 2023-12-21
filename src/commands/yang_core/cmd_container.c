@@ -6,6 +6,7 @@
 #include "y_utils.h"
 #include "yang_core.h"
 #include "data_factory.h"
+#include "src/onm_logger.h"
 
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -18,7 +19,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
             cli_print(cli, " <cr>     configure container: %s", y_node->dsc);
             return CLI_INCOMPLETE_COMMAND;
         }
-        cli_print(cli, "ERROR: unknown argument(s)\n");
+        cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
 
@@ -33,7 +34,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     if (is_delete) {
         ret = delete_data_node(y_node, NULL,cli);
         if (ret != LY_SUCCESS) {
-            fprintf(stderr, "Failed to delete the data tree\n");
+            LOG_ERROR( "Failed to delete the data tree");
             cli_print(cli, "failed to execute command, error with deleting the data node.");
             return CLI_ERROR;
         } else
@@ -43,7 +44,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     // this is add operation.
     ret = add_data_node(y_node, NULL,cli);
     if (ret != LY_SUCCESS) {
-        fprintf(stderr, "Failed to create the data tree\n");
+        LOG_ERROR( "Failed to create the data tree");
         cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }

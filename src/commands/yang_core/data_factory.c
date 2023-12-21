@@ -4,6 +4,7 @@
 #include "data_factory.h"
 #include "src/onm_sysrepo.h"
 #include "y_utils.h"
+#include "src/onm_logger.h"
 
 
 extern struct lyd_node *parent_data;
@@ -62,7 +63,7 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
     char *predicate_str = (char *) malloc(total_len);
     memset(predicate_str, '\0', total_len);
     if (!predicate_str) {
-        perror("Memory allocation failed");
+        LOG_ERROR("Memory allocation failed");
         return NULL;
     }
 
@@ -93,7 +94,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     memset(xpath, '\0', 256);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
     if (!sysrepo_ctx) {
-        printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
+        LOG_ERROR(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
     }
 
@@ -165,7 +166,7 @@ struct lyd_node *get_sysrepo_root_node(char *xpath) {
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
         return NULL;
-    printf("data_factory.c: error returning sysrepo data, code=%d\n", ret);
+    LOG_ERROR("data_factory.c: error returning sysrepo data, code=%d", ret);
     return NULL;
 }
 
@@ -177,7 +178,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
 
     if (!sysrepo_ctx) {
-        printf(" add_data_node(): Failure: failed to get sysrepo_ctx");
+        LOG_ERROR(" add_data_node(): Failure: failed to get sysrepo_ctx");
         return EXIT_FAILURE;
     }
     switch (y_node->nodetype) {

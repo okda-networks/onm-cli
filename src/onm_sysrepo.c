@@ -3,6 +3,7 @@
 //
 #include <signal.h>
 #include "onm_sysrepo.h"
+#include "onm_logger.h"
 
 
 static sr_conn_ctx_t *connection = NULL;
@@ -13,27 +14,27 @@ static char msg_buffer[2048] = {'\0'};
 int sysrepo_disconnect();
 
 void cleanup_handler(int signo) {
-    printf("Received signal %d. Cleaning up...\n", signo);
+    LOG_INFO("Received signal %d. Cleaning up...", signo);
     sysrepo_disconnect();
 
 
     exit(EXIT_SUCCESS);
 }
 
-static void print_errs(struct cli_def *cli) {
-    const sr_error_info_t *sysrepo_err;
-    sr_session_get_error(session, &sysrepo_err);
-    if (sysrepo_err != NULL) {
-        for (int i = 0; i < sysrepo_err->err_count; i++) {
-            cli_print(cli, "ERROR:SYSREPO: %s", sysrepo_err->err[i].message);
-        }
-    }
-
-}
+//static void print_errs(struct cli_def *cli) {
+//    const sr_error_info_t *sysrepo_err;
+//    sr_session_get_error(session, &sysrepo_err);
+//    if (sysrepo_err != NULL) {
+//        for (int i = 0; i < sysrepo_err->err_count; i++) {
+//            cli_print(cli, "SYSREPO: %s", sysrepo_err->err[i].message);
+//        }
+//    }
+//
+//}
 
 int sysrepo_connect() {
     if (sr_connect(SR_CONN_DEFAULT, &connection) != SR_ERR_OK) {
-        fprintf(stderr, "Failed to connect to Sysrepo\n");
+        LOG_ERROR("Failed to connect to Sysrepo");
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
@@ -41,10 +42,10 @@ int sysrepo_connect() {
 
 int sysrepo_disconnect() {
     if (sr_disconnect(connection) != SR_ERR_OK) {
-        fprintf(stderr, "Failed to disconnect from Sysrepo\n");
+        LOG_ERROR( "Failed to disconnect from Sysrepo");
         return EXIT_FAILURE;
     }
-    fprintf(stdout, "disconnect from sysrepo successfully\n");
+    LOG_INFO("disconnect from sysrepo successfully");
     return EXIT_SUCCESS;
 
 }
@@ -52,7 +53,7 @@ int sysrepo_disconnect() {
 int sysrepo_start_session() {
     // Start a new session
     if (sr_session_start(connection, SR_DS_RUNNING, &session) != SR_ERR_OK) {
-        fprintf(stderr, "Failed to start a new Sysrepo session\n");
+        LOG_ERROR("Failed to start a new Sysrepo session");
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
@@ -96,20 +97,19 @@ int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
         return 1;
 }
 
-int sysrepo_commit(struct lyd_node *data_tree, struct cli_def *cli) {
+int sysrepo_commit(struct lyd_node *data_tree) {
     // Check if there is data_tree to add and apply
 
     if (data_tree != NULL) {
         // If there are changes in the session, add the data_tree using sr_edit_batch
         if (sr_edit_batch(session, data_tree, "replace") != SR_ERR_OK) {
-            print_errs(cli);
-            fprintf(stderr, "Failed to add data_tree to Sysrepo changes\n");
+            LOG_ERROR( "Failed to add data_tree to Sysrepo changes");
             return EXIT_FAILURE;
         }
         // Apply the changes (if any)
         if (sr_apply_changes(session, 0) != SR_ERR_OK) {
-            print_errs(cli);
-            fprintf(stderr, "Failed to commit changes to Sysrepo\n");
+//            print_errs(cli);
+            LOG_ERROR( "Failed to commit changes to Sysrepo");
             sr_discard_changes(session);
             return EXIT_FAILURE;
         }
@@ -123,11 +123,11 @@ int sysrepo_init() {
 
     // Set up signal handler for SIGINT (Ctrl+C)
     if (signal(SIGINT, cleanup_handler) == SIG_ERR) {
-        perror("Unable to set up signal handler for SIGINT");
+        LOG_ERROR("Unable to set up signal handler for SIGINT");
         return EXIT_FAILURE;
     }
     if (signal(SIGTERM, cleanup_handler) == SIG_ERR) {
-        perror("Unable to set up signal handler");
+        LOG_ERROR("Unable to set up signal handler");
         return EXIT_FAILURE;
     }
 

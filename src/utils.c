@@ -4,7 +4,7 @@
 
 #include "utils.h"
 #include <stdarg.h>
-
+#include "onm_logger.h"
 
 void to_lower(char *str) {
     while (*str) {
@@ -81,7 +81,7 @@ void create_argv_from_optpair(struct cli_optarg_pair *head, char ***argv, int *a
 
     *argv = (char **) malloc((count + 1) * sizeof(char *));  // +1 for the NULL pointer at the end
     if (*argv == NULL) {
-        fprintf(stderr, "Memory allocation error\n");
+        LOG_ERROR("Memory allocation error");
         exit(EXIT_FAILURE);
     }
 

@@ -9,100 +9,24 @@
 #include "yang_core/yang_core.h"
 #include "src/onm_sysrepo.h"
 #include "yang_core/y_utils.h"
+#include "src/onm_logger.h"
 
 extern struct ly_ctx *yang_ctx;
 
 int set_yang_searchdir(const char *dir) {
-    printf("INFO:onm_yang.c: setting yang search path to `%s`\n", dir);
+    LOG_DEBUG("onm_yang.c: setting yang search path to `%s`", dir);
     ly_ctx_set_searchdir(yang_ctx, dir);
     return 0;
 }
 
 int unset_yang_searchdir(const char *dir) {
-    printf("INFO:onm_yang.c: setting yang search path to `%s`\n", dir);
+    LOG_DEBUG("onm_yang.c: setting yang search path to `%s`", dir);
     ly_ctx_unset_searchdir(yang_ctx, dir);
     return 0;
 }
 
 const char *const *get_yang_searchdirs() {
     return ly_ctx_get_searchdirs(yang_ctx);
-}
-
-
-int cmd_yang_remove_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    if (argc == 0) {
-        cli_print(cli, "  please specify yang module name");
-        return CLI_INCOMPLETE_COMMAND;
-    }
-    if (strcmp(argv[0], "?") == 0) {
-        cli_print(cli,
-                  "  specify yang module name to load,\n NOTE: this will not generate the command until `yang compile`"
-                  "cmd is executed, and it will compile all loaded modules.");
-        return CLI_OK;
-    }
-    if (strcmp(argv[0], "all") == 0) {
-        unsigned int index = 0;
-        struct lys_module *mod;
-        while ((mod = (struct lys_module *) ly_ctx_get_module_iter(yang_ctx, &index))) {
-            if (mod != NULL) {
-                const char *new_argv[1] = {mod->name};
-                cmd_yang_remove_module(cli, c, cmd, (char **) new_argv, 1);
-            }
-        }
-        return CLI_OK;
-    }
-    const char *all_features[] = {"*", NULL};
-    char *module_name = (char *) argv[0];
-    const struct lys_module *module = ly_ctx_load_module(yang_ctx, module_name, NULL, all_features);
-
-    if (module == NULL) {
-        cli_print(cli, "  ERROR: module `%s` not found, \n"
-                       "  please make sure to set the correct search dir for yang,\n"
-                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode", module_name);
-        return CLI_ERROR;
-    } else if (module->compiled == NULL) {
-        cli_print(cli, "  ERROR: module `%s` was not complied check onm_cli logs for details\n", module_name);
-        return CLI_ERROR;
-    } else if (module->compiled->data == NULL) {
-        if (module->parsed == NULL) {
-            cli_print(cli, "  ERROR: module `%s` is loaded but not parsed.. check logs for details\n", module_name);
-            return CLI_ERROR;
-        } else if (module->parsed->augments != NULL) {
-            cli_print(cli, "  WARN: module `%s` is loaded but not parsed as it's augmenting `%s`\n"
-                           "  please run yang generate for the augmented module", module_name,
-                      module->parsed->augments->node.name);
-            return CLI_ERROR;
-        }
-    }
-    unregister_commands_schema(module->compiled->data, cli);
-}
-
-
-int cmd_yang_load_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    printf("DEBUG:commands.c:cmd_yang2cmd_generate(): executing command `%s`\n", cmd);
-
-    if (argc == 0) {
-        cli_print(cli, "  please specify yang module name");
-        return CLI_INCOMPLETE_COMMAND;
-    }
-    if (strcmp(argv[0], "?") == 0) {
-        cli_print(cli, "  specify yang module name to remove or `all` to remove all modules");
-        return CLI_OK;
-    }
-
-
-    const char *all_features[] = {"*", NULL};
-    char *module_name = (char *) argv[0];
-    if (ly_ctx_load_module(yang_ctx, module_name, NULL, all_features) == NULL) {
-        cli_print(cli, "  ERROR: module `%s` not found, \n"
-                       "  please make sure to set the correct search dir for yang,\n"
-                       "  use command 'yang search_dir set /path/to/yang_modules' in enable mode", module_name);
-        return CLI_ERROR;
-    }
-    cli_print(cli, "  module loaded successfully!\n  "
-                   "make sure to run `yang compile` command after done with loading all required modules.");
-    return CLI_OK;
-
 }
 
 
@@ -185,26 +109,6 @@ int mod2cmd_generate(struct cli_def *cli, const struct lys_module *module) {
     return CLI_OK;
 }
 
-int cmd_yang_compile(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    ly_err_clean(yang_ctx, NULL);
-    if (ly_ctx_compile(yang_ctx) != LY_SUCCESS) {
-        cli_print(cli, "compile failed, reason=%s", ly_errmsg(yang_ctx));
-        return CLI_ERROR;
-    }
-    unsigned int index = 0;
-    struct lys_module *mod;
-
-
-    while ((mod = (struct lys_module *) ly_ctx_get_module_iter(yang_ctx, &index))) {
-        if (mod != NULL)
-            mod2cmd_generate(cli, mod);
-    }
-    return CLI_OK;
-
-
-}
-
-
 
 int cmd_sysrepo_load_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
@@ -237,7 +141,6 @@ int yang_cmd_loader_init(struct cli_def *cli) {
         printf("failed\n");
 
 
-
     struct cli_command *yang_set_cmd = cli_register_command(cli, yang_cmd, NULL,
                                                             "set", NULL, PRIVILEGE_UNPRIVILEGED,
                                                             MODE_EXEC, NULL, "set yang settings");
@@ -255,24 +158,11 @@ int yang_cmd_loader_init(struct cli_def *cli) {
                          "list-seachdir", cmd_yang_list_searchdirs, PRIVILEGE_PRIVILEGED,
                          MODE_EXEC, NULL, "list yang serachdirs");
 
-    cli_register_command(cli, yang_cmd, NULL,
-                         "load-module", cmd_yang_load_module, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, NULL, "load yang module to onm_cli:yang load-module <module-name>\n "
-                                          " make sure to run yang compile after you load all the required modules.");
-
-    cli_register_command(cli, yang_cmd, NULL,
-                         "remove-module", cmd_yang_remove_module, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, NULL,
-                         "remove yang module from onm_cli:yang remove-module <module-name>|all");
-
 
     cli_register_command(cli, yang_cmd, NULL,
                          "list-modules", cmd_yang_list_modules, PRIVILEGE_PRIVILEGED,
                          MODE_EXEC, NULL, "list all the loaded yang modules.");
 
-    cli_register_command(cli, yang_cmd, NULL,
-                         "compile", cmd_yang_compile, PRIVILEGE_PRIVILEGED,
-                         MODE_EXEC, NULL, "compile loaded modules, use ");
 
     struct cli_command *sysrepo_cmd = cli_register_command(cli, yang_cmd, NULL,
                                                            "sysrepo", NULL, PRIVILEGE_PRIVILEGED,

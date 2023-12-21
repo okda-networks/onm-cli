@@ -8,9 +8,11 @@
 #define LOGFILE_NAME "onmcli.log"
 
 #define LEVEL_INFO    1
-#define LEVEL_DEBUG   2
+#define LEVEL_ERROR   2
 #define LEVEL_WARNING 3
-#define LEVEL_ERROR   4
+#define LEVEL_DEBUG   4
+
+
 
 // Current log level (adjust as needed)
 #define LOG_LEVEL   LEVEL_DEBUG

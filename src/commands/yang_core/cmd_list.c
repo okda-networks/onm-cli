@@ -6,6 +6,7 @@
 #include "yang_core.h"
 #include "data_validators.h"
 #include "data_factory.h"
+#include "src/onm_logger.h"
 
 
 int cmd_print_list_order(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
@@ -72,7 +73,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     if (is_delete) {
         ret = delete_data_node_list(y_node, argv, argc,cli);
         if (ret != LY_SUCCESS) {
-            fprintf(stderr, "Failed to delete the data tree\n");
+            LOG_ERROR("Failed to delete the data tree");
             cli_print(cli, "failed to execute command, error with adding the data node.");
             return CLI_ERROR;
         }
@@ -83,7 +84,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
 
     if (ret != LY_SUCCESS) {
-        fprintf(stderr, "Failed to create/delete the data tree\n");
+        LOG_ERROR( "Failed to create/delete the data tree");
         cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }

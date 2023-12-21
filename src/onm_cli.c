@@ -7,6 +7,7 @@
 #include "commands/default_cmd.h"
 #include "commands/yang_loader_cmd.h"
 #include "VERSION.h"
+#include "onm_logger.h"
 
 
 struct cli_def *cli;
@@ -23,18 +24,16 @@ int handle_session(int fd) {
 
 int onm_cli_init() {
     cli = cli_init();
-    char banner[100]= "router";
+    char banner[1024];
+    memset(banner,'\0',1024);
     sprintf(banner, "\n\nonmcli version: %d.%d.%d\nby Okda networks (c) 2023", MAJOR, MINOR, PATCH);
 
     cli_set_banner(cli, banner);
-    char hostname[256];
+    char hostname[64];
 
-    if (gethostname(hostname, sizeof(hostname)) == 0) {
-        printf("Hostname: %s\n", hostname);
-    } else {
-        perror("gethostname:");
+    if (gethostname(hostname, sizeof(hostname)) < 0)
+        LOG_ERROR("gethostname:");
 
-    }
     cli_set_hostname(cli, hostname);
 
     cli_set_idle_timeout_callback(cli, CLI_TIMEOUT, idle_timeout);

@@ -2,7 +2,7 @@
 // Created by ali on 10/21/23.
 //
 #include "y_utils.h"
-
+#include "src/onm_logger.h"
 #define CONFIG_MODE 1
 
 
@@ -11,7 +11,7 @@ void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def
     while (err) {
         if (err->level == LY_LLERR)
             cli_print(cli,"ERROR: YANG: %s",err->msg);
-        fprintf(stderr, "ERROR:%s:libyang error: %s\n",component, err->msg);
+        LOG_ERROR(":%s:libyang error: %s\n",component, err->msg);
         err = err->next;
     }
 }
@@ -92,7 +92,7 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
 
     char *help = (char *) malloc(help_len);
     if (!help) {
-        perror("Memory allocation failed");
+        LOG_ERROR("Memory allocation failed");
         return NULL;
     }
 

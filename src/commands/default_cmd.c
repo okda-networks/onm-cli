@@ -6,6 +6,7 @@
 #include "default_cmd.h"
 #include "src/onm_sysrepo.h"
 #include "yang_core/data_factory.h"
+#include "src/onm_logger.h"
 
 
 #ifdef __GNUC__
@@ -16,25 +17,12 @@
 
 extern struct lyd_node *root_data, *parent_data;
 
-/*
- * Forward Declarations for cli default commands
- * */
-
-
-
-/*
- * Globals
- * */
 
 enum {
     MODE_FRR = 10,
 
 };
 
-
-/*
- * default commands definition
- * */
 
 
 unsigned int regular_count = 0;
@@ -142,7 +130,7 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
     }
     struct data_tree *curr_root = config_dtree;
     while (curr_root != NULL) {
-        if (sysrepo_commit(curr_root->node,cli) != EXIT_SUCCESS) {
+        if (sysrepo_commit(curr_root->node) != EXIT_SUCCESS) {
             cli_print(cli, "commit_failed: failed to commit changes!");
             return CLI_ERROR;
         }
@@ -166,7 +154,7 @@ int cmd_commit_confirm(struct cli_def *cli, struct cli_command *c, const char *c
 
 
 int default_commands_init(struct cli_def *cli) {
-    printf("INFO:commands.c: initializing commands\n");
+    LOG_INFO("commands.c: initializing commands\n");
 
 
     cli_set_auth_callback(cli, check_auth);

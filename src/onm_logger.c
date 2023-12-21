@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include <ctype.h>
 #include "onm_logger.h"
 
 // Log file
@@ -39,32 +40,28 @@ void logTimestamp() {
             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
 }
 
-void logMessage(int level, const char *format, ...) {
+
+void logMessage(int level, const char *format, va_list args) {
     if (LOG_LEVEL <= level) {
         logTimestamp();
 
-        va_list args;
-        va_start(args, format);
-
         switch (level) {
             case LEVEL_INFO:
-                fprintf(logFile, "[INFO]    ");
+                fprintf(logFile, "[INFO] ");
                 break;
             case LEVEL_DEBUG:
-                fprintf(logFile, "[DEBUG]   ");
+                fprintf(logFile, "[DEBUG] ");
                 break;
             case LEVEL_WARNING:
                 fprintf(logFile, "[WARNING] ");
                 break;
             case LEVEL_ERROR:
-                fprintf(logFile, "[ERROR]   ");
+                fprintf(logFile, "[ERROR] ");
                 break;
         }
 
         vfprintf(logFile, format, args);
         fprintf(logFile, "\n");
-
-        va_end(args);
     }
 }
 
@@ -104,14 +101,6 @@ int onm_logger_init() {
     // Initialize the logger
     initLogger(LOGFILE_NAME);
 
-//    // Example usage of log macros
-//    LOG_INFO("This is an info message.");
-//    LOG_DEBUG("Debug message with values: %d, %f", 42, 3.14);
-//    LOG_WARNING("Warning message.");
-//    LOG_ERROR("Error message!");
-//
-//    // Close the logger when done
-//    closeLogger();
 
     return 0;
 }

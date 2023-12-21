@@ -3,6 +3,7 @@
 //
 
 #include "yang_core.h"
+#include "src/onm_logger.h"
 
 extern struct ly_ctx *yang_ctx;
 
@@ -19,23 +20,23 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
     }
     switch (schema->nodetype) {
         case LYS_CONTAINER:
-//            printf("TRACE: register CLI command for container: %s\r\n", schema->name);
+            LOG_DEBUG("register CLI command for container: %s", schema->name);
             register_cmd_container(cli, schema);
             break;
         case LYS_LEAF:
-//            printf("TRACE: register CLI command for leaf: %s\r\n", schema->name);
+            LOG_DEBUG("register CLI command for leaf: %s", schema->name);
             register_cmd_leaf(cli, schema);
             break;
         case LYS_LIST:
-//            printf("TRACE: register CLI command for list: %s\r\n", schema->name);
+            LOG_DEBUG("register CLI command for list: %s", schema->name);
             register_cmd_list(cli, schema);
             break;
         case LYS_LEAFLIST:
-//            printf("TRACE: register CLI command for leaf-list: %s\r\n", schema->name);
+            LOG_DEBUG("register CLI command for leaf-list: %s", schema->name);
             register_cmd_leaf_list(cli, schema);
             break;
         case LYS_CHOICE:
-//            printf("TRACE: register CLI command for choice: %s\r\n", schema->name);
+            LOG_DEBUG("register CLI command for choice: %s", schema->name);
             register_cmd_choice(cli, schema);
             return REG_SKIP_NEXT_SIG;
         default:
@@ -51,7 +52,7 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
  * @return
  */
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
-    printf("DEBUG:commands.c: registering schema for  `%s`\n", schema->name);
+    LOG_DEBUG("commands.c: registering schema for  %s", schema->name);
 
     struct lysc_node *child = NULL;
     int signal;
@@ -61,7 +62,7 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
                 LYSC_TREE_DFS_continue = 1;
         LYSC_TREE_DFS_END(schema, child);
     }
-    printf("DEBUG:commands.c: schema `%s` registered successfully\r\n", schema->name);
+    LOG_DEBUG("commands.c: schema %s registered successfully", schema->name);
 
 }
 
@@ -82,10 +83,10 @@ int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     struct lysc_node *child = NULL;
 
     LYSC_TREE_DFS_BEGIN(schema, child) {
-            printf("DEBUG:commands.c: unregistering command for  `%s`\n", child->name);
+            LOG_DEBUG("commands.c: unregistering command for %s", child->name);
             unregister_node_routine(cli, child);
         LYSC_TREE_DFS_END(schema->next, child);
     }
-    printf("DEBUG:commands.c: schema `%s` unregistered successfully\r\n", schema->name);
+    LOG_DEBUG("commands.c: schema `%s` unregistered successfully", schema->name);
 
 }
