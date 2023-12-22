@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "onm_cli.h"
-#include "onm_yang.h"
 #include "onm_sysrepo.h"
 #include "onm_logger.h"
 
@@ -59,11 +58,6 @@ int main() {
     ret = onm_cli_init();
     if (ret != EXIT_SUCCESS) {
         LOG_ERROR("failed to initialize cli: existing...");
-        return -1;
-    }
-    ret = onm_yang_init();
-    if (ret != EXIT_SUCCESS) {
-        LOG_ERROR("failed to initialize yang context: existing...");
         return -1;
     }
 

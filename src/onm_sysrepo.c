@@ -5,13 +5,50 @@
 #include "onm_sysrepo.h"
 #include "onm_logger.h"
 
-
 static sr_conn_ctx_t *connection = NULL;
 static sr_session_ctx_t *session = NULL;
 static char msg_buffer[2048] = {'\0'};
 
-// FWD decleration for disconnect
+char *module_path = NULL;
+
+
 int sysrepo_disconnect();
+
+void sysrepo_set_module_path(char *path) {
+    if (module_path!=NULL)
+        free(module_path);
+    module_path = malloc(sizeof(char) * (strlen(path)+1));
+    memcpy(module_path,path,strlen(path));
+    return;
+}
+
+
+int sysrepo_insmod(char *mod) {
+    if (module_path == NULL){
+        printf("[ERR] please set module path: # sysrepo set-module-path /path/to/module\n");
+        return EXIT_FAILURE;
+    }
+    char* mod_path = malloc(sizeof(char) * (strlen(mod) + strlen(module_path) + 2));
+    sprintf(mod_path,"%s/%s",module_path,mod);
+
+
+    const char *features[2] = {"*", NULL};
+    int ret = sr_install_module(connection, mod_path, module_path, features);
+    free(mod_path);
+    if (ret != SR_ERR_OK)
+        return EXIT_FAILURE;
+    LOG_INFO("module %s installed in sysrepo", mod);
+
+    return EXIT_SUCCESS;
+}
+
+int sysrepo_rmmod(char *mod, int force) {
+
+    if (sr_remove_module(connection, mod, force) != SR_ERR_OK)
+        return EXIT_FAILURE;
+    return EXIT_SUCCESS;
+}
+
 
 void cleanup_handler(int signo) {
     LOG_INFO("Received signal %d. Cleaning up...", signo);
@@ -29,7 +66,6 @@ void cleanup_handler(int signo) {
 //            cli_print(cli, "SYSREPO: %s", sysrepo_err->err[i].message);
 //        }
 //    }
-//
 //}
 
 int sysrepo_connect() {
@@ -37,12 +73,13 @@ int sysrepo_connect() {
         LOG_ERROR("Failed to connect to Sysrepo");
         return EXIT_FAILURE;
     }
+    LOG_INFO("connection to sysrepo closed!");
     return EXIT_SUCCESS;
 }
 
 int sysrepo_disconnect() {
     if (sr_disconnect(connection) != SR_ERR_OK) {
-        LOG_ERROR( "Failed to disconnect from Sysrepo");
+        LOG_ERROR("Failed to disconnect from Sysrepo");
         return EXIT_FAILURE;
     }
     LOG_INFO("disconnect from sysrepo successfully");
@@ -60,6 +97,7 @@ int sysrepo_start_session() {
 }
 
 const struct ly_ctx *sysrepo_get_ctx() {
+    LOG_DEBUG("sysrepo context acquired!");
     return sr_acquire_context(connection);
 }
 
@@ -68,6 +106,7 @@ sr_session_ctx_t *sysrepo_get_session() {
 }
 
 int sysrepo_release_ctx() {
+    LOG_DEBUG("sysrepo context released!");
     sr_release_context(connection);
     return EXIT_SUCCESS;
 }
@@ -103,13 +142,13 @@ int sysrepo_commit(struct lyd_node *data_tree) {
     if (data_tree != NULL) {
         // If there are changes in the session, add the data_tree using sr_edit_batch
         if (sr_edit_batch(session, data_tree, "replace") != SR_ERR_OK) {
-            LOG_ERROR( "Failed to add data_tree to Sysrepo changes");
+            LOG_ERROR("Failed to add data_tree to Sysrepo changes");
             return EXIT_FAILURE;
         }
         // Apply the changes (if any)
         if (sr_apply_changes(session, 0) != SR_ERR_OK) {
 //            print_errs(cli);
-            LOG_ERROR( "Failed to commit changes to Sysrepo");
+            LOG_ERROR("Failed to commit changes to Sysrepo");
             sr_discard_changes(session);
             return EXIT_FAILURE;
         }

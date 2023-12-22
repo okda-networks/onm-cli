@@ -7,7 +7,7 @@
 #include "src/onm_logger.h"
 
 
-extern struct lyd_node *parent_data;
+struct lyd_node *parent_data;
 struct data_tree *curr_root;
 struct data_tree *config_root_tree;
 
@@ -28,7 +28,6 @@ void free_data_tree_all() {
         curr_node = curr_node->prev;
     }
     config_root_tree = NULL;
-
 }
 
 // edit type

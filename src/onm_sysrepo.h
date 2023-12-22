@@ -24,4 +24,10 @@ int sysrepo_init();
 
 char *sysrepo_get_error_msg();
 
+int sysrepo_insmod(char *mod);
+
+int sysrepo_rmmod(char *mod, int force);
+
+void sysrepo_set_module_path(char *path);
+
 #endif //ONMCLI_ONM_SYSREPO_H

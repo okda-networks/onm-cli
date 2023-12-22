@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "onm_cli.h"
 #include "commands/default_cmd.h"
-#include "commands/yang_loader_cmd.h"
+#include "commands/sysrepo_cmd.h"
 #include "VERSION.h"
 #include "onm_logger.h"
 
