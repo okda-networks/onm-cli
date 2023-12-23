@@ -69,6 +69,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         if (ret != LY_SUCCESS) {
             LOG_ERROR("Failed to delete the data tree");
             cli_print(cli, "failed to execute command, error with adding the data node.");
+            free_argv(argv,argc);
             return CLI_ERROR;
         }
         return CLI_OK;
@@ -80,6 +81,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to create/delete the data tree");
         cli_print(cli, "failed to execute command, error with adding the data node.");
+        free_argv(argv,argc);
         return CLI_ERROR;
     }
 
@@ -100,6 +102,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     int mode = y_get_next_mode(y_node);
 
     cli_push_configmode(cli, mode, mod_str);
+    free(mod_str);
+    free_argv(argv,argc);
     return CLI_OK;
 }
 
@@ -129,9 +133,10 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             if (type == LY_TYPE_IDENT)
                 optarg_help = creat_help_for_identity_type((struct lysc_node *) child);
             else
-                optarg_help = child->dsc;
+                optarg_help = strdup(child->dsc);
             cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                 mode, optarg_help, NULL, yang_data_validator, NULL);
+            free((char*)optarg_help);
         }
     }
     cli_register_optarg(c, "delete", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
@@ -150,6 +155,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                              "print ordered entries of the list");
 
     }
+
 
     return 0;
 }

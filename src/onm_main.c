@@ -61,7 +61,7 @@ int main() {
         return -1;
     }
 
-    ret = sysrepo_init();
+    ret = onm_sysrepo_init();
     if (ret != EXIT_SUCCESS) {
         LOG_ERROR("failed to initialize yang context: existing...");
         return -1;
@@ -75,5 +75,11 @@ int main() {
     int fd = dup(STDIN_FILENO);
     set_input_mode();
     handle_session(fd);
+
+    // cleanup
+    onm_cli_done();
+    onm_sysrepo_done();
+
+    LOG_INFO("onmcli exiting...");
 
 }

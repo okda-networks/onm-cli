@@ -9,27 +9,46 @@ static sr_conn_ctx_t *connection = NULL;
 static sr_session_ctx_t *session = NULL;
 static char msg_buffer[2048] = {'\0'};
 
+struct data_tree *config_root_tree;
+
 char *module_path = NULL;
 
+void free_data_tree(struct data_tree *dtree) {
+    lyd_free_all(dtree->node);
+    dtree->prev = NULL;
+    free(dtree);
+}
 
+void free_data_tree_all() {
+    struct data_tree *curr_node = config_root_tree;
+    while (curr_node != NULL) {
+        struct data_tree *next_node = curr_node->prev;  // Save the pointer to the next node
+        lyd_free_all(curr_node->node);
+        free(curr_node);
+        curr_node = next_node;  // Move to the next node
+    }
+    config_root_tree = NULL;
+}
+
+// forward declaration
 int sysrepo_disconnect();
 
 void sysrepo_set_module_path(char *path) {
-    if (module_path!=NULL)
+    if (module_path != NULL)
         free(module_path);
-    module_path = malloc(sizeof(char) * (strlen(path)+1));
-    memcpy(module_path,path,strlen(path));
+    module_path = malloc(sizeof(char) * (strlen(path) + 1));
+    memcpy(module_path, path, strlen(path));
     return;
 }
 
 
 int sysrepo_insmod(char *mod) {
-    if (module_path == NULL){
+    if (module_path == NULL) {
         printf("[ERR] please set module path: # sysrepo set-module-path /path/to/module\n");
         return EXIT_FAILURE;
     }
-    char* mod_path = malloc(sizeof(char) * (strlen(mod) + strlen(module_path) + 2));
-    sprintf(mod_path,"%s/%s",module_path,mod);
+    char *mod_path = malloc(sizeof(char) * (strlen(mod) + strlen(module_path) + 2));
+    sprintf(mod_path, "%s/%s", module_path, mod);
 
 
     int ret = sr_install_module(connection, mod_path, module_path, NULL);
@@ -125,6 +144,7 @@ int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
     if (ret == SR_ERR_OK) {
         struct lyd_node *diff;
         lyd_diff_tree(data_node, sysrepo_subtree->tree, 0, &diff);
+        sr_release_data(sysrepo_subtree);
         if (diff == NULL)
             return 0;
         else
@@ -155,7 +175,12 @@ int sysrepo_commit(struct lyd_node *data_tree) {
     return EXIT_SUCCESS;
 }
 
-int sysrepo_init() {
+int onm_sysrepo_done() {
+    free_data_tree_all();
+    sysrepo_disconnect();
+}
+
+int onm_sysrepo_init() {
     sr_log_stderr(SR_LL_DBG);
 
     // Set up signal handler for SIGINT (Ctrl+C)

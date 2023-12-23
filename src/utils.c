@@ -52,19 +52,6 @@ void str2fun_name(char *str) {
     }
 }
 
-char * create_func_name(char*name1,char*name2,char*name3){
-    str2fun_name(name1);
-    str2fun_name(name2);
-    str2fun_name(name3);
-    char *func_name_suffix = malloc(strlen(name1)+strlen(name2)+strlen(name3));
-    strcat(func_name_suffix,name1);
-    strcat(func_name_suffix,name2);
-    strcat(func_name_suffix,name3);
-    return func_name_suffix;
-
-
-}
-
 
 int count_optargs(struct cli_optarg_pair *head) {
     int count = 0;
@@ -75,6 +62,17 @@ int count_optargs(struct cli_optarg_pair *head) {
     return count;
 }
 
+void free_argv(char **argv, int argc) {
+    if (argv == NULL) {
+        return;  // Nothing to free
+    }
+
+    for (int i = 0; i < argc; i++) {
+        free(argv[i]);  // Free each argument
+    }
+
+    free(argv);  // Free the array itself
+}
 
 void create_argv_from_optpair(struct cli_optarg_pair *head, char ***argv, int *argc) {
     int count = count_optargs(head);

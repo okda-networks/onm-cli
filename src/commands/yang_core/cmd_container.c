@@ -58,7 +58,7 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
     unsigned int mode;
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_root_module->name);
+    char *cmd_hash = (char*)y_root_module->name;
 
     mode = y_get_curr_mode(y_node);
 

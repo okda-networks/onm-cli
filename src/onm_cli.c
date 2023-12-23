@@ -22,6 +22,10 @@ int handle_session(int fd) {
     return cli_loop(cli, fd);
 }
 
+int onm_cli_done(){
+    return cli_done(cli);
+}
+
 int onm_cli_init() {
     cli = cli_init();
     char banner[1024];
@@ -38,6 +42,7 @@ int onm_cli_init() {
     cli_set_hostname(cli, hostname);
 
     cli_set_idle_timeout_callback(cli, CLI_TIMEOUT, idle_timeout);
+
 
     default_commands_init(cli);
     yang_cmd_loader_init(cli);

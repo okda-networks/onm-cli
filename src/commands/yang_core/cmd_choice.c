@@ -92,6 +92,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     mode = y_get_next_mode(y_case_n);
 
     cli_push_configmode(cli, mode, mod_str);
+    free(mod_str);
 
     return CLI_OK;
 }
@@ -105,7 +106,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
 
     sprintf(help, "configure %s (%s) [choice]", y_node->name, y_node->module->name);
 
-    char *cmd_hash = strdup(y_root_module->name);
+    char *cmd_hash = (char*)y_root_module->name;
     // this can be called recursively. so we might pass the mode.
     if (mode == -1)
         mode = y_get_curr_mode(y_node);

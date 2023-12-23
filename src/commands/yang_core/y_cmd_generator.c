@@ -75,7 +75,7 @@ static void unregister_node_routine(struct cli_def *cli, struct lysc_node *y_nod
         cli_unregister_command(cli, "print-order", "print-order");
     }
     const struct lys_module *y_owner_module = lysc_owner_module(y_node);
-    cli_unregister_command(cli, strdup(y_node->name), (char *) strdup(y_owner_module->name));
+    cli_unregister_command(cli, y_node->name, (char *) y_owner_module->name);
 }
 
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {

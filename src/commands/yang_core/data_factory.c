@@ -9,25 +9,10 @@
 
 struct lyd_node *parent_data;
 struct data_tree *curr_root;
-struct data_tree *config_root_tree;
+extern struct data_tree *config_root_tree;
 
 struct data_tree *get_config_root_tree() {
     return config_root_tree;
-}
-
-void free_data_tree(struct data_tree *dtree) {
-    lyd_free_all(dtree->node);
-    dtree->prev = NULL;
-    free(dtree);
-}
-
-void free_data_tree_all() {
-    struct data_tree *curr_node = config_root_tree;
-    while (curr_node != NULL) {
-        lyd_free_all(curr_node->node);
-        curr_node = curr_node->prev;
-    }
-    config_root_tree = NULL;
 }
 
 // edit type
@@ -94,6 +79,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
     if (!sysrepo_ctx) {
         LOG_ERROR(" add_data_node(): Failure: failed to get sysrepo_ctx");
+        sysrepo_release_ctx();
         return EXIT_FAILURE;
     }
 
@@ -144,6 +130,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     if (ret != LY_SUCCESS) {
         print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
     }
+    sysrepo_release_ctx();
     return ret;
 }
 
@@ -178,10 +165,12 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
     if (!sysrepo_ctx) {
         LOG_ERROR(" add_data_node(): Failure: failed to get sysrepo_ctx");
+        sysrepo_release_ctx();
         return EXIT_FAILURE;
     }
     switch (y_node->nodetype) {
         case LYS_CHOICE:
+            sysrepo_release_ctx();
             return LY_SUCCESS;
         case LYS_CONTAINER: {
             if (parent_data == NULL) {
@@ -199,6 +188,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     curr_root = config_root_tree;
                     if (config_root_tree->node != NULL) {
                         parent_data = config_root_tree->node;
+                        sysrepo_release_ctx();
                         return EXIT_SUCCESS;
                     }
 
@@ -211,6 +201,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                             // root data tree found, we just set parent_data to the found root and exit without creating
                             // new path.
                             parent_data = curr_root->node;
+                            sysrepo_release_ctx();
                             return LY_SUCCESS;
                         }
                         curr_root = curr_root->prev;
@@ -272,7 +263,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     }
     if (ret != LY_SUCCESS)
         print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
-
+    sysrepo_release_ctx();
 
     return ret;
 }

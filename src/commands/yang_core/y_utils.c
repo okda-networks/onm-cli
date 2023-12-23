@@ -66,6 +66,7 @@ void add_identities_recursive(struct lysc_ident *identity, char *help) {
         strcat(help, " [+] ");
         strcat(help, id_str);
         strcat(help, "\n");
+        free(id_str);
 
         // Recursively call to print derived identities
         add_identities_recursive(identity->derived[i], help);

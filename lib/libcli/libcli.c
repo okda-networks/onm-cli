@@ -148,12 +148,12 @@ struct cli_filter_cmds {
   } while (0)
 
 // Free and NULL (to avoid double-free)
-
 #define FREE_TERMMODE_STACK(term) \
     do { \
         struct term_mode_node *tempterm; \
         while (term != NULL) { \
-            tempterm = term; \
+            tempterm = term;      \
+            free((void*)term->mode_desc); \
             free(term); \
             term = tempterm->prev; \
         } \
@@ -272,7 +272,7 @@ void cli_push_configmode(struct cli_def *cli, int mode, const char *desc) {
     cli_set_configmode(cli, mode, desc);
     struct term_mode_node *next_mod = malloc(sizeof(struct term_mode_node));
     next_mod->mode = mode;
-    next_mod->mode_desc = desc;
+    next_mod->mode_desc = strdup(desc);
     if (cli->term_mode_stack == NULL)
         next_mod->prev = NULL;
     else
@@ -708,11 +708,13 @@ int cli_exit(struct cli_def *cli, UNUSED(struct cli_command *c), const char *com
         if (cli->term_mode_stack->prev != NULL){
             struct term_mode_node *term_prev;
             term_prev = cli->term_mode_stack->prev;
+            free((void*)cli->term_mode_stack->mode_desc);
             free(cli->term_mode_stack);
             cli->term_mode_stack = term_prev;
             cli_set_configmode(cli, cli->term_mode_stack->mode, cli->term_mode_stack->mode_desc);
             return CLI_OK;
         }
+        free((void*)cli->term_mode_stack->mode_desc);
         free(cli->term_mode_stack);
         cli->term_mode_stack = NULL;
     }
@@ -894,7 +896,10 @@ int cli_done(struct cli_def *cli) {
     free_z(cli->promptchar);
     free_z(cli->hostname);
     free_z(cli->buffer);
+    FREE_TERMMODE_STACK(cli->term_mode_stack);
     free_z(cli);
+
+
 
     return CLI_OK;
 }

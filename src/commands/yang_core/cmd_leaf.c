@@ -86,7 +86,7 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
     unsigned int mode;
     const struct lys_module *y_module = lysc_owner_module(y_node);
 
-    char *cmd_hash = strdup(y_module->name);;
+    char *cmd_hash = (char*)y_module->name;;
     mode = y_get_curr_mode(y_node);
 
 
@@ -101,6 +101,7 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
     char *delete_help = malloc(strlen("<leaf> delete ") + strlen(y_node->name) + 1);
     sprintf(delete_help, "%s <leaf> delete", y_node->name);
     cli_optarg_addhelp(o, "delete", delete_help);
+    free(delete_help);
 
     return 0;
 }
@@ -111,7 +112,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
     unsigned int mode;
     const struct lys_module *y_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_module->name);;
+    char *cmd_hash = (char*)y_module->name;
     mode = y_get_curr_mode(y_node);
 
     struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_leaf,
@@ -122,16 +123,21 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     if (type == LY_TYPE_IDENT)
         optarg_help = creat_help_for_identity_type(y_node);
     else
-        optarg_help = y_node->dsc;
+        optarg_help = strdup(y_node->dsc);
 
     struct cli_optarg *o = cli_register_optarg(c, "value", CLI_CMD_ARGUMENT,
                                                PRIVILEGE_PRIVILEGED, mode,
                                                optarg_help, NULL, yang_data_validator, NULL);
 
+
+
     // add delete to arg help
     char *delete_help = malloc(strlen("delete") + strlen(y_node->name) + 2);
     sprintf(delete_help, "delete %s", y_node->name);
     cli_optarg_addhelp(o, "[delete]", delete_help);
+
+    free((char*)optarg_help);
+    free(delete_help);
 
     return 0;
 }
