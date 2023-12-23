@@ -28,6 +28,7 @@ int onm_cli_init() {
     memset(banner,'\0',1024);
     sprintf(banner, "\n\nonmcli version: %d.%d.%d\nby Okda networks (c) 2023", MAJOR, MINOR, PATCH);
 
+
     cli_set_banner(cli, banner);
     char hostname[64];
 

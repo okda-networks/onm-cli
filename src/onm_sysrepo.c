@@ -32,8 +32,7 @@ int sysrepo_insmod(char *mod) {
     sprintf(mod_path,"%s/%s",module_path,mod);
 
 
-    const char *features[2] = {"*", NULL};
-    int ret = sr_install_module(connection, mod_path, module_path, features);
+    int ret = sr_install_module(connection, mod_path, module_path, NULL);
     free(mod_path);
     if (ret != SR_ERR_OK)
         return EXIT_FAILURE;
@@ -43,7 +42,6 @@ int sysrepo_insmod(char *mod) {
 }
 
 int sysrepo_rmmod(char *mod, int force) {
-
     if (sr_remove_module(connection, mod, force) != SR_ERR_OK)
         return EXIT_FAILURE;
     return EXIT_SUCCESS;

@@ -35,7 +35,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
         ret = delete_data_node(y_node, NULL,cli);
         if (ret != LY_SUCCESS) {
             LOG_ERROR( "Failed to delete the data tree");
-            cli_print(cli, "failed to execute command, error with deleting the data node.");
+            cli_error(cli, "failed to execute command, error with deleting the data node.");
             return CLI_ERROR;
         } else
             return CLI_OK;
@@ -45,7 +45,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     ret = add_data_node(y_node, NULL,cli);
     if (ret != LY_SUCCESS) {
         LOG_ERROR( "Failed to create the data tree");
-        cli_print(cli, "failed to execute command, error with adding the data node.");
+        cli_error(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }
     int mode = y_get_next_mode(y_node);

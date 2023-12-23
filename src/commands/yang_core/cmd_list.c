@@ -24,7 +24,7 @@ int cmd_print_list_order(struct cli_def *cli, struct cli_command *c, const char 
             }
         }
         cli_print(cli, "%s index [%d]", line, curr_indx);
-        memset(line,'\0',265);
+        memset(line, '\0', 265);
         curr_indx += 10;
     }
     return EXIT_SUCCESS;
@@ -38,40 +38,34 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             cli_print(cli, "  <cr>");
             cli_print(cli, "  delete");
             return CLI_OK;
-        } else{
-            cli_print(cli, "ERROR: unknown argument '%s'",argv[0]);
+        } else {
+            cli_error(cli, "ERROR: unknown argument '%s'", argv[0]);
             return CLI_ERROR_ARG;
         }
     }
 
     struct cli_optarg_pair *optargs = cli->found_optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    int is_delete = 0;
     int index = 0; // no index
 
-    //parse optargs
-    while (optargs != NULL) {
-        if (strcmp(optargs->name, "delete") == 0) {
-            is_delete = 1;
-        }
-        if (strcmp(optargs->name, "index") == 0) {
-            char *endptr; // Used to detect conversion errors
-            index = (int) strtol(optargs->value, &endptr, 10);
+    int is_delete = cli_get_optarg_value(cli, "delete", NULL) ? 1 : 0;
+    char *idx_char = cli_get_optarg_value(cli, "index", NULL);
+    if (idx_char != NULL) {
+        char *idx_endptr;
+        index = (int) strtol(idx_char, &idx_endptr, 10);
 
-            // Check for conversion errors
-            if (*endptr != '\0' && *endptr != '\n' || (index == 0)) {
-                cli_print(cli, "ERROR: <index> must be numeric greater than 0, entered value=%s", optargs->value);
-                return CLI_ERROR;
-            }
+        // Check for conversion errors
+        if (*idx_endptr != '\0' && *idx_endptr != '\n' || (index == 0)) {
+            cli_error(cli, "ERROR: <index> must be numeric greater than 0, entered value=%s", optargs->value);
+            return CLI_ERROR;
         }
-        optargs = optargs->next;
     }
 
     int ret;
     optargs = cli->found_optargs;
     create_argv_from_optpair(optargs, &argv, &argc);
     if (is_delete) {
-        ret = delete_data_node_list(y_node, argv, argc,cli);
+        ret = delete_data_node_list(y_node, argv, argc, cli);
         if (ret != LY_SUCCESS) {
             LOG_ERROR("Failed to delete the data tree");
             cli_print(cli, "failed to execute command, error with adding the data node.");
@@ -79,12 +73,12 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         }
         return CLI_OK;
     } else {
-        ret = add_data_node_list(y_node, argv, argc, index,cli);
+        ret = add_data_node_list(y_node, argv, argc, index, cli);
     }
 
 
     if (ret != LY_SUCCESS) {
-        LOG_ERROR( "Failed to create/delete the data tree");
+        LOG_ERROR("Failed to create/delete the data tree");
         cli_print(cli, "failed to execute command, error with adding the data node.");
         return CLI_ERROR;
     }
@@ -114,7 +108,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     unsigned int mode;
 
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
-    char *cmd_hash = strdup(y_root_module->name);;
+    char *cmd_hash = (char *) y_root_module->name;
 
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
 

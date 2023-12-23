@@ -27,8 +27,7 @@ int mod2cmd_generate(struct cli_def *cli, const struct lys_module *module) {
 
 
 int cmd_sysrepo_set_module_path(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    struct cli_optarg_pair *cmd_arg = cli->found_optargs;
-    char *path = cmd_arg->value;
+    char *path = cli_get_optarg_value(cli,"absolute-path",NULL);
     sysrepo_set_module_path(path);
     return CLI_OK;
 }
@@ -87,20 +86,19 @@ int cmd_sysrepo_load_module(struct cli_def *cli, struct cli_command *c, const ch
 }
 
 int cmd_sysrepo_install_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    struct cli_optarg_pair *cmd_arg = cli->found_optargs;
-    char *file = cmd_arg->value;
+    char *file = cli_get_optarg_value(cli,"module-file",NULL);
     if (sysrepo_insmod(file) != EXIT_SUCCESS)
         return CLI_ERROR;
     return CLI_OK;
 }
 
 int cmd_sysrepo_remove_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    struct cli_optarg_pair *cmd_arg = cli->found_optargs;
-    int force = 0;
-    char *file = cmd_arg->value;
-    if (cmd_arg->next != NULL)
-        force = 1;
-    if (sysrepo_rmmod(file, force) != EXIT_SUCCESS)
+
+
+    char *file = cli_get_optarg_value(cli,"module-name",NULL);
+    char *force =  cli_get_optarg_value(cli,"force",NULL);
+
+    if (sysrepo_rmmod(file, force?1:0) != EXIT_SUCCESS)
         return CLI_ERROR;
     return CLI_OK;
 }
@@ -141,7 +139,7 @@ int yang_cmd_loader_init(struct cli_def *cli) {
                                                               PRIVILEGE_PRIVILEGED,
                                                               MODE_EXEC, NULL, "remove yang module from sysrepo");
 
-    cli_register_optarg(sysrepo_rm_mod, "module-file", CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, MODE_EXEC,
+    cli_register_optarg(sysrepo_rm_mod, "module-name", CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, MODE_EXEC,
                         "module name ex:ietf-vrrp", NULL, NULL, NULL);
 
     cli_register_optarg(sysrepo_rm_mod, "force", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED, MODE_EXEC,

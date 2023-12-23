@@ -217,10 +217,13 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     }
                     // create new root_tree node and link it to the list.
                     struct data_tree *new_root = malloc(sizeof(struct data_tree));
-                    new_root->node = NULL;
+                    new_root->node = get_sysrepo_root_node(xpath);
                     new_root->prev = config_root_tree;
                     config_root_tree = new_root;
                     curr_root = config_root_tree;
+                    parent_data = curr_root->node;
+
+
                 }
             }
 

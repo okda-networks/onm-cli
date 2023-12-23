@@ -147,6 +147,18 @@ struct cli_filter_cmds {
     }             \
   } while (0)
 
+// Free and NULL (to avoid double-free)
+
+#define FREE_TERMMODE_STACK(term) \
+    do { \
+        struct term_mode_node *tempterm; \
+        while (term != NULL) { \
+            tempterm = term; \
+            free(term); \
+            term = tempterm->prev; \
+        } \
+        term = NULL; \
+    } while (0)
 
 // Forward defines of *INTERNAL* library function as static here
 static int cli_search_flags_validator(struct cli_def *cli, const char *word, const char *value, void* cmd_model);
@@ -246,13 +258,27 @@ static char DELIM_ARG_START[] = "<";
 static char DELIM_ARG_END[] = ">";
 static char DELIM_NONE[] = "";
 
+//void free_termmode_stack(struct term_mode_node *term){
+//    struct term_mode_node *tempterm;
+//    while (term != NULL){
+//        tempterm = term;
+//        free(term);
+//        term = tempterm->prev;
+//    }
+//    term = NULL;
+//}
+
 void cli_push_configmode(struct cli_def *cli, int mode, const char *desc) {
     cli_set_configmode(cli, mode, desc);
-    struct term_mode_node *c = malloc(sizeof(struct term_mode_node));
-    c->mode = mode;
-    c->mode_desc = desc;
-    c->prev = cli->term_mode_stack;
-    cli->term_mode_stack = c;
+    struct term_mode_node *next_mod = malloc(sizeof(struct term_mode_node));
+    next_mod->mode = mode;
+    next_mod->mode_desc = desc;
+    if (cli->term_mode_stack == NULL)
+        next_mod->prev = NULL;
+    else
+        next_mod->prev = cli->term_mode_stack;
+
+    cli->term_mode_stack = next_mod;
 }
 
 struct term_mode_node *pop_configmode(struct cli_def *cli) {
@@ -454,6 +480,10 @@ int cli_set_configmode(struct cli_def *cli, int mode, const char *config_desc) {
 
         cli_build_shortest(cli, cli->commands);
     }
+
+    if (mode==MODE_CONFIG || mode==MODE_EXEC)
+        FREE_TERMMODE_STACK(cli->term_mode_stack);
+
 
     return old;
 }
@@ -674,16 +704,20 @@ int cli_quit(struct cli_def *cli, UNUSED(struct cli_command *c), UNUSED(const ch
 }
 
 int cli_exit(struct cli_def *cli, UNUSED(struct cli_command *c), const char *command, char *argv[], int argc) {
-    if (cli->term_mode_stack->prev != NULL) {
-        struct term_mode_node *term_prev;
-        term_prev = cli->term_mode_stack->prev;
+    if (cli->term_mode_stack != NULL) {
+        if (cli->term_mode_stack->prev != NULL){
+            struct term_mode_node *term_prev;
+            term_prev = cli->term_mode_stack->prev;
+            free(cli->term_mode_stack);
+            cli->term_mode_stack = term_prev;
+            cli_set_configmode(cli, cli->term_mode_stack->mode, cli->term_mode_stack->mode_desc);
+            return CLI_OK;
+        }
         free(cli->term_mode_stack);
-        cli->term_mode_stack = term_prev;
-        cli_set_configmode(cli, cli->term_mode_stack->mode, cli->term_mode_stack->mode_desc);
-        return CLI_OK;
+        cli->term_mode_stack = NULL;
     }
     if (cli->mode == MODE_EXEC) return cli_quit(cli, c, command, argv, argc);
-    if (cli->mode > MODE_CONFIG)
+    if (cli->mode != MODE_CONFIG && cli->mode != MODE_EXEC)
         cli_set_configmode(cli, MODE_CONFIG, NULL);
     else
         cli_set_configmode(cli, MODE_EXEC, NULL);
@@ -803,9 +837,7 @@ struct cli_def *cli_init() {
     cli_register_optarg(c, "search_pattern", CLI_CMD_ARGUMENT | CLI_CMD_REMAINDER_OF_LINE, PRIVILEGE_UNPRIVILEGED,
                         MODE_ANY, "Search pattern", NULL, NULL, NULL);
 
-    cli->term_mode_stack = malloc(sizeof(struct term_mode_node));
-    cli->term_mode_stack->mode = MODE_CONFIG;
-    cli->term_mode_stack->prev = NULL;
+    cli->term_mode_stack = NULL;
     cli->privilege = cli->mode = -1;
     cli_set_privilege(cli, PRIVILEGE_UNPRIVILEGED);
     cli_set_configmode(cli, MODE_EXEC, 0);

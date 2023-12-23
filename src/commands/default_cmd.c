@@ -54,7 +54,7 @@ int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *
         return CLI_ERROR;
     }
     cli_print(cli, "config changes discarded!");
-    cli_set_configmode(cli, MODE_CONFIG, "");
+    cli_set_configmode(cli, MODE_CONFIG, NULL);
     return CLI_OK;
 }
 
@@ -89,12 +89,12 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
 int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct data_tree *config_dtree = get_config_root_tree();
-    struct cli_optarg_pair *args = cli->found_optargs;
     int is_xml = 1;
-
-    if (args != NULL) {
-        to_lower(args->value);
-        is_xml = strcmp(args->value, "json");
+    char *format = cli_get_optarg_value(cli,"format",NULL);
+    if (format !=NULL){
+        to_lower(format);
+        if (strcmp(format,"json")==0)
+            is_xml = 0;
     }
     // commit changes.
     if (config_dtree == NULL) {
@@ -147,7 +147,7 @@ int cmd_commit_confirm(struct cli_def *cli, struct cli_command *c, const char *c
     int ret = cmd_commit(cli, c, cmd, argv, argc);
     if (ret == CLI_OK) {
         free_data_tree_all();
-        cli_set_configmode(cli, MODE_CONFIG, "");
+        cli_set_configmode(cli, MODE_CONFIG, NULL);
     }
     cli_print(cli, " commit-confirmed successfully!");
 
