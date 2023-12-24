@@ -13,7 +13,6 @@
 #include <libyang/log.h>
 #include "lib/libcli/libcli.h"
 
-//char *xpath_predicates[10];
 
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node);
 

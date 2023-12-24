@@ -1,4 +1,4 @@
-# onm-cli [WIP]
+# onm-cli
 
 "Okda Network CLI" (onmcli) is a command-line interface designed 
 for configuring the Sysrepo configuration database. 
@@ -7,17 +7,15 @@ that have been installed in the Sysrepo system.
 
 ## Table of Contents
 
-- [Installation](#installation)
+- [Build](#Build)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Installation
-onmcli uses a customized version of [libcli](https://github.com/dparrish/libcli)
+## Build
+onmcli uses a customized fork of [libcli](https://github.com/dparrish/libcli)
 
 ```bash
-# install custom libcli
-$ make install_lib
 # build
 $ make
 # run
@@ -25,7 +23,7 @@ $ ./onm_cli
 ```
 ## usage
 
-[+] usage example `onmcli`:
+[+] usage example of `onmcli`:
 
 ```commandline
 $ ./onmcli 

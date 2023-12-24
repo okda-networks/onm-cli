@@ -6,21 +6,17 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
-#include <ctype.h>
 #include "onm_logger.h"
 
 // Log file
 FILE *logFile = NULL;
-
-// Severity levels
-
 
 // Function to initialize the logger
 void initLogger(const char *logFileName) {
     logFile = fopen(logFileName, "a");
     if (logFile == NULL) {
         perror("Error opening log file");
-        return;
+        exit(1);
     }
 }
 
