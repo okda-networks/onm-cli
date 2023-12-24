@@ -13,7 +13,9 @@ that have been installed in the Sysrepo system.
 - [License](#license)
 
 ## Build
-onmcli uses a customized fork of [libcli](https://github.com/dparrish/libcli)
+require: [sysrepo](https://github.com/sysrepo/sysrepo).
+
+`onmcli` uses a customized fork of [libcli](https://github.com/dparrish/libcli).
 
 ```bash
 # build
@@ -69,9 +71,6 @@ router(config-interface[eth0])#
 
 [+] to modify installed modules in sysrepo:
 ```commandline
-router# sysrepo set-module-path /home/ali/CLionProjects/xain/DentOS/okda/onm_cli/yang/standard/ietf
-router# sysrepo install-module ietf-vrrp.yang
-[ERR] Failed to create input handler for "/home/ali/CLionProjects/xain/DentOS/okda/onm_cli/yang/standard/ietf��U/ietf-vrrp.yang".
 pcrouter# sysrepo set-module-path /home/ali/CLionProjects/xain/DentOS/okda/onm_cli/yang/standard/ietf/RFC
 pcrouter# sysrepo install-module ietf-vrrp.yang
 [INF] Module "ietf-vrrp" was installed.

@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g
+CFLAGS :=
 LIB_PATH := -L/usr/local/lib/
 INCLUDE_PATH := -I$(CURDIR)
 LIBS := -lyang -lsysrepo -lcrypt
@@ -23,12 +23,15 @@ OBJ := $(COMMANDS_SRC:.c=.o) $(UTILS_SRC:.c=.o)
 # Executable
 EXEC := onmcli
 
-.PHONY: all clean run
+.PHONY: all clean run debug
 
 all: $(EXEC)
 
+debug: CFLAGS += -g --vtv-debug
+debug: $(EXEC)
+
 $(EXEC): $(OBJ)
-	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS) --vtv-debug
+	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_PATH)
