@@ -1,33 +1,39 @@
-CC = gcc
-ycore_dir = src/commands/yang_core
-yang_core_src = $(ycore_dir)/y_utils.c \
-	$(ycore_dir)/cmd_list.c $(ycore_dir)/cmd_leaf.c\
-	$(ycore_dir)/cmd_container.c $(ycore_dir)/cmd_choice.c\
-	$(ycore_dir)/data_validators.c $(ycore_dir)/y_cmd_generator.c\
-	$(ycore_dir)/data_factory.c
+CC := gcc
+CFLAGS := -g
+LIB_PATH := -L/usr/local/lib/
+INCLUDE_PATH := -I$(CURDIR)
+LIBS := -lcli -lyang -lsysrepo
 
-commands_src = src/commands/default_cmd.c src/commands/sysrepo_cmd.c $(yang_core_src)
-src = src/onm_main.c src/onm_cli.c src/onm_sysrepo.c src/utils.c src/onm_logger.c $(commands_src)
-LIB_PATH = -L/usr/local/lib/
-# Get the current directory
-CURRENT_DIR := $(CURDIR)
+# Directories
+SRC_DIR := src
+YCORE_DIR := $(SRC_DIR)/commands/yang_core
+LIB_DIR := lib
 
-# Set the include path to the current directory
-INCLUDE_PATH := -I$(CURRENT_DIR)
+# Source files
+YCORE_SRC := $(wildcard $(YCORE_DIR)/*.c)
+COMMANDS_SRC := $(SRC_DIR)/commands/default_cmd.c $(SRC_DIR)/commands/sysrepo_cmd.c $(YCORE_SRC)
+UTILS_SRC := $(SRC_DIR)/onm_main.c $(SRC_DIR)/onm_cli.c $(SRC_DIR)/onm_sysrepo.c $(SRC_DIR)/utils.c $(SRC_DIR)/onm_logger.c
 
+# Object files
+OBJ := $(COMMANDS_SRC:.c=.o) $(UTILS_SRC:.c=.o)
 
+# Executable
+EXEC := onmcli
 
+.PHONY: all clean run
 
-main: $(src)
-	$(CC) -g $(src) -o onmcli $(INCLUDE_PATH) $(LIB_PATH) -lcli -lyang -lsysrepo  --vtv-debug
+all: $(EXEC)
 
-run: main
-	LD_LIBRARY_PATH=/usr/local/lib/ ./onm_cli
+$(EXEC): $(OBJ)
+	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS) --vtv-debug
 
-static_link: $(src)
-	$(CC) -g $(src) lib/libcli/libcli.c -o onm_cli -lcrypt -lyang  -lsysrepo --vtv-debug
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_PATH)
+
+run: all
+	LD_LIBRARY_PATH=/usr/local/lib/ ./$(EXEC)
 
 clean:
-	rm -f onmcli
+	rm -f $(OBJ) $(EXEC)
 
-include lib/Makefile
+include $(LIB_DIR)/Makefile
