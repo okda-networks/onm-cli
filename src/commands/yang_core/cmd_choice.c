@@ -9,16 +9,17 @@
 
 int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     if (argc == 0) {
-        cli_print(cli, "ERROR: please choose one of the available choices for %s, "
+        cli_error(cli, "ERROR: please choose one of the available choices for %s, "
                        "use '?' to see available choices", cmd);
         return CLI_MISSING_ARGUMENT;
     } else if (argc > 1) {
-        cli_print(cli, "ERROR: please enter one choice for %s", cmd);
+        cli_error(cli, "ERROR: please enter one choice for %s", cmd);
         return CLI_MISSING_ARGUMENT;
     }
 
+    cli_error(cli,"ERROR: invalid choice `%s` , please use `?` for available choices",argv[0]);
 
-    return CLI_OK;
+    return CLI_ERROR_ARG;
 }
 
 
