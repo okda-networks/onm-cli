@@ -14,6 +14,9 @@
 #include "onm_logger.h"
 
 
+#define GET_NEW_MODE_STR(current_mod, new_mode) \
+    strcat((char*)current_mod, strcat(":", new_mode))
+
 /* Saves the original terminal attributes. */
 struct termios saved_termios;
 
@@ -44,13 +47,8 @@ void set_input_mode(void)
     tattr.c_cc[VMIN] = 1;
     tattr.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
+
 }
-
-#define GET_NEW_MODE_STR(current_mod, new_mode) \
-    strcat((char*)current_mod, strcat(":", new_mode))
-
-
-
 
 int main() {
     int ret;

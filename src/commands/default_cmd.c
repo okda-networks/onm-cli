@@ -143,16 +143,6 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
     return CLI_OK;
 }
 
-int cmd_commit_confirm(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    int ret = cmd_commit(cli, c, cmd, argv, argc);
-    if (ret == CLI_OK) {
-        free_data_tree_all();
-        cli_set_configmode(cli, MODE_CONFIG, NULL);
-    }
-    cli_print(cli, " commit-confirmed successfully!");
-
-    return ret;
-}
 
 
 int default_commands_init(struct cli_def *cli) {
@@ -169,9 +159,6 @@ int default_commands_init(struct cli_def *cli) {
                          "commit", cmd_commit, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "commit changes to sysrepo cdb");
 
-    cli_register_command(cli, NULL, NULL,
-                         "commit-confirm", cmd_commit_confirm, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "commit changes and clear local config");
 
     struct cli_command *print = cli_register_command(cli, NULL, NULL,
                                                      "print", NULL, PRIVILEGE_UNPRIVILEGED,

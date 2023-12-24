@@ -16,6 +16,7 @@ enum register_node_routine_signals {
 
 static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
     if (schema->flags & LYS_CONFIG_R) {
+        LOG_DEBUG("cmd_generator: skipping none config node: %s", schema->name);
         return REG_NO_SIG;
     }
     switch (schema->nodetype) {
@@ -52,7 +53,6 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
  * @return
  */
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
-    LOG_DEBUG("commands.c: registering schema for  %s", schema->name);
 
     struct lysc_node *child = NULL;
     int signal;
@@ -62,7 +62,6 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
                 LYSC_TREE_DFS_continue = 1;
         LYSC_TREE_DFS_END(schema, child);
     }
-    LOG_DEBUG("commands.c: schema %s registered successfully", schema->name);
 
 }
 
