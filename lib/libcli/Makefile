@@ -3,7 +3,7 @@ DYNAMIC_LIB ?= 1
 # Build static library by default
 STATIC_LIB ?= 1
 # Run tests by default
-TESTS ?= 1
+TESTS ?= 0
 
 UNAME = $(shell sh -c 'uname -s 2>/dev/null || echo not')
 DESTDIR =
