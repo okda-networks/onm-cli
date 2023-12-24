@@ -4,7 +4,7 @@
 
 #ifndef ONMCLI_VERSION_H
 #define ONMCLI_VERSION_H
-#define MAJOR   1
-#define MINOR   0
+#define MAJOR   0
+#define MINOR   1
 #define PATCH   0
 #endif //ONMCLI_VERSION_H
