@@ -7,15 +7,9 @@
 
 #define LOGFILE_NAME "onmcli.log"
 
-#define LEVEL_INFO    1
-#define LEVEL_ERROR   2
-#define LEVEL_WARNING 3
-#define LEVEL_DEBUG   4
+#include "config.h"
 
-
-
-// Current log level (adjust as needed)
-#define LOG_LEVEL   LEVEL_DEBUG
+#define LOG_LEVEL   ONM_LOG_LEVEL
 
 int onm_logger_init();
 

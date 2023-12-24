@@ -32,12 +32,6 @@ int cmd_regular_callback(struct cli_def *cli) {
 }
 
 
-int check_auth(const char *username, const char *password) {
-    if (strcasecmp(username, USERNAME) != 0) return CLI_ERROR;
-    if (strcasecmp(password, PASSWORD) != 0) return CLI_ERROR;
-    return CLI_OK;
-}
-
 int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct data_tree *config_dtree = get_config_root_tree();
@@ -147,9 +141,6 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
 
 int default_commands_init(struct cli_def *cli) {
     LOG_INFO("commands.c: initializing commands\n");
-
-
-    cli_set_auth_callback(cli, check_auth);
 
     cli_register_command(cli, NULL, NULL,
                          "exit", cmd_exit2, PRIVILEGE_UNPRIVILEGED,
