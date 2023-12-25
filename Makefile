@@ -1,20 +1,43 @@
-CC = gcc
-commands_src = src/cmds/commands.c src/cmds/yang_commands.c
-src = src/onm_main.c src/cli.c src/onm_yang.c src/utils.c $(commands_src)
-LIB_PATH = -L/usr/local/lib/
+CC := gcc
+CFLAGS :=
+LIB_PATH := -L/usr/local/lib/
+INCLUDE_PATH := -I$(CURDIR)
+LIBS := -lyang -lsysrepo -lcrypt
 
+# Directories
+SRC_DIR := src
+YCORE_DIR := $(SRC_DIR)/commands/yang_core
+LIBCLI_DIR := lib/libcli
 
+# libcli source files
+LIBCLI_SRC := $(wildcard $(LIBCLI_DIR)/*.c)
 
-main: $(src)
-	$(CC) -g $(src) -o onm_cli $(LIB_PATH) -lcli -lyang  --vtv-debug
+# Source files
+YCORE_SRC := $(wildcard $(YCORE_DIR)/*.c)
+COMMANDS_SRC := $(SRC_DIR)/commands/default_cmd.c $(SRC_DIR)/commands/sysrepo_cmd.c $(YCORE_SRC) $(LIBCLI_SRC)
+UTILS_SRC := $(SRC_DIR)/onm_main.c $(SRC_DIR)/onm_cli.c $(SRC_DIR)/onm_sysrepo.c $(SRC_DIR)/utils.c $(SRC_DIR)/onm_logger.c
 
-run: main
-	LD_LIBRARY_PATH=/usr/local/lib/ ./onm_cli
+# Object files
+OBJ := $(COMMANDS_SRC:.c=.o) $(UTILS_SRC:.c=.o)
 
-static_link: $(src)
-	$(CC) -g $(src) lib/libcli/libcli.c -o onm_cli -lcrypt -lyang  --vtv-debug
+# Executable
+EXEC := onmcli
+
+.PHONY: all clean run debug
+
+all: $(EXEC)
+
+debug: CFLAGS += -g --vtv-debug
+debug: $(EXEC)
+
+$(EXEC): $(OBJ)
+	$(CC) $(CFLAGS) $^ -o $@ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE_PATH)
+
+run: all
+	./$(EXEC)
 
 clean:
-	rm -f onm_cli
-
-include lib/Makefile
+	rm -f $(OBJ) $(EXEC)

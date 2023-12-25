@@ -17,11 +17,11 @@
 #include <libyang/log.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../../lib/libcli/libcli.h"
-#include "../config.h"
+#include "lib/libcli/libcli.h"
+#include "src/config.h"
 
 
 
-int onm_commands_init(struct cli_def *cli);
+int default_commands_init(struct cli_def *cli);
 
 #endif //ONMCLI_COMMANDS_H

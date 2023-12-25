@@ -5,8 +5,8 @@
 
 compile_commands.json
 # Executables
-onm_cli
-clitest
+onmcli
+
 
 # Compiled libraries
 *.so
@@ -25,3 +25,4 @@ clitest
 *.d
 
 # Editor-specific files
+valgrind*

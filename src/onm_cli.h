@@ -10,4 +10,6 @@ int handle_session(int fd);
 
 int onm_cli_init();
 
+int onm_cli_done();
+
 #endif //ONMCLI_CLI_H
