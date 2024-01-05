@@ -59,19 +59,20 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
 
 int yang_data_validator(struct cli_def *cli, const char *word, const char *value, void *cmd_model) {
     // if this is delete request skip validation.
-    if (strcmp(value,"delete")==0)
+    if (strcmp(value, "delete") == 0)
         return CLI_OK;
     int ret = CLI_OK;
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
     struct lysc_node_leaf *leaf;
-    // the value might be leaf value or list key leaf value, need to be handled.
+    // the value might be leaf value, list key leaf value or case node, need to be handled.
     if (y_node->nodetype == LYS_LEAF)
         leaf = (struct lysc_node_leaf *) y_node;
-    else if (y_node->nodetype == LYS_LIST) {
+    else if (y_node->nodetype == LYS_LIST || y_node->nodetype == LYS_CASE) {
+        // if choice's case we need to get its child
         const struct lysc_node *child_list = lysc_node_child(y_node);
         const struct lysc_node *child;
         LY_LIST_FOR(child_list, child) {
-            if ((child->flags & LYS_KEY) && (strcmp(child->name, word) == 0)) {
+            if (strcmp(child->name, word) == 0) {
                 leaf = (struct lysc_node_leaf *) child;
                 break;
             }
@@ -81,12 +82,7 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
             return CLI_OK;
         }
 
-    } else if (y_node->nodetype == LYS_CASE) {
-        // if choice's case we need to get its child
-        const struct lysc_node *child = lysc_node_child(y_node);
-        leaf = (struct lysc_node_leaf *) child;
     } else {
-
         return CLI_OK;
     }
 

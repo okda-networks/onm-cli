@@ -56,7 +56,6 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     // if the case node is leaf/leaf-list parse the value, else set the next config mode.
     if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
         struct lysc_node *leaf_next;
-
         LY_LIST_FOR(y_case_n, leaf_next) {
             // add data node
             optargs = cli->found_optargs;
