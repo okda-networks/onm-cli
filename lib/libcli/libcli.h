@@ -148,8 +148,9 @@ struct cli_optarg {
   char *help;
   int mode;
   int privilege;
+  void *opt_model;
   unsigned int unique_len;
-  int (*get_completions)(struct cli_def *, const char *, const char *, struct cli_comphelp *);
+  int (*get_completions)(struct cli_def *, const char *, const char *, struct cli_comphelp *, void * cmd_model);
   int (*validator)(struct cli_def *, const char *, const char *,void *);
   int (*transient_mode)(struct cli_def *, const char *, const char *);
   struct cli_optarg *next;
@@ -249,7 +250,7 @@ int cli_unregister_filter(struct cli_def *cli, const char *command);
 struct cli_optarg *cli_register_optarg(struct cli_command *cmd, const char *name, int flags, int priviledge, int mode,
                                        const char *help,
                                        int (*get_completions)(struct cli_def *cli, const char *, const char *,
-                                                              struct cli_comphelp *),
+                                                              struct cli_comphelp *,void *optarg_model),
                                        int (*validator)(struct cli_def *cli, const char *, const char *,void*),
                                        int (*transient_mode)(struct cli_def *, const char *, const char *));
 int cli_optarg_addhelp(struct cli_optarg *optarg, const char *helpname, const char *helptext);
@@ -262,7 +263,7 @@ void cli_unregister_all_optarg(struct cli_command *c);
 void cli_unregister_all_filters(struct cli_def *cli);
 void cli_unregister_all_commands(struct cli_def *cli);
 void cli_unregister_all(struct cli_def *cli, struct cli_command *command);
-
+void cli_get_completions(struct cli_def *cli, const char *command, char lastchar, struct cli_comphelp *comphelp);
 /*
  * Expose some previous internal routines.  Just in case someone was using those
  * with an explicit reference, the original routines (cli_int_*) internally point

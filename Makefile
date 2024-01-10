@@ -40,4 +40,4 @@ run: all
 	./$(EXEC)
 
 clean:
-	rm -f $(OBJ) $(EXEC)
+	rm -f $(OBJ) $(EXEC) onmcli.log

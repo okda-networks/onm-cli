@@ -134,8 +134,9 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                 optarg_help = creat_help_for_identity_type((struct lysc_node *) child);
             else
                 optarg_help = strdup(child->dsc);
-            cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                mode, optarg_help, NULL, yang_data_validator, NULL);
+            o =cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                                mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+            o->opt_model = (void *)child; // for get_completion
             free((char*)optarg_help);
         }
     }

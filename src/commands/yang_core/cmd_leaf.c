@@ -8,6 +8,8 @@
 #include "data_factory.h"
 
 
+
+
 int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     if (argc == 0) {
@@ -111,6 +113,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
     sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
     unsigned int mode;
+    struct cli_comphelp *comphelp = NULL;
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = (char*)y_module->name;
     mode = y_get_curr_mode(y_node);
@@ -125,10 +128,19 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     else
         optarg_help = strdup(y_node->dsc);
 
+    if (type == LY_TYPE_ENUM){
+        struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) ((struct lysc_node_leaf *) y_node)->type;
+        LY_ARRAY_COUNT_TYPE i;
+        LY_ARRAY_FOR(y_enum_type->enums, i){
+            cli_add_comphelp_entry(comphelp,y_enum_type->enums[i].name);
+
+        }
+    }
+
     struct cli_optarg *o = cli_register_optarg(c, "value", CLI_CMD_ARGUMENT,
                                                PRIVILEGE_PRIVILEGED, mode,
-                                               optarg_help, NULL, yang_data_validator, NULL);
-
+                                               optarg_help, optagr_get_compl, yang_data_validator, NULL);
+    o->opt_model = (void *)y_node;
 
 
     // add delete to arg help
