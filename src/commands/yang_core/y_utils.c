@@ -156,8 +156,8 @@ const char **create_type_options(struct lysc_node *y_node) {
         return env_vars;
     } else if (type == LY_TYPE_BOOL) {
         env_vars = malloc(3 * sizeof(const char *));
-        env_vars[0] = "false";
-        env_vars[1] = "true";
+        env_vars[0] = strdup("false");
+        env_vars[1] = strdup("true");
         env_vars[2] = NULL;
         return env_vars;
     }
@@ -190,7 +190,7 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
                 rc = cli_add_comphelp_entry(comphelp, *next_option);
             }
         }
-//        free_options(options);
+        free_options(options);
     }
 
 
