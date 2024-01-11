@@ -15,10 +15,6 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
     if (argc >= 1) {
-        if (strcmp(argv[0], "?") == 0) {
-            cli_print(cli, " <cr>     configure container: %s", y_node->dsc);
-            return CLI_INCOMPLETE_COMMAND;
-        }
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }

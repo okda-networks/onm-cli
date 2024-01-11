@@ -127,6 +127,45 @@ int identityref_add_comphelp(struct lysc_ident *identity, const char *word, stru
     }
 }
 
+
+void free_options(const char **options) {
+    if (options) {
+        for (int i = 0; options[i] != NULL; i++) {
+            free((void *)options[i]);  // Correctly cast to void* for freeing
+        }
+        free(options);
+    }
+}
+
+
+const char **create_type_options(struct lysc_node *y_node) {
+    LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
+    int num_args = 0;
+    const char **env_vars = NULL;
+    LY_ARRAY_COUNT_TYPE i_sized;
+    if (type == LY_TYPE_ENUM) {
+        struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) ((struct lysc_node_leaf *) y_node)->type;
+        // Populate the array with enum names
+        LY_ARRAY_FOR(y_enum_type->enums, i_sized) {
+            num_args++;
+            env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
+            env_vars[num_args - 1] = strdup(y_enum_type->enums[i_sized].name);
+        }
+        env_vars = realloc(env_vars, sizeof(env_vars) * (num_args + 1));
+        env_vars[num_args] = NULL;
+        return env_vars;
+    } else if (type == LY_TYPE_BOOL) {
+        env_vars = malloc(3 * sizeof(const char *));
+        env_vars[0] = "false";
+        env_vars[1] = "true";
+        env_vars[2] = NULL;
+        return env_vars;
+    }
+
+    return NULL;
+}
+
+
 int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                      void *cmd_model) {
     if (cmd_model == NULL)
@@ -134,24 +173,27 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
     LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
 
-    const char **enum_name;
+    const char **next_option, **options;
     LY_ARRAY_COUNT_TYPE i;
     int rc = CLI_OK;
-    if (type == LY_TYPE_ENUM) {
-        struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) ((struct lysc_node_leaf *) y_node)->type;
-        LY_ARRAY_FOR(y_enum_type->enums, i) {
-            if (rc != CLI_OK)
-                return rc;
-            enum_name = &y_enum_type->enums[i].name;
-            if (!word || !strncmp(*enum_name, word, strlen(word))) {
-                rc = cli_add_comphelp_entry(comphelp, *enum_name);
-            }
-        }
-    } else if (type == LY_TYPE_IDENT) {
+    // LY_TYPE_IDENT has special case where we need to add recursively.
+    if (type == LY_TYPE_IDENT) {
         struct lysc_type_identityref *y_id_type = (struct lysc_type_identityref *) ((struct lysc_node_leaf *) y_node)->type;
         LY_ARRAY_FOR(y_id_type->bases, i) {
             identityref_add_comphelp(y_id_type->bases[i], word, comphelp);
         }
+        return CLI_OK;
+    } else if (type == LY_TYPE_ENUM || LY_TYPE_BOOL) {
+        options = (const char **) create_type_options(y_node);
+        for (next_option = options; *next_option && (rc == CLI_OK); next_option++) {
+            if (!word || !strncmp(*next_option, word, strlen(word))) {
+                rc = cli_add_comphelp_entry(comphelp, *next_option);
+            }
+        }
+//        free_options(options);
     }
-    return 0;
+
+
+
+    return rc;
 }
