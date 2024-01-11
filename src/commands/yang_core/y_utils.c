@@ -3,6 +3,7 @@
 //
 #include "y_utils.h"
 #include "src/onm_logger.h"
+
 #define CONFIG_MODE 1
 
 
@@ -10,8 +11,8 @@ void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def
 
     while (err) {
         if (err->level == LY_LLERR)
-            cli_print(cli,"ERROR: YANG: %s",err->msg);
-        LOG_ERROR(":%s:libyang error: %s\n",component, err->msg);
+            cli_print(cli, "ERROR: YANG: %s", err->msg);
+        LOG_ERROR(":%s:libyang error: %s\n", component, err->msg);
         err = err->next;
     }
 }
@@ -61,8 +62,8 @@ void add_identities_recursive(struct lysc_ident *identity, char *help) {
 
 
     LY_ARRAY_FOR(identity->derived, i) {
-        char * id_str = malloc(strlen(identity->derived[i]->name) + strlen(identity->derived[i]->module->name)+2);
-        sprintf(id_str,"%s:%s",identity->derived[i]->module->name,identity->derived[i]->name);
+        char *id_str = malloc(strlen(identity->derived[i]->name) + strlen(identity->derived[i]->module->name) + 2);
+        sprintf(id_str, "%s:%s", identity->derived[i]->module->name, identity->derived[i]->name);
         strcat(help, " [+] ");
         strcat(help, id_str);
         strcat(help, "\n");
@@ -105,4 +106,94 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
         add_identities_recursive(identities[i], help);
     }
     return help;
+}
+
+int identityref_add_comphelp(struct lysc_ident *identity, const char *word, struct cli_comphelp *comphelp) {
+    if (!identity) {
+        return 0;
+    }
+    char **id_entry;
+    LY_ARRAY_COUNT_TYPE i;
+    LY_ARRAY_FOR(identity->derived, i) {
+        char *id_str = malloc(strlen(identity->derived[i]->name) + strlen(identity->derived[i]->module->name) + 2);
+        sprintf(id_str, "%s:%s", identity->derived[i]->module->name, identity->derived[i]->name);
+
+        id_entry = &id_str;
+        if (!word || !strncmp(*id_entry, word, strlen(word))) {
+            cli_add_comphelp_entry(comphelp, *id_entry);
+        }
+        free(id_str);
+        identityref_add_comphelp(identity->derived[i], word, comphelp);
+    }
+}
+
+
+void free_options(const char **options) {
+    if (options) {
+        for (int i = 0; options[i] != NULL; i++) {
+            free((void *)options[i]);  // Correctly cast to void* for freeing
+        }
+        free(options);
+    }
+}
+
+
+const char **create_type_options(struct lysc_node *y_node) {
+    LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
+    int num_args = 0;
+    const char **env_vars = NULL;
+    LY_ARRAY_COUNT_TYPE i_sized;
+    if (type == LY_TYPE_ENUM) {
+        struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) ((struct lysc_node_leaf *) y_node)->type;
+        // Populate the array with enum names
+        LY_ARRAY_FOR(y_enum_type->enums, i_sized) {
+            num_args++;
+            env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
+            env_vars[num_args - 1] = strdup(y_enum_type->enums[i_sized].name);
+        }
+        env_vars = realloc(env_vars, sizeof(env_vars) * (num_args + 1));
+        env_vars[num_args] = NULL;
+        return env_vars;
+    } else if (type == LY_TYPE_BOOL) {
+        env_vars = malloc(3 * sizeof(const char *));
+        env_vars[0] = strdup("false");
+        env_vars[1] = strdup("true");
+        env_vars[2] = NULL;
+        return env_vars;
+    }
+
+    return NULL;
+}
+
+
+int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                     void *cmd_model) {
+    if (cmd_model == NULL)
+        return 0;
+    struct lysc_node *y_node = (struct lysc_node *) cmd_model;
+    LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
+
+    const char **next_option, **options;
+    LY_ARRAY_COUNT_TYPE i;
+    int rc = CLI_OK;
+    // LY_TYPE_IDENT has special case where we need to add recursively.
+    if (type == LY_TYPE_IDENT) {
+        struct lysc_type_identityref *y_id_type = (struct lysc_type_identityref *) ((struct lysc_node_leaf *) y_node)->type;
+        LY_ARRAY_FOR(y_id_type->bases, i) {
+            identityref_add_comphelp(y_id_type->bases[i], word, comphelp);
+        }
+        return CLI_OK;
+    } else if (type == LY_TYPE_ENUM || LY_TYPE_BOOL) {
+        options = (const char **) create_type_options(y_node);
+        for (next_option = options; *next_option && (rc == CLI_OK); next_option++) {
+            if (!word || !strncmp(*next_option, word, strlen(word))) {
+                rc = cli_add_comphelp_entry(comphelp, *next_option);
+            }
+        }
+        free_options(options);
+    }
+
+
+
+    return rc;
 }

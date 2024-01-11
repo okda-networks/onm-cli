@@ -135,13 +135,22 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
                 return register_cmd_choice_core(cli, case_child, case_cmd, mode);
             }
 
-
             if (case_child->nodetype == LYS_LEAF) {
+                char * optarg_help;
+                if (case_child->dsc != NULL)
+                    optarg_help = strdup(case_child->dsc);
+                else{
+                    optarg_help = malloc(strlen(case_child->name) + strlen("configure ") + 2);
+                    sprintf((char*)optarg_help,"configure %s", strdup(case_child->name));
+                }
+
                 struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
                                                            CLI_CMD_ARGUMENT,
                                                            PRIVILEGE_PRIVILEGED,
-                                                           mode, case_child->dsc, NULL, yang_data_validator, NULL);
+                                                           mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+                o->opt_model = (void*)case_child;
                 cli_optarg_addhelp(o, "delete", "delete node from config");
+                free(optarg_help);
             } else
                 register_commands_schema(case_child, cli);
         }

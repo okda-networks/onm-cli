@@ -132,10 +132,18 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             LY_DATA_TYPE type = ((struct lysc_node_leaf *) child)->type->basetype;
             if (type == LY_TYPE_IDENT)
                 optarg_help = creat_help_for_identity_type((struct lysc_node *) child);
-            else
-                optarg_help = strdup(child->dsc);
-            cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                mode, optarg_help, NULL, yang_data_validator, NULL);
+            else{
+                if (child->dsc != NULL)
+                    optarg_help = strdup(child->dsc);
+                else {
+                    optarg_help = malloc(strlen(child->name) + strlen("configure ") + 2);
+                    sprintf((char*)optarg_help,"configure %s", strdup(child->name));
+                }
+            }
+
+            o =cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                                mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+            o->opt_model = (void *)child; // for get_completion
             free((char*)optarg_help);
         }
     }

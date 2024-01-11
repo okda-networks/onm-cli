@@ -225,7 +225,7 @@ static int
 cli_int_buildmode_unset_cback(struct cli_def *cli, struct cli_command *c, const char *command, char *argv[], int argc);
 
 static int cli_int_buildmode_unset_completor(struct cli_def *cli, const char *name, const char *word,
-                                             struct cli_comphelp *comphelp);
+                                             struct cli_comphelp *comphelp, void *optarg_mode);
 
 static int cli_int_buildmode_unset_validator(struct cli_def *cli, const char *name, const char *value, void * cmd_model);
 
@@ -1100,6 +1100,7 @@ void cli_get_completions(struct cli_def *cli, const char *command, char lastchar
                 strcmp(stage->words[i], c->command))
                 continue;
 
+
             n = c->children;
 
             // If we have no more children, we've matched the *command* - remember this
@@ -1600,6 +1601,7 @@ int cli_loop(struct cli_def *cli, int sockfd) {
             // TAB completion
             if (c == CTRL('I')) {
                 struct cli_comphelp comphelp = {0};
+
 
                 if (cli->state == STATE_LOGIN || cli->state == STATE_PASSWORD ||
                     cli->state == STATE_ENABLE_PASSWORD)
@@ -2400,7 +2402,7 @@ int cli_optarg_addhelp(struct cli_optarg *optarg, const char *helpname, const ch
 struct cli_optarg *cli_register_optarg(struct cli_command *cmd, const char *name, int flags, int privilege, int mode,
                                        const char *help,
                                        int (*get_completions)(struct cli_def *cli, const char *, const char *,
-                                                              struct cli_comphelp *),
+                                                              struct cli_comphelp *, void *optarg_model),
                                        int (*validator)(struct cli_def *cli, const char *, const char *, void * cmd_model),
                                        int (*transient_mode)(struct cli_def *cli, const char *, const char *)) {
     struct cli_optarg *optarg = NULL;
@@ -2961,7 +2963,7 @@ int cli_int_buildmode_unset_cback(struct cli_def *cli, struct cli_command *c_, c
 
 // Generate a list of variables that *have* been set
 int cli_int_buildmode_unset_completor(struct cli_def *cli, const char *name, const char *word,
-                                      struct cli_comphelp *comphelp) {
+                                      struct cli_comphelp *comphelp, void *optarg_model) {
     struct cli_optarg_pair *optarg_pair;
 
     for (optarg_pair = cli->found_optargs; optarg_pair; optarg_pair = optarg_pair->next) {
@@ -3372,7 +3374,7 @@ static void cli_get_optarg_comphelp(struct cli_def *cli, struct cli_optarg *opta
     int help_insert = 0;
     char *delim_start = DELIM_NONE;
     char *delim_end = DELIM_NONE;
-    int (*get_completions)(struct cli_def *, const char *, const char *, struct cli_comphelp *) = NULL;
+    int (*get_completions)(struct cli_def *, const char *, const char *, struct cli_comphelp *, void * cmd_model) = NULL;
     char *tptr = NULL;
 
     // If we've already seen a value by this exact name, skip it, unless the multiple flag is set
@@ -3491,7 +3493,7 @@ static void cli_get_optarg_comphelp(struct cli_def *cli, struct cli_optarg *opta
         free_z(working);
     } else if (lastchar == CTRL('I')) {
         if (get_completions) {
-            (*get_completions)(cli, optarg->name, next_word, comphelp);
+            (*get_completions)(cli, optarg->name, next_word, comphelp,optarg->opt_model);
         } else if ((!anchor_word || !strncmp(anchor_word, optarg->name, strlen(anchor_word))) &&
                    (asprintf(&tptr, "%s%s%s", delim_start, optarg->name, delim_end) != -1)) {
             cli_add_comphelp_entry(comphelp, tptr);
