@@ -7,7 +7,6 @@
 
 static sr_conn_ctx_t *connection = NULL;
 static sr_session_ctx_t *session = NULL;
-static char msg_buffer[2048] = {'\0'};
 
 struct data_tree *config_root_tree;
 
@@ -145,13 +144,12 @@ int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
         struct lyd_node *diff;
         lyd_diff_tree(data_node, sysrepo_subtree->tree, 0, &diff);
         sr_release_data(sysrepo_subtree);
-        if (diff == NULL)
-            return 0;
-        else
+        if (diff != NULL)
             return 1;
     }
     if (ret == SR_ERR_NOT_FOUND)
         return 1;
+    return 0;
 }
 
 int sysrepo_commit(struct lyd_node *data_tree) {
@@ -178,6 +176,7 @@ int sysrepo_commit(struct lyd_node *data_tree) {
 int onm_sysrepo_done() {
     free_data_tree_all();
     sysrepo_disconnect();
+    return EXIT_SUCCESS;
 }
 
 int onm_sysrepo_init() {

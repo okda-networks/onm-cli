@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS :=
+CFLAGS := -Wall
 LIB_PATH := -L/usr/local/lib/
 INCLUDE_PATH := -I$(CURDIR)
 LIBS := -lyang -lsysrepo -lcrypt

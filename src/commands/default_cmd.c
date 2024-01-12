@@ -173,6 +173,6 @@ int default_commands_init(struct cli_def *cli) {
     cli_register_command(cli, NULL, NULL,
                          "discard-changes", cmd_discard_changes, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "discard all current changes");
-
+    return EXIT_SUCCESS;
 
 }

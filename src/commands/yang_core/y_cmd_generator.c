@@ -62,6 +62,7 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
                 LYSC_TREE_DFS_continue = 1;
         LYSC_TREE_DFS_END(schema, child);
     }
+    return EXIT_SUCCESS;
 
 }
 
@@ -87,5 +88,5 @@ int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
         LYSC_TREE_DFS_END(schema->next, child);
     }
     LOG_DEBUG("commands.c: schema `%s` unregistered successfully", schema->name);
-
+    return EXIT_SUCCESS;
 }
