@@ -10,5 +10,4 @@ void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def
 int y_get_curr_mode(struct lysc_node * y_node);
 int y_get_next_mode(struct lysc_node * y_node);
 const char * creat_help_for_identity_type(struct lysc_node *y_node);
-int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,void *cmd_model);
 #endif //ONMCLI_Y_UTILS_H

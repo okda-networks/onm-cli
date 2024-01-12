@@ -7,12 +7,13 @@
 #include "data_validators.h"
 #include "data_factory.h"
 #include "src/onm_logger.h"
-
+#include "data_cmd_compl.h"
 
 int cmd_print_list_order(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     int curr_indx = 10;
     struct lyd_node *next = NULL, *entry_child = NULL;
-    struct lyd_node *list_entries = get_list_nodes();
+    struct lysc_node * y_node = (struct lysc_node * )c->cmd_model;
+    struct lyd_node *list_entries = get_list_nodes(y_node);
     char line[265] = {'\0'};
     LY_LIST_FOR(list_entries, next) {
         struct lyd_node *entry_children = lyd_child(next);
@@ -154,12 +155,13 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                             mode, "to delete the list entry", NULL, NULL, NULL);
 
         // add print order command
+
         struct cli_command *print_order = cli_register_command(cli, NULL, NULL, "print-order", NULL,
-                                                               PRIVILEGE_PRIVILEGED, mode, "print-order",
+                                                               PRIVILEGE_PRIVILEGED, mode, cmd_hash,
                                                                "print ordered entries of the list");
 
         cli_register_command(cli, print_order, y_node, y_node->name, cmd_print_list_order,
-                             PRIVILEGE_PRIVILEGED, mode, NULL,
+                             PRIVILEGE_PRIVILEGED, mode, cmd_hash,
                              "print ordered entries of the list");
 
     }

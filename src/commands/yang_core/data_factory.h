@@ -21,7 +21,7 @@ void free_data_tree_all();
 
 void free_data_tree(struct data_tree *dtree);
 
-struct lyd_node *get_list_nodes();
+struct lyd_node *get_list_nodes(struct lysc_node *y_node);
 
 int add_data_node(struct lysc_node *y_node, char *value,struct cli_def *cli);
 
