@@ -21,9 +21,23 @@ enum {
     EDIT_DATA_DEL,
 };
 
-struct lyd_node *get_list_nodes() {
-    return lyd_first_sibling(lyd_child(parent_data));
+
+// TODO: this assum the container has only list node, if container has more than one node it fail.
+struct lyd_node *get_list_nodes(struct lysc_node *y_node) {
+    struct lyd_node *list_node = lyd_child(parent_data);
+    struct lyd_node *next = NULL;
+    LY_LIST_FOR(list_node, next) {
+        if (next->schema->nodetype == LYS_LIST) {
+            if (!strcmp(y_node->name, next->schema->name))
+                return next;
+        }
+    }
+    return NULL;
 }
+
+//struct lyd_node *get_list_nodes() {
+//    return lyd_first_sibling(lyd_child(parent_data));
+//}
 
 char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc, int with_module_name) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
