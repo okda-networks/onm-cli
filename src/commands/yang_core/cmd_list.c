@@ -55,7 +55,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         index = (int) strtol(idx_char, &idx_endptr, 10);
 
         // Check for conversion errors
-        if (*idx_endptr != '\0' && *idx_endptr != '\n' || (index == 0)) {
+        if ((*idx_endptr != '\0' && *idx_endptr != '\n') || (index == 0)) {
             cli_error(cli, "ERROR: <index> must be numeric greater than 0, entered value=%s", optargs->value);
             return CLI_ERROR;
         }

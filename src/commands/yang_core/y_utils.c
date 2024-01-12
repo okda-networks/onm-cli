@@ -125,13 +125,14 @@ int identityref_add_comphelp(struct lysc_ident *identity, const char *word, stru
         free(id_str);
         identityref_add_comphelp(identity->derived[i], word, comphelp);
     }
+    return EXIT_SUCCESS;
 }
 
 
 void free_options(const char **options) {
     if (options) {
         for (int i = 0; options[i] != NULL; i++) {
-            free((void *)options[i]);  // Correctly cast to void* for freeing
+            free((void *) options[i]);  // Correctly cast to void* for freeing
         }
         free(options);
     }
@@ -183,8 +184,13 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
             identityref_add_comphelp(y_id_type->bases[i], word, comphelp);
         }
         return CLI_OK;
-    } else if (type == LY_TYPE_ENUM || LY_TYPE_BOOL) {
+    } else if ((type == LY_TYPE_ENUM) || (type == LY_TYPE_BOOL)) {
         options = (const char **) create_type_options(y_node);
+        if (options == NULL){
+            LOG_DEBUG("failed to get available options for node %s",y_node->name);
+            return CLI_OK;
+        }
+
         for (next_option = options; *next_option && (rc == CLI_OK); next_option++) {
             if (!word || !strncmp(*next_option, word, strlen(word))) {
                 rc = cli_add_comphelp_entry(comphelp, *next_option);
@@ -192,7 +198,6 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
         }
         free_options(options);
     }
-
 
 
     return rc;
