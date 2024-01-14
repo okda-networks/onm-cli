@@ -53,7 +53,6 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
  * @return
  */
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
-
     struct lysc_node *child = NULL;
     int signal;
     LYSC_TREE_DFS_BEGIN(schema, child) {

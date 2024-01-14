@@ -74,7 +74,13 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     }
     // we need to shift the parent_data backward with each exit call.
     if (parent_data != NULL) {
-        parent_data = (struct lyd_node *) parent_data->parent;
+        struct lyd_node *prev_parent = (struct lyd_node *) parent_data->parent;
+        while (prev_parent != NULL ){
+            if (prev_parent->schema->nodetype == LYS_LIST)
+                break;
+            prev_parent = (struct lyd_node *) prev_parent->parent;
+        }
+        parent_data = (struct lyd_node *) prev_parent;
     }
 
     return cli_exit(cli, c, cmd, argv, argc);

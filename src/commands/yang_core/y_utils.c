@@ -3,9 +3,89 @@
 //
 #include "y_utils.h"
 #include "src/onm_logger.h"
+#include "uthash.h"
 
 #define CONFIG_MODE 1
 
+
+const char * get_relative_path(struct lysc_node *y_node){
+    struct lysc_node *root_parent= y_node->parent;
+    while (root_parent != NULL && root_parent->nodetype != LYS_LIST){
+        if (root_parent->parent  == NULL)
+            break;
+        root_parent = root_parent->parent;
+    }
+
+    char xpath_parent[256], xpath_child[256];
+    memset(xpath_parent, 0, sizeof(xpath_parent));
+    memset(xpath_child, 0, sizeof(xpath_child));
+
+    lysc_path(y_node,LYSC_PATH_DATA,xpath_child,256);
+    lysc_path(root_parent,LYSC_PATH_DATA,xpath_parent,256);
+    // Find the position where x and y differ
+    size_t i;
+    for (i = 0; xpath_parent[i] != '\0' && xpath_child[i] != '\0' && xpath_parent[i] == xpath_child[i]; ++i);
+
+    // Extract the remaining part of y
+    int shift =0;
+    if (xpath_child[i] == '/')
+        shift =1;
+    const char *result = &xpath_child[i+shift];
+
+    // Print the result
+    return strdup(result);
+}
+
+struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node **y_node) {
+    struct cli_command *c;
+    const char *root_module = lysc_owner_module(*y_node)->name;
+    for (c = commands; c; c = c->next) {
+        if (c->command_hash == NULL) continue;
+        if (strcmp(c->command_hash, root_module) != 0) continue;
+        if (c->children) {
+            struct cli_command *found_c = search_cmds(c->children, y_node);
+
+            if (found_c != NULL){
+                return found_c;
+            }
+        }
+        if ((struct lysc_node *) c->cmd_model != *y_node) continue;
+        return c;
+    }
+
+    return NULL;
+}
+
+struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node **y_node) {
+    return search_cmds(cli->commands, y_node);
+}
+
+//
+//struct cli_command * search_cmds(struct cli_command *commands, struct lysc_node *y_node){
+//    struct cli_command *c;
+//    const char * root_module = lysc_owner_module(y_node)->name;
+//    for (c = commands; c; c = c->next) {
+//        if (c->command_hash == NULL) continue;
+//        if (strcmp(c->command_hash, root_module) != 0) continue;
+//        if (c->children){
+//            struct cli_command *found_c = search_cmds(c->children,y_node);
+//
+//            if (found_c != NULL)
+//                return found_c;
+//
+//
+//        }
+//        if (c->command_type != CLI_REGULAR_COMMAND) continue;
+//        if (strcmp(c->command, y_node->name) != 0) continue;
+//
+//        return c;
+//    }
+//    return NULL;
+//}
+//
+//struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node *y_node) {
+//    return search_cmds(cli->commands,y_node);
+//}
 
 
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {
@@ -27,6 +107,7 @@ int y_get_curr_mode(struct lysc_node *y_node) {
         lysc_path(y_node->parent, LYSC_PATH_LOG, xpath, 256);
         mode = str2int_hash(xpath, NULL);
     }
+
     return mode;
 }
 

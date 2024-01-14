@@ -560,6 +560,7 @@ cli_register_command(struct cli_def *cli, struct cli_command *parent, void *c_mo
     c->cmd_model = c_model;
     if (command_hash != NULL)
         c->command_hash = strdup(command_hash);
+
     return cli_register_command_core(cli, parent, c);
 }
 

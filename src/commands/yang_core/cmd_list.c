@@ -81,13 +81,13 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to create/delete the data tree");
-        cli_print(cli, "failed to execute command, error with adding the data node.");
+        cli_print(cli, "failed to execute command, error with adding the data node. list");
         free_argv(argv,argc);
         return CLI_ERROR;
     }
 
     char *mod_str;
-    ssize_t mod_str_len = strlen(cmd) + strlen(argv[0]) + 3;
+    ssize_t mod_str_len = strlen(cmd) + 3;
     for (int i = 0; i < argc; i++) {
         mod_str_len += strlen(argv[i]) + 2;
     }
@@ -101,7 +101,6 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     int mode = y_get_next_mode(y_node);
-
     cli_push_configmode(cli, mode, mod_str);
     free(mod_str);
     free_argv(argv,argc);
@@ -117,9 +116,24 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
 
-    mode = y_get_curr_mode(y_node);
+    struct cli_command *parent_cmd = NULL;
+    // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
+    if (y_node->parent != NULL && y_node->parent->parent != NULL
+        && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE || y_node->parent->nodetype == LYS_CASE)) {
+        if (y_node->parent->nodetype == LYS_CASE)
+            parent_cmd = get_cli_yang_command(cli, &y_node->parent->parent);
+        else
+            parent_cmd = get_cli_yang_command(cli, &y_node->parent);
+    }
 
-    struct cli_command *c = cli_register_command(cli, NULL, y_node, y_node->name, cmd_yang_list,
+    if (parent_cmd == NULL)
+        mode = y_get_curr_mode(y_node);
+    else
+        mode = parent_cmd->mode;
+
+
+
+    struct cli_command *c = cli_register_command(cli, parent_cmd, y_node, y_node->name, cmd_yang_list,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
 
     const struct lysc_node *child_list = lysc_node_child(y_node);
