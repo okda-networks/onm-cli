@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include "lib/libcli/libcli.h"
 #include "src/config.h"
+#include "src/commands/yang_core/y_utils.h"
 
 
 
