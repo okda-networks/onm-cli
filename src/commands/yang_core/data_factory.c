@@ -28,7 +28,7 @@ struct lyd_node *get_list_nodes(struct lysc_node *y_node) {
     struct lyd_node *match = NULL;
     if (parent_data->schema == y_node->parent)
         match = parent_data;
-    else{
+    else {
         sprintf(xpath, "%s", get_relative_path(y_node->parent));
         lyd_find_path(parent_data, xpath, 0, &match);
         if (match == NULL)

@@ -38,7 +38,7 @@ unsigned int str2int_hash(char *str, ...) {
     // Clean up the argument list
     va_end(args);
 
-    return (unsigned int)hash;
+    return (unsigned int) hash;
 }
 
 void str2fun_name(char *str) {

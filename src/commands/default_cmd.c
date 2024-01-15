@@ -75,7 +75,7 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     // we need to shift the parent_data backward with each exit call.
     if (parent_data != NULL) {
         struct lyd_node *prev_parent = (struct lyd_node *) parent_data->parent;
-        while (prev_parent != NULL ){
+        while (prev_parent != NULL) {
             if (prev_parent->schema->nodetype == LYS_LIST)
                 break;
             prev_parent = (struct lyd_node *) prev_parent->parent;
@@ -90,10 +90,10 @@ int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const cha
 
     struct data_tree *config_dtree = get_config_root_tree();
     int is_xml = 1;
-    char *format = cli_get_optarg_value(cli,"format",NULL);
-    if (format !=NULL){
+    char *format = cli_get_optarg_value(cli, "format", NULL);
+    if (format != NULL) {
         to_lower(format);
-        if (strcmp(format,"json")==0)
+        if (strcmp(format, "json") == 0)
             is_xml = 0;
     }
     // commit changes.
@@ -142,7 +142,6 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
         cli_print(cli, " no modification to commit!");
     return CLI_OK;
 }
-
 
 
 int default_commands_init(struct cli_def *cli) {

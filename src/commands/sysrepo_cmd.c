@@ -27,7 +27,7 @@ int mod2cmd_generate(struct cli_def *cli, const struct lys_module *module) {
 
 
 int cmd_sysrepo_set_module_path(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    char *path = cli_get_optarg_value(cli,"absolute-path",NULL);
+    char *path = cli_get_optarg_value(cli, "absolute-path", NULL);
     sysrepo_set_module_path(path);
     return CLI_OK;
 }
@@ -86,7 +86,7 @@ int cmd_sysrepo_load_module(struct cli_def *cli, struct cli_command *c, const ch
 }
 
 int cmd_sysrepo_install_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    char *file = cli_get_optarg_value(cli,"module-file",NULL);
+    char *file = cli_get_optarg_value(cli, "module-file", NULL);
     if (sysrepo_insmod(file) != EXIT_SUCCESS)
         return CLI_ERROR;
     return CLI_OK;
@@ -95,10 +95,10 @@ int cmd_sysrepo_install_module(struct cli_def *cli, struct cli_command *c, const
 int cmd_sysrepo_remove_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
 
-    char *file = cli_get_optarg_value(cli,"module-name",NULL);
-    char *force =  cli_get_optarg_value(cli,"force",NULL);
+    char *file = cli_get_optarg_value(cli, "module-name", NULL);
+    char *force = cli_get_optarg_value(cli, "force", NULL);
 
-    if (sysrepo_rmmod(file, force?1:0) != EXIT_SUCCESS)
+    if (sysrepo_rmmod(file, force ? 1 : 0) != EXIT_SUCCESS)
         return CLI_ERROR;
     return CLI_OK;
 }

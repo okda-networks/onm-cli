@@ -8,10 +8,10 @@
 #define CONFIG_MODE 1
 
 
-const char * get_relative_path(struct lysc_node *y_node){
-    struct lysc_node *root_parent= y_node->parent;
-    while (root_parent != NULL && root_parent->nodetype != LYS_LIST){
-        if (root_parent->parent  == NULL)
+const char *get_relative_path(struct lysc_node *y_node) {
+    struct lysc_node *root_parent = y_node->parent;
+    while (root_parent != NULL && root_parent->nodetype != LYS_LIST) {
+        if (root_parent->parent == NULL)
             break;
         root_parent = root_parent->parent;
     }
@@ -20,17 +20,17 @@ const char * get_relative_path(struct lysc_node *y_node){
     memset(xpath_parent, 0, sizeof(xpath_parent));
     memset(xpath_child, 0, sizeof(xpath_child));
 
-    lysc_path(y_node,LYSC_PATH_DATA,xpath_child,256);
-    lysc_path(root_parent,LYSC_PATH_DATA,xpath_parent,256);
+    lysc_path(y_node, LYSC_PATH_DATA, xpath_child, 256);
+    lysc_path(root_parent, LYSC_PATH_DATA, xpath_parent, 256);
     // Find the position where x and y differ
     size_t i;
     for (i = 0; xpath_parent[i] != '\0' && xpath_child[i] != '\0' && xpath_parent[i] == xpath_child[i]; ++i);
 
     // Extract the remaining part of y
-    int shift =0;
+    int shift = 0;
     if (xpath_child[i] == '/')
-        shift =1;
-    const char *result = &xpath_child[i+shift];
+        shift = 1;
+    const char *result = &xpath_child[i + shift];
 
     // Print the result
     return strdup(result);
@@ -45,7 +45,7 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
         if (c->children) {
             struct cli_command *found_c = search_cmds(c->children, y_node);
 
-            if (found_c != NULL){
+            if (found_c != NULL) {
                 return found_c;
             }
         }
@@ -60,11 +60,11 @@ struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node *
     return search_cmds(cli->commands, y_node);
 }
 
-struct cli_command* find_parent_cmd(struct cli_def *cli,struct lysc_node * y_node){
+struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_node) {
     if (y_node->parent != NULL && y_node->parent->parent != NULL
         && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE ||
             y_node->parent->nodetype == LYS_CASE)) {
-        if (!strcmp(y_node->parent->name,y_node->parent->parent->name))
+        if (!strcmp(y_node->parent->name, y_node->parent->parent->name))
             return get_cli_yang_command(cli, &y_node->parent->parent);
         else
             return get_cli_yang_command(cli, &y_node->parent);

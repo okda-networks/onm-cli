@@ -45,7 +45,6 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
 }
 
 
-
 int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
@@ -86,10 +85,6 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 }
 
 
-
-
-
-
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
     sprintf(help, "configure %s (%s) [leaf-list]", y_node->name, y_node->module->name);
@@ -98,10 +93,9 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_module = lysc_owner_module(y_node);
 
 
-
     char *cmd_hash = (char *) y_module->name;
 
-    struct cli_command *parent_cmd = find_parent_cmd(cli,y_node);
+    struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
 
 
     if (parent_cmd == NULL)
@@ -144,7 +138,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_module->name;
 
-    struct cli_command *parent_cmd = find_parent_cmd(cli,y_node);
+    struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
 
 
     if (parent_cmd == NULL)

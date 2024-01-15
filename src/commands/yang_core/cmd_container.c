@@ -11,8 +11,8 @@
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    if (y_node->parent != NULL){
-        cli_print(cli,"incomplete command, please use '?' for options cont ");
+    if (y_node->parent != NULL) {
+        cli_print(cli, "incomplete command, please use '?' for options cont ");
         return CLI_ERROR;
     }
 
@@ -69,12 +69,10 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     char *cmd_hash = (char *) y_root_module->name;
     // there is ietf-yang where container and choice has same name.
     // we don't want to register this container to avoid duplication.
-    if (y_node->parent != NULL && !strcmp(y_node->parent->name,y_node->name))
+    if (y_node->parent != NULL && !strcmp(y_node->parent->name, y_node->name))
         return 1;
     // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
-    struct cli_command *parent_cmd = find_parent_cmd(cli,y_node);
-
-
+    struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
 
     if (parent_cmd == NULL)
         mode = y_get_curr_mode(y_node);
