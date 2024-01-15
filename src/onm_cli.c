@@ -43,7 +43,8 @@ int onm_cli_init() {
 
     cli_set_idle_timeout_callback(cli, CLI_TIMEOUT, idle_timeout);
 
-
+    struct cli_ctx_data *cli_ctx= malloc(sizeof (struct cli_ctx_data));
+    cli_set_context(cli,cli_ctx);
     default_commands_init(cli);
     yang_cmd_loader_init(cli);
     return EXIT_SUCCESS;

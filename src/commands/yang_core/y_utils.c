@@ -36,9 +36,11 @@ const char *get_relative_path(struct lysc_node *y_node) {
     return strdup(result);
 }
 
+
 struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node **y_node) {
     struct cli_command *c;
     const char *root_module = lysc_owner_module(*y_node)->name;
+
     for (c = commands; c; c = c->next) {
         if (c->command_hash == NULL) continue;
         if (strcmp(c->command_hash, root_module) != 0) continue;
@@ -56,20 +58,33 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
     return NULL;
 }
 
-struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node **y_node) {
-    return search_cmds(cli->commands, y_node);
-}
+//struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node **y_node) {
+//    struct cli_command * no_cmd = ((struct cli_ctx_data *)cli_get_context(cli))->no_cmd;
+//    return search_cmds(cli->commands, y_node,no_cmd);
+//}
 
-struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y_node, int no_cmd) {
+    struct cli_command *root_cmds = cli->commands;
+    if (no_cmd)
+        root_cmds = ((struct cli_ctx_data *)cli_get_context(cli))->no_cmd->children;
+
     if (y_node->parent != NULL && y_node->parent->parent != NULL
         && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE ||
             y_node->parent->nodetype == LYS_CASE)) {
         if (!strcmp(y_node->parent->name, y_node->parent->parent->name))
-            return get_cli_yang_command(cli, &y_node->parent->parent);
+            return search_cmds(root_cmds, &y_node->parent->parent);
         else
-            return get_cli_yang_command(cli, &y_node->parent);
+            return search_cmds(root_cmds, &y_node->parent);
     }
     return NULL;
+}
+
+struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli,y_node,0);
+}
+
+struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli,y_node,1);
 }
 
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {

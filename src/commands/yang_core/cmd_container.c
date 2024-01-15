@@ -60,9 +60,26 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     return CLI_OK;
 }
 
+int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    if (argc >= 1) {
+        cli_print(cli, "ERROR: unknown argument(s)");
+        return CLI_ERROR_ARG;
+    }
+    int ret = delete_data_node(y_node, NULL, cli);
+    if (ret != LY_SUCCESS) {
+        LOG_ERROR("Failed to delete the data tree");
+        cli_error(cli, "failed to execute command, error with deleting the data node.");
+        return CLI_ERROR;
+    }
+    return CLI_OK;
+}
+
+
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100];
+    char help[100], no_help[100];
     sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
+    sprintf(no_help, "delete %s (%s) [contain]", y_node->name, y_node->module->name);
 
     unsigned int mode;
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
@@ -73,19 +90,25 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
         return 1;
     // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
+    struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
 
     if (parent_cmd == NULL)
         mode = y_get_curr_mode(y_node);
     else
         mode = parent_cmd->mode;
 
-    struct cli_command *c = cli_register_command(cli, parent_cmd, y_node, y_node->name,
+    if (parent_cmd_no == NULL)
+        parent_cmd_no = ((struct cli_ctx_data *) cli_get_context(cli))->no_cmd;
+
+
+    cli_register_command(cli, parent_cmd, y_node, y_node->name,
                                                  cmd_yang_container, PRIVILEGE_PRIVILEGED,
                                                  mode, cmd_hash, help);
 
-    cli_register_optarg(c, "delete", CLI_CMD_OPTIONAL_FLAG,
-                        PRIVILEGE_PRIVILEGED, mode,
-                        "delete container", NULL, NULL, NULL);
+    cli_register_command(cli, parent_cmd_no, y_node, y_node->name,
+                         cmd_yang_no_container, PRIVILEGE_PRIVILEGED,
+                         mode, cmd_hash, no_help);
+
 
     return EXIT_SUCCESS;
 }

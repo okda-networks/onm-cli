@@ -46,44 +46,28 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
 
 
 int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
-    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-
-    int is_delete = 0;
-    char *value;
-    struct cli_optarg_pair *optargs = cli->found_optargs;
-    // parse optargs
-    while (optargs != NULL) {
-        if (strcmp(optargs->name, "value") == 0)
-            value = optargs->value;
-        optargs = optargs->next;
-    }
-    if (strcmp(value, "delete") == 0)
-        is_delete = 1;
-
-
     int ret;
-    if (is_delete) {
-        ret = delete_data_node(y_node, NULL, cli);
-        if (ret != LY_SUCCESS) {
-            cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
-            return CLI_ERROR;
-        }
-        return CLI_OK;
-    }
-
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    char *value = cli_get_optarg_value(cli, "value", NULL);
     ret = add_data_node(y_node, value, cli);
-
-
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
         return CLI_ERROR;
     }
-
     return CLI_OK;
 
 }
 
+int cmd_yang_no_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    int ret;
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    ret = delete_data_node(y_node, NULL, cli);
+    if (ret != LY_SUCCESS) {
+        cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
+        return CLI_ERROR;
+    }
+    return CLI_OK;
+}
 
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
@@ -131,14 +115,19 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
 
 
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100];
+    char help[100],no_help[100];
     sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
+    sprintf(help, "delete %s (%s) [leaf]", y_node->name, y_node->module->name);
+
     unsigned int mode;
     struct cli_comphelp *comphelp = NULL;
     const struct lys_module *y_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_module->name;
 
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
+    struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
+    if (parent_cmd_no == NULL)
+        parent_cmd_no = ((struct cli_ctx_data *) cli_get_context(cli))->no_cmd;
 
 
     if (parent_cmd == NULL)
@@ -149,6 +138,9 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
 
     struct cli_command *c = cli_register_command(cli, parent_cmd, y_node, y_node->name, cmd_yang_leaf,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
+    cli_register_command(cli, parent_cmd_no, y_node, y_node->name,
+                         cmd_yang_no_leaf, PRIVILEGE_PRIVILEGED,
+                         mode, cmd_hash, no_help);
 
     const char *optarg_help;
     LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;

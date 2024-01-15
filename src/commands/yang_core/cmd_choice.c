@@ -23,6 +23,10 @@ int cmd_yang_choice(struct cli_def *cli, struct cli_command *c, const char *cmd,
     return CLI_ERROR_ARG;
 }
 
+int cmd_yang_no_choice(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    return cmd_yang_choice(cli, c, cmd, argv, argc);
+}
+
 
 int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
@@ -84,43 +88,63 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     return CLI_ERROR;
 }
 
+int cmd_yang_no_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    return 0;
+}
+
 
 int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, struct cli_command *parent_cmd,
+                             struct cli_command *parent_no_cmd,
                              unsigned int mode) {
     /* ragisterning the choice is the most complex function, change carefully*/
-    char help[100];
+    char help[100] = {0};
+    char no_help[100] = {0};
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
 
     sprintf(help, "configure %s (%s) [choice]", y_node->name, y_node->module->name);
+    sprintf(no_help, "delete %s (%s) [choice]", y_node->name, y_node->module->name);
 
     char *cmd_hash = (char *) y_root_module->name;
     // this can be called recursively. so we might pass the mode.
 
     if (mode == -1)
         mode = y_get_curr_mode(y_node);
-    struct cli_command *choice_cmd;
+    struct cli_command *choice_cmd, *choice_no_cmd;
 
     // there is ietf-yang where choice and choice has same name.
     // we don't want to register this choice to avoid duplication.
     if (y_node->parent != NULL
         && y_node->parent->nodetype == LYS_CONTAINER
-        && !strcmp(y_node->parent->name, y_node->name))
+        && !strcmp(y_node->parent->name, y_node->name)) {
         choice_cmd = parent_cmd;
-    else
+        choice_no_cmd = parent_no_cmd;
+    } else {
         choice_cmd = cli_register_command(cli, parent_cmd, y_node, y_node->name,
                                           cmd_yang_choice, PRIVILEGE_UNPRIVILEGED,
                                           mode, cmd_hash, help);
+
+        choice_no_cmd = cli_register_command(cli, parent_no_cmd, y_node, y_node->name,
+                                             cmd_yang_no_choice, PRIVILEGE_UNPRIVILEGED,
+                                             mode, cmd_hash, no_help);
+
+    }
+
 
     struct lysc_node_choice *y_choice = (struct lysc_node_choice *) y_node;
     struct lysc_node *y_case;
 
     LY_LIST_FOR((struct lysc_node *) y_choice->cases, y_case) {
         sprintf(help, "configure %s (%s) [case]", y_case->name, y_case->module->name);
+        sprintf(no_help, "delete %s (%s) [case]", y_case->name, y_case->module->name);
 //        struct cli_command *case_cmd = choice_cmd;
 
         struct cli_command *case_cmd = cli_register_command(cli, choice_cmd, (void *) y_case, y_case->name,
                                                             cmd_yang_case, PRIVILEGE_UNPRIVILEGED,
                                                             mode, cmd_hash, help);
+
+        struct cli_command *case_no_cmd = cli_register_command(cli, choice_no_cmd, (void *) y_case, y_case->name,
+                                                               cmd_yang_no_case, PRIVILEGE_UNPRIVILEGED,
+                                                               mode, cmd_hash, no_help);
 
 
         struct lysc_node *case_child_list = (struct lysc_node *) lysc_node_child(y_case);
@@ -130,7 +154,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
             // if the case-child is another choice then run recursively
             if (case_child->nodetype == LYS_CHOICE) {
                 // should be called with same mode.
-                return register_cmd_choice_core(cli, case_child, case_cmd, mode);
+                return register_cmd_choice_core(cli, case_child, case_cmd, case_no_cmd,mode);
             }
             if (case_child->nodetype == LYS_LEAF) {
                 char *optarg_help;
@@ -293,10 +317,11 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
 
 int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
     int mode = -1;
-    struct cli_command *parent_cmd = find_parent_cmd(cli,y_node);
+    struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
+    struct cli_command *parent_no_cmd = find_parent_no_cmd(cli, y_node);
 
     if (parent_cmd != NULL)
         mode = parent_cmd->mode;
 
-    return register_cmd_choice_core(cli, y_node, parent_cmd, mode);
+    return register_cmd_choice_core(cli, y_node, parent_cmd, parent_no_cmd, mode);
 }
