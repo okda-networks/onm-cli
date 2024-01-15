@@ -10,16 +10,15 @@
 
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    // execut parent containers commands to build parent_data tree.
-
-//    if (c == NULL)
-//        return CLI_OK;
-//    if (c->parent != NULL)
-//        c->parent->callback(cli, c->parent, c->parent->command, NULL, -1);
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    if (y_node->parent != NULL){
+        cli_print(cli,"incomplete command, please use '?' for options cont ");
+        return CLI_ERROR;
+    }
 
     int ret;
     int is_delete = 0;
-    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+
 
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -58,26 +57,23 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
         cli_push_configmode(cli, mode, (char *) cmd);
     }
 
-
     return CLI_OK;
 }
 
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100];
     sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
+
     unsigned int mode;
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_root_module->name;
-
-    struct cli_command *parent_cmd = NULL;
+    // there is ietf-yang where container and choice has same name.
+    // we don't want to register this container to avoid duplication.
+    if (y_node->parent != NULL && !strcmp(y_node->parent->name,y_node->name))
+        return 1;
     // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
-    if (y_node->parent != NULL && y_node->parent->parent != NULL
-        && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE || y_node->parent->nodetype == LYS_CASE)) {
-        if (y_node->parent->nodetype == LYS_CASE)
-            parent_cmd = get_cli_yang_command(cli, &y_node->parent->parent);
-        else
-            parent_cmd = get_cli_yang_command(cli, &y_node->parent);
-    }
+    struct cli_command *parent_cmd = find_parent_cmd(cli,y_node);
+
 
 
     if (parent_cmd == NULL)
@@ -88,9 +84,10 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     struct cli_command *c = cli_register_command(cli, parent_cmd, y_node, y_node->name,
                                                  cmd_yang_container, PRIVILEGE_PRIVILEGED,
                                                  mode, cmd_hash, help);
+
     cli_register_optarg(c, "delete", CLI_CMD_OPTIONAL_FLAG,
                         PRIVILEGE_PRIVILEGED, mode,
                         "delete container", NULL, NULL, NULL);
 
-    return 0;
+    return EXIT_SUCCESS;
 }

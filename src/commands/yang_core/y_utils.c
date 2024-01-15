@@ -60,33 +60,17 @@ struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node *
     return search_cmds(cli->commands, y_node);
 }
 
-//
-//struct cli_command * search_cmds(struct cli_command *commands, struct lysc_node *y_node){
-//    struct cli_command *c;
-//    const char * root_module = lysc_owner_module(y_node)->name;
-//    for (c = commands; c; c = c->next) {
-//        if (c->command_hash == NULL) continue;
-//        if (strcmp(c->command_hash, root_module) != 0) continue;
-//        if (c->children){
-//            struct cli_command *found_c = search_cmds(c->children,y_node);
-//
-//            if (found_c != NULL)
-//                return found_c;
-//
-//
-//        }
-//        if (c->command_type != CLI_REGULAR_COMMAND) continue;
-//        if (strcmp(c->command, y_node->name) != 0) continue;
-//
-//        return c;
-//    }
-//    return NULL;
-//}
-//
-//struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node *y_node) {
-//    return search_cmds(cli->commands,y_node);
-//}
-
+struct cli_command* find_parent_cmd(struct cli_def *cli,struct lysc_node * y_node){
+    if (y_node->parent != NULL && y_node->parent->parent != NULL
+        && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE ||
+            y_node->parent->nodetype == LYS_CASE)) {
+        if (!strcmp(y_node->parent->name,y_node->parent->parent->name))
+            return get_cli_yang_command(cli, &y_node->parent->parent);
+        else
+            return get_cli_yang_command(cli, &y_node->parent);
+    }
+    return NULL;
+}
 
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {
 

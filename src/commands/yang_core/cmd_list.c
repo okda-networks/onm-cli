@@ -116,15 +116,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
 
-    struct cli_command *parent_cmd = NULL;
-    // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
-    if (y_node->parent != NULL && y_node->parent->parent != NULL
-        && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE || y_node->parent->nodetype == LYS_CASE)) {
-        if (y_node->parent->nodetype == LYS_CASE)
-            parent_cmd = get_cli_yang_command(cli, &y_node->parent->parent);
-        else
-            parent_cmd = get_cli_yang_command(cli, &y_node->parent);
-    }
+    struct cli_command *parent_cmd = find_parent_cmd(cli,y_node);
 
     if (parent_cmd == NULL)
         mode = y_get_curr_mode(y_node);
