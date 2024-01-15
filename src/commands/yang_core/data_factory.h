@@ -31,4 +31,6 @@ int delete_data_node(struct lysc_node *y_node, char *value,struct cli_def *cli);
 
 int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc,struct cli_def *cli);
 
+struct lyd_node *get_list_nodes2(struct lysc_node *y_node);
+
 #endif //ONMCLI_DATA_FACTORY_H

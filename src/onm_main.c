@@ -20,19 +20,16 @@
 /* Saves the original terminal attributes. */
 struct termios saved_termios;
 
-void reset_input_mode(void)
-{
+void reset_input_mode(void) {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &saved_termios);
 }
 
-void set_input_mode(void)
-{
+void set_input_mode(void) {
     struct termios tattr;
 
     /* Make sure stdin is a terminal. */
-    if (!isatty(STDIN_FILENO))
-    {
-        LOG_ERROR( "Not a terminal.");
+    if (!isatty(STDIN_FILENO)) {
+        LOG_ERROR("Not a terminal.");
         exit(EXIT_FAILURE);
     }
 
@@ -42,7 +39,7 @@ void set_input_mode(void)
 
     /* Set the funny terminal modes. */
     tcgetattr(STDIN_FILENO, &tattr);
-    tattr.c_lflag &= ~(ICANON|ECHO);       /* Clear ICANON and ECHO. */
+    tattr.c_lflag &= ~(ICANON | ECHO);       /* Clear ICANON and ECHO. */
     tattr.c_iflag &= ~(ICRNL);             /* Clear ICRNL. */
     tattr.c_cc[VMIN] = 1;
     tattr.c_cc[VTIME] = 0;

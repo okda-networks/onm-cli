@@ -24,7 +24,18 @@ enum {
 
 // TODO: this assum the container has only list node, if container has more than one node it fail.
 struct lyd_node *get_list_nodes(struct lysc_node *y_node) {
-    struct lyd_node *list_node = lyd_child(parent_data);
+    char xpath[256] = {0};
+    struct lyd_node *match = NULL;
+    if (parent_data->schema == y_node->parent)
+        match = parent_data;
+    else {
+        sprintf(xpath, "%s", get_relative_path(y_node->parent));
+        lyd_find_path(parent_data, xpath, 0, &match);
+        if (match == NULL)
+            return NULL;
+    }
+
+    struct lyd_node *list_node = lyd_child(match);
     struct lyd_node *next = NULL;
     LY_LIST_FOR(list_node, next) {
         if (next->schema->nodetype == LYS_LIST) {
@@ -35,18 +46,14 @@ struct lyd_node *get_list_nodes(struct lysc_node *y_node) {
     return NULL;
 }
 
-//struct lyd_node *get_list_nodes() {
-//    return lyd_first_sibling(lyd_child(parent_data));
-//}
-
-char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc, int with_module_name) {
+char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc) {
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
     int arg_pos = -1;
     size_t total_len = 0;
     // Calculate the total length needed for the string
-    if (with_module_name)
-        total_len = strlen(y_node->module->name) + strlen(y_node->name) + 2; // +2 for ":", "]", and null terminator
+//    if (with_module_name)
+//        total_len = strlen(y_node->module->name) + strlen(y_node->name) + 2; // +2 for ":", "]", and null terminator
 
     LY_LIST_FOR(child_list, child) {
         if (lysc_is_key(child)) {
@@ -65,9 +72,9 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
         return NULL;
     }
 
-    // Construct the string
-    if (with_module_name)
-        sprintf(predicate_str, "%s:%s", y_node->module->name, y_node->name);
+//    // Construct the string
+//    if (with_module_name)
+//        sprintf(predicate_str, "%s:%s", y_node->module->name, y_node->name);
     arg_pos = -1;
     LY_LIST_FOR(child_list, child) {
         if (lysc_is_key(child)) {
@@ -89,7 +96,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     int ret;
     char xpath[265];
     char *predicate_str;
-    memset(xpath, '\0', 256);
+    memset(xpath, 0, 265);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
     if (!sysrepo_ctx) {
         LOG_ERROR(" add_data_node(): Failure: failed to get sysrepo_ctx");
@@ -97,28 +104,27 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
         return EXIT_FAILURE;
     }
 
+    sprintf(xpath, "%s", get_relative_path(y_node));
     struct lyd_node *curr_parent, *new_parent;
     // set current parent and xpath based on the list location in the tree.
     if (parent_data == NULL) {
         curr_parent = curr_root->node;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-        predicate_str = create_list_path_predicate(y_node, argv, argc, 0);
-        strcat(xpath, predicate_str);
-    } else {
+    } else
         curr_parent = parent_data;
-        predicate_str = create_list_path_predicate(y_node, argv, argc, 1);
-        strcat(xpath, predicate_str);
-    }
+
+    predicate_str = create_list_path_predicate(y_node, argv, argc);
+    strcat(xpath, predicate_str);
 
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
-    if (new_parent == NULL)
-        ret = lyd_new_path(curr_parent, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
+    if (new_parent == NULL || ret == LY_EINCOMPLETE)
+        ret = lyd_new_path2(curr_parent, sysrepo_ctx, xpath, NULL, 0, 0, LYD_NEW_PATH_UPDATE, NULL, &new_parent);
 
     if (index) {
         // index start from 10 and the step is 10, 10,20,30...
         int curr_indx = 10;
         struct lyd_node *next = NULL;
-        struct lyd_node *orderd_nodes = lyd_first_sibling(lyd_child(parent_data));
+        struct lyd_node *orderd_nodes = lyd_first_sibling(new_parent);
 
         LY_LIST_FOR(orderd_nodes, next) {
             if (index < curr_indx) {
@@ -187,11 +193,10 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             sysrepo_release_ctx();
             return LY_SUCCESS;
         case LYS_CONTAINER: {
-            if (parent_data == NULL) {
+            if (y_node->parent != NULL)
+                snprintf(xpath, 256, "%s",  get_relative_path(y_node));
+            else
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-            } else {
-                snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
-            }
             // set the config_data_tree
             // check if this is first node in the schema, to set the root node.
             if (y_node->parent == NULL) {
@@ -227,8 +232,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     config_root_tree = new_root;
                     curr_root = config_root_tree;
                     parent_data = curr_root->node;
-
-
                 }
             }
 
@@ -237,7 +240,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             // check if the node exist in the tree, if not create new node in the tree.
             ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
-            if (new_parent == NULL) {
+            if (new_parent == NULL || ret == LY_EINCOMPLETE) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
 
@@ -256,17 +259,20 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
         case LYS_LEAF:
         case LYS_LEAFLIST:
             if (y_node->nodetype == LYS_LEAFLIST)
-                snprintf(xpath, 256, "%s:%s[.='%s']", y_node->module->name, y_node->name, value);
+                snprintf(xpath, 256, "%s:%s[.='%s']", y_node->module->name, get_relative_path(y_node), value);
             else
-                snprintf(xpath, 256, "%s:%s", y_node->module->name, y_node->name);
+                snprintf(xpath, 256, "%s:%s", y_node->module->name, get_relative_path(y_node));
+
+
             struct lyd_node *new_leaf;
 
             // check if node already exist in data_tree, if not creat a new node.
             ret = lyd_find_path(parent_data, xpath, 0, &new_leaf);
-            if (new_leaf == NULL) {
+            if (new_leaf == NULL || ret == LY_EINCOMPLETE) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, value, LYD_NEW_PATH_UPDATE,
                                    &new_leaf);
             }
+
 
             if (edit_type == EDIT_DATA_ADD)
                 lyd_change_term(new_leaf, value);

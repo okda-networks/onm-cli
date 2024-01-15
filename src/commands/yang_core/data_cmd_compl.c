@@ -56,10 +56,10 @@ const char **create_type_options(struct lysc_node *y_node) {
         env_vars[1] = strdup("true");
         env_vars[2] = NULL;
         return env_vars;
-    } else if (type == LY_TYPE_STRING && lysc_is_key(y_node)){
+    } else if (type == LY_TYPE_STRING && lysc_is_key(y_node)) {
         struct lyd_node *list_data_node = get_list_nodes(y_node->parent);
-        struct lyd_node *next =NULL;
-        LY_LIST_FOR(list_data_node, next){
+        struct lyd_node *next = NULL;
+        LY_LIST_FOR(list_data_node, next) {
             struct lyd_node *entry_children = lyd_child(next);
             struct lyd_node *entry_child = NULL;
             LY_LIST_FOR(entry_children, entry_child) {
@@ -72,7 +72,7 @@ const char **create_type_options(struct lysc_node *y_node) {
         }
     }
     // add null termination for the array
-    if (env_vars != NULL){
+    if (env_vars != NULL) {
         env_vars = realloc(env_vars, sizeof(env_vars) * (num_args + 1));
         env_vars[num_args] = NULL;
     }
@@ -101,8 +101,8 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
         return CLI_OK;
     }
     options = (const char **) create_type_options(y_node);
-    if (options == NULL){
-        LOG_DEBUG("failed to get available options for node %s",y_node->name);
+    if (options == NULL) {
+        LOG_DEBUG("failed to get available options for node %s", y_node->name);
         return CLI_OK;
     }
     for (next_option = options; *next_option && (rc == CLI_OK); next_option++) {

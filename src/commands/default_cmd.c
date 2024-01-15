@@ -31,7 +31,10 @@ int cmd_regular_callback(struct cli_def *cli) {
     return CLI_OK;
 }
 
-
+int cmd_no(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc){
+    cli_print(cli,"incomplete command!");
+    return CLI_ERROR;
+}
 int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct data_tree *config_dtree = get_config_root_tree();
@@ -74,7 +77,13 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     }
     // we need to shift the parent_data backward with each exit call.
     if (parent_data != NULL) {
-        parent_data = (struct lyd_node *) parent_data->parent;
+        struct lyd_node *prev_parent = (struct lyd_node *) parent_data->parent;
+        while (prev_parent != NULL) {
+            if (prev_parent->schema->nodetype == LYS_LIST)
+                break;
+            prev_parent = (struct lyd_node *) prev_parent->parent;
+        }
+        parent_data = (struct lyd_node *) prev_parent;
     }
 
     return cli_exit(cli, c, cmd, argv, argc);
@@ -84,10 +93,10 @@ int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const cha
 
     struct data_tree *config_dtree = get_config_root_tree();
     int is_xml = 1;
-    char *format = cli_get_optarg_value(cli,"format",NULL);
-    if (format !=NULL){
+    char *format = cli_get_optarg_value(cli, "format", NULL);
+    if (format != NULL) {
         to_lower(format);
-        if (strcmp(format,"json")==0)
+        if (strcmp(format, "json") == 0)
             is_xml = 0;
     }
     // commit changes.
@@ -138,7 +147,6 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
 }
 
 
-
 int default_commands_init(struct cli_def *cli) {
     LOG_INFO("commands.c: initializing commands\n");
 
@@ -173,6 +181,13 @@ int default_commands_init(struct cli_def *cli) {
     cli_register_command(cli, NULL, NULL,
                          "discard-changes", cmd_discard_changes, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "discard all current changes");
+    struct cli_command* no_cmd = cli_register_command(cli, NULL, NULL,
+                                                      "no", cmd_no, PRIVILEGE_UNPRIVILEGED,
+                                                      MODE_ANY, NULL, "delete configs");
+
+    struct cli_ctx_data *ctx_data = (struct cli_ctx_data *) cli_get_context(cli);
+    ctx_data->no_cmd = no_cmd;
+
     return EXIT_SUCCESS;
 
 }

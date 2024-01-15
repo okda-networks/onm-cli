@@ -53,7 +53,6 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
  * @return
  */
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
-
     struct lysc_node *child = NULL;
     int signal;
     LYSC_TREE_DFS_BEGIN(schema, child) {
@@ -71,7 +70,7 @@ static void unregister_node_routine(struct cli_def *cli, struct lysc_node *y_nod
         return;
     }
     // we add "print-order" command for userordered node, we need to unregister.
-    if (lysc_is_userordered(y_node)){
+    if (lysc_is_userordered(y_node)) {
         cli_unregister_command(cli, "print-order", "print-order");
     }
     const struct lys_module *y_owner_module = lysc_owner_module(y_node);

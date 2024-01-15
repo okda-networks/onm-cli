@@ -3,10 +3,89 @@
 //
 #include "y_utils.h"
 #include "src/onm_logger.h"
+#include "uthash.h"
 
 #define CONFIG_MODE 1
 
 
+const char *get_relative_path(struct lysc_node *y_node) {
+    struct lysc_node *root_parent = y_node->parent;
+    while (root_parent != NULL && root_parent->nodetype != LYS_LIST) {
+        if (root_parent->parent == NULL)
+            break;
+        root_parent = root_parent->parent;
+    }
+
+    char xpath_parent[256], xpath_child[256];
+    memset(xpath_parent, 0, sizeof(xpath_parent));
+    memset(xpath_child, 0, sizeof(xpath_child));
+
+    lysc_path(y_node, LYSC_PATH_DATA, xpath_child, 256);
+    lysc_path(root_parent, LYSC_PATH_DATA, xpath_parent, 256);
+    // Find the position where x and y differ
+    size_t i;
+    for (i = 0; xpath_parent[i] != '\0' && xpath_child[i] != '\0' && xpath_parent[i] == xpath_child[i]; ++i);
+
+    // Extract the remaining part of y
+    int shift = 0;
+    if (xpath_child[i] == '/')
+        shift = 1;
+    const char *result = &xpath_child[i + shift];
+
+    // Print the result
+    return strdup(result);
+}
+
+
+struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node **y_node) {
+    struct cli_command *c;
+    const char *root_module = lysc_owner_module(*y_node)->name;
+
+    for (c = commands; c; c = c->next) {
+        if (c->command_hash == NULL) continue;
+        if (strcmp(c->command_hash, root_module) != 0) continue;
+        if (c->children) {
+            struct cli_command *found_c = search_cmds(c->children, y_node);
+
+            if (found_c != NULL) {
+                return found_c;
+            }
+        }
+        if ((struct lysc_node *) c->cmd_model != *y_node) continue;
+        return c;
+    }
+
+    return NULL;
+}
+
+//struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node **y_node) {
+//    struct cli_command * no_cmd = ((struct cli_ctx_data *)cli_get_context(cli))->no_cmd;
+//    return search_cmds(cli->commands, y_node,no_cmd);
+//}
+
+struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y_node, int no_cmd) {
+    struct cli_command *root_cmds = cli->commands;
+    if (no_cmd)
+        root_cmds = ((struct cli_ctx_data *)cli_get_context(cli))->no_cmd->children;
+
+    if (y_node->parent != NULL && y_node->parent->parent != NULL
+        && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE ||
+            y_node->parent->nodetype == LYS_CASE)) {
+        if (!strcmp(y_node->parent->name, y_node->parent->parent->name))
+            return search_cmds(root_cmds, &y_node->parent->parent);
+        else
+            return search_cmds(root_cmds, &y_node->parent);
+    }
+    return NULL;
+}
+
+struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli,y_node,0);
+}
+
+struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli,y_node,1);
+}
 
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {
 
@@ -27,6 +106,7 @@ int y_get_curr_mode(struct lysc_node *y_node) {
         lysc_path(y_node->parent, LYSC_PATH_LOG, xpath, 256);
         mode = str2int_hash(xpath, NULL);
     }
+
     return mode;
 }
 

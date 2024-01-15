@@ -14,6 +14,7 @@
 #include "lib/libcli/libcli.h"
 
 
+
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node);
 
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node);
