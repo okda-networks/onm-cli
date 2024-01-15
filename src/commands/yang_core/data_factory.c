@@ -193,7 +193,10 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             sysrepo_release_ctx();
             return LY_SUCCESS;
         case LYS_CONTAINER: {
-            lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+            if (y_node->parent != NULL)
+                snprintf(xpath, 256, "%s",  get_relative_path(y_node));
+            else
+                lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
             // set the config_data_tree
             // check if this is first node in the schema, to set the root node.
             if (y_node->parent == NULL) {
@@ -237,7 +240,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             // check if the node exist in the tree, if not create new node in the tree.
             ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
-            if (new_parent == NULL) {
+            if (new_parent == NULL || ret == LY_EINCOMPLETE) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
 

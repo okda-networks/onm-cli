@@ -89,7 +89,38 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 }
 
 int cmd_yang_no_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    return 0;
+
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    struct lysc_node *y_case_n;
+
+
+    // case might be leaf or container, for leaf we get the child, for container the child is null and we use y_node
+    y_case_n = (struct lysc_node *) lysc_node_child(y_node);
+    if (y_case_n == NULL)
+        y_case_n = y_node;
+
+    int ret;
+
+    // if the case node is leaf/leaf-list,we need to remove all leafs from data_node.
+    if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
+        struct lysc_node *leaf_next;
+        LY_LIST_FOR(y_case_n, leaf_next) {
+            ret = delete_data_node(leaf_next, NULL, cli);
+            if (ret != LY_SUCCESS) {
+                cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
+                return CLI_ERROR;
+            }
+        }
+        return CLI_OK;
+    }
+    // data node is container.
+    ret = delete_data_node(y_case_n, NULL, cli);
+    if (ret != LY_SUCCESS) {
+        cli_print(cli, "Failed to delete the yang data node '%s'\n", y_case_n->name);
+        return CLI_ERROR;
+    }
+    return CLI_OK;
+
 }
 
 
@@ -126,7 +157,6 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
         choice_no_cmd = cli_register_command(cli, parent_no_cmd, y_node, y_node->name,
                                              cmd_yang_no_choice, PRIVILEGE_UNPRIVILEGED,
                                              mode, cmd_hash, no_help);
-
     }
 
 
@@ -154,7 +184,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
             // if the case-child is another choice then run recursively
             if (case_child->nodetype == LYS_CHOICE) {
                 // should be called with same mode.
-                return register_cmd_choice_core(cli, case_child, case_cmd, case_no_cmd,mode);
+                return register_cmd_choice_core(cli, case_child, case_cmd, case_no_cmd, mode);
             }
             if (case_child->nodetype == LYS_LEAF) {
                 char *optarg_help;
@@ -171,7 +201,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
                                                            mode, optarg_help, optagr_get_compl, yang_data_validator,
                                                            NULL);
                 o->opt_model = (void *) case_child;
-                cli_optarg_addhelp(o, "delete", "delete node from config");
+
                 free(optarg_help);
             } else
                 register_commands_schema(case_child, cli);
@@ -322,6 +352,9 @@ int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
 
     if (parent_cmd != NULL)
         mode = parent_cmd->mode;
+
+    if (parent_no_cmd == NULL)
+        parent_no_cmd = ((struct cli_ctx_data *) cli_get_context(cli))->no_cmd;
 
     return register_cmd_choice_core(cli, y_node, parent_cmd, parent_no_cmd, mode);
 }

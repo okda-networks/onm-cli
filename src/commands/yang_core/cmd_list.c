@@ -121,6 +121,7 @@ int cmd_yang_no_list(struct cli_def *cli, struct cli_command *c, const char *cmd
     struct cli_optarg_pair *optargs = cli->found_optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
+
     create_argv_from_optpair(optargs, &argv, &argc);
 
     ret = delete_data_node_list(y_node, argv, argc, cli);
@@ -159,13 +160,13 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     struct cli_command *c = cli_register_command(cli, parent_cmd, y_node, y_node->name, cmd_yang_list,
                                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash, help);
 
-    cli_register_command(cli, parent_cmd_no, y_node, y_node->name,
-                         cmd_yang_no_list, PRIVILEGE_PRIVILEGED,
-                         mode, cmd_hash, no_help);
+    struct cli_command *no_c = cli_register_command(cli, parent_cmd_no, y_node, y_node->name,
+                                                    cmd_yang_no_list, PRIVILEGE_PRIVILEGED,
+                                                    mode, cmd_hash, no_help);
 
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
-    struct cli_optarg *o;
+    struct cli_optarg *o, *no_o;
 //    char *list_cmd_help = create_list_cmd_help(y_node, lysc_is_userordered(y_node));
 
     LY_LIST_FOR(child_list, child) {
@@ -185,12 +186,14 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
             o = cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                     mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+            no_o = cli_register_optarg(no_c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                                       mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
             o->opt_model = (void *) child; // for get_completion
+            no_o->opt_model = (void *) child; // for get_completion
+
             free((char *) optarg_help);
         }
     }
-    cli_register_optarg(c, "delete", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
-                        mode, "to delete the list entry", NULL, NULL, NULL);
     if (lysc_is_userordered(y_node)) {
         cli_register_optarg(c, "index", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_PRIVILEGED,
                             mode, "to delete the list entry", NULL, NULL, NULL);
