@@ -44,7 +44,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             return CLI_ERROR_ARG;
         }
     }
-
+    
+    
     struct cli_optarg_pair *optargs = cli->found_optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int index = 0; // no index
@@ -62,6 +63,18 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         }
     }
 
+    int has_none_key_node = 0;
+    const struct lysc_node *child_list = lysc_node_child(y_node);
+    const struct lysc_node *child;
+    // if list has none key nodes we will not update data parent_node and we will not go to new mode.
+    LY_LIST_FOR(child_list, child) {
+        if (!lysc_is_key(child)){
+            has_none_key_node = 1;
+            break;
+        }
+
+    }
+
     int ret;
     optargs = cli->found_optargs;
     create_argv_from_optpair(optargs, &argv, &argc);
@@ -75,7 +88,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         }
         return CLI_OK;
     } else {
-        ret = add_data_node_list(y_node, argv, argc, index, cli);
+        ret = add_data_node_list(y_node, argv, argc, index, cli,has_none_key_node);
     }
 
 
@@ -85,6 +98,11 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         free_argv(argv, argc);
         return CLI_ERROR;
     }
+    if (!has_none_key_node){
+        free_argv(argv, argc);
+        return CLI_OK;
+    }
+
 
     char *mod_str;
     ssize_t mod_str_len = strlen(cmd) + 3;
@@ -102,6 +120,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     int mode = y_get_next_mode(y_node);
     cli_push_configmode(cli, mode, mod_str);
+
     free(mod_str);
     free_argv(argv, argc);
     return CLI_OK;

@@ -32,19 +32,9 @@ struct lyd_node *get_local_list_nodes(struct lysc_node *y_node) {
         sprintf(xpath, "%s", get_relative_path(y_node->parent));
         lyd_find_path(parent_data, xpath, 0, &match);
         // for leafref if node does not exist in parent_data, check all roots.
-        if (match == NULL) {
-            struct data_tree *curr_node = config_root_tree;
-            lysc_path(y_node->parent, LYSC_PATH_DATA, xpath, 256);
-            while (curr_node != NULL && curr_node->node != NULL) {
-                lyd_find_path(curr_node->node, xpath, 0, &match);
-                if (match != NULL)
-                    break;
-                curr_node = curr_node->prev;  // Move to the next node
-            }
-        }
+        if (match == NULL)
+            return NULL;
     }
-    if (match == NULL)
-        return NULL;
     struct lyd_node *list_node = lyd_child(match);
     struct lyd_node *next = NULL;
     LY_LIST_FOR(list_node, next) {
@@ -119,7 +109,7 @@ char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int arg
 }
 
 int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, int edit_type,
-                             int index, struct cli_def *cli) {
+                             int index, struct cli_def *cli, int is_update_parent) {
     int ret;
     char xpath[265];
     char *predicate_str;
@@ -145,7 +135,8 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
     if (new_parent == NULL || ret == LY_EINCOMPLETE)
-        ret = lyd_new_path2(curr_parent, sysrepo_ctx, xpath, NULL, 0, 0, LYD_NEW_PATH_UPDATE, NULL, &new_parent);
+        ret = lyd_new_path2(curr_parent, sysrepo_ctx, xpath, NULL, 0,
+                            0, LYD_NEW_PATH_UPDATE, NULL, &new_parent);
 
     if (index) {
         // index start from 10 and the step is 10, 10,20,30...
@@ -166,9 +157,10 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
             curr_indx += 10;
         }
     }
-    if (edit_type == EDIT_DATA_ADD)
-        parent_data = new_parent;
-    else
+    if (edit_type == EDIT_DATA_ADD) {
+        if (is_update_parent)
+            parent_data = new_parent;
+    } else
         lyd_free_tree(new_parent);
 
 
@@ -182,13 +174,14 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 }
 
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index, struct cli_def *cli) {
-    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index, cli);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index, struct cli_def *cli,
+                       int has_none_key_nodes) {
+    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index, cli, has_none_key_nodes);
 }
 
 int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc, struct cli_def *cli) {
 
-    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, 0, cli);// no index use key for delete
+    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, 0, cli, 0);// no index use key for delete
 
 }
 

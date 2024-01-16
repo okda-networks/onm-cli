@@ -37,9 +37,14 @@ void free_options(const char **options) {
     }
 }
 
-const char **get_list_key_values_array(struct lysc_node *y_node, int num_args) {
+const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int local_only) {
     const char **env_vars = NULL;
-    struct lyd_node *list_data_node = get_local_or_sr_list_nodes(y_node->parent);
+    struct lyd_node *list_data_node;
+    if (local_only)
+        list_data_node = get_local_list_nodes(y_node->parent);
+    else
+        list_data_node = get_local_or_sr_list_nodes(y_node->parent);
+
     struct lyd_node *next = NULL;
     LY_LIST_FOR(list_data_node, next) {
         struct lyd_node *entry_children = lyd_child(next);
@@ -88,10 +93,10 @@ const char **create_type_options(struct lysc_node *y_node) {
         case LY_TYPE_STRING:
             if (!lysc_is_key(y_node))
                 break;
-            return get_list_key_values_array(y_node, num_args);
+            return get_list_key_values_array(y_node, num_args,1);
         case LY_TYPE_LEAFREF: {
             struct lysc_node *target_node = (struct lysc_node *) lysc_node_lref_target(y_node);
-            return get_list_key_values_array(target_node, num_args);
+            return get_list_key_values_array(target_node, num_args,0);
         }
         default:
             LOG_DEBUG("completion not supported for nodetype %d", type);
