@@ -46,12 +46,6 @@ static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) 
     return REG_OK_SIG;
 }
 
-/**
- * register  commands from a yang schema.
- * @param schema  lysc_node schema the root node
- * @param cli     libcli cli
- * @return
- */
 int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
     struct lysc_node *child = NULL;
     int signal;
@@ -69,12 +63,14 @@ static void unregister_node_routine(struct cli_def *cli, struct lysc_node *y_nod
     if (y_node->flags & LYS_CONFIG_R) {
         return;
     }
+    const struct lys_module *y_owner_module = lysc_owner_module(y_node);
+    char *cmd_hash = (char *) y_owner_module->name;
     // we add "print-order" command for userordered node, we need to unregister.
     if (lysc_is_userordered(y_node)) {
-        cli_unregister_command(cli, "print-order", "print-order");
+        cli_unregister_command(cli, "print-order", cmd_hash);
     }
-    const struct lys_module *y_owner_module = lysc_owner_module(y_node);
-    cli_unregister_command(cli, y_node->name, (char *) y_owner_module->name);
+
+    cli_unregister_command(cli, y_node->name, cmd_hash);
 }
 
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {

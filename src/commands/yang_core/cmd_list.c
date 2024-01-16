@@ -144,7 +144,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     char help[100], no_help[100];
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
-    sprintf(help, "delete %s (%s) [list]", y_node->name, y_node->module->name);
+    sprintf(no_help, "delete %s (%s) [list]", y_node->name, y_node->module->name);
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
     struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
 

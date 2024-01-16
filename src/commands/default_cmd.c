@@ -160,8 +160,8 @@ int default_commands_init(struct cli_def *cli) {
 
 
     struct cli_command *print = cli_register_command(cli, NULL, NULL,
-                                                     "print", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                     MODE_ANY, NULL, "print the candidate/running config");
+                                                     "show", NULL, PRIVILEGE_UNPRIVILEGED,
+                                                     MODE_EXEC, NULL, "print the candidate/running config");
 
     struct cli_command *local_config = cli_register_command(cli, print, NULL,
                                                             "local-candidate-config", cmd_print_local_config,

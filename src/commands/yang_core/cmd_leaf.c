@@ -135,7 +135,7 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
     char help[100], no_help[100];
     sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
-    sprintf(help, "delete %s (%s) [leaf]", y_node->name, y_node->module->name);
+    sprintf(no_help, "delete %s (%s) [leaf]", y_node->name, y_node->module->name);
 
     unsigned int mode;
     struct cli_comphelp *comphelp = NULL;

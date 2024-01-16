@@ -753,13 +753,11 @@ struct cli_def *cli_init() {
     }
     cli->telnet_protocol = 1;
 
-    cli_register_command(cli, 0, NULL, "help", cli_help, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL,
-                         "Show available commands");
-    cli_register_command(cli, 0, NULL, "quit", cli_quit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL, "Disconnect");
-    cli_register_command(cli, 0, NULL, "logout", cli_quit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL, "Disconnect");
+    cli_register_command(cli, 0, NULL, "quit", cli_quit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL, "quit cli");
+//    cli_register_command(cli, 0, NULL, "logout", cli_quit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL, "Disconnect");
 //    cli_register_command(cli, 0, NULL, "exit", cli_exit, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL,
 //                         "Exit from current mode");
-    cli_register_command(cli, 0, NULL, "history", cli_history, PRIVILEGE_UNPRIVILEGED, MODE_ANY, NULL,
+    cli_register_command(cli, 0, NULL, "history", cli_history, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,
                          "Show a list of previously run commands");
     cli_register_command(cli, 0, NULL, "enable", cli_enable, PRIVILEGE_UNPRIVILEGED, MODE_EXEC, NULL,
                          "Turn on privileged commands");
@@ -773,7 +771,7 @@ struct cli_def *cli_init() {
         return 0;
     }
     cli_register_command(cli, c, NULL, "terminal", cli_int_configure_terminal, PRIVILEGE_PRIVILEGED, MODE_EXEC, NULL,
-                         "Conlfigure from the terminal");
+                         "Configure from the terminal");
 
     // And now the built in filters
     c = cli_register_filter(cli, "begin", cli_range_filter_init, cli_range_filter, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
