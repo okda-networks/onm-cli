@@ -117,8 +117,19 @@ const struct ly_ctx *sysrepo_get_ctx() {
     return sr_acquire_context(connection);
 }
 
+
 sr_session_ctx_t *sysrepo_get_session() {
     return session;
+}
+
+struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node) {
+    sr_data_t *sr_data;
+    char xpath[1028];
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
+    int ret = sr_get_subtree(session, xpath, 0, &sr_data);
+    if (ret != SR_ERR_OK)
+        return NULL;
+    return sr_data->tree;
 }
 
 int sysrepo_release_ctx() {
