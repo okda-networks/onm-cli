@@ -13,7 +13,7 @@ int cmd_print_list_order(struct cli_def *cli, struct cli_command *c, const char 
     int curr_indx = 10;
     struct lyd_node *next = NULL, *entry_child = NULL;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    struct lyd_node *list_entries = get_list_nodes(y_node);
+    struct lyd_node *list_entries = get_local_list_nodes(y_node);
     char line[265] = {'\0'};
     LY_LIST_FOR(list_entries, next) {
         struct lyd_node *entry_children = lyd_child(next);

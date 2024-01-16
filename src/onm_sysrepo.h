@@ -13,9 +13,6 @@ struct data_tree {
     struct data_tree *prev;
 };
 
-const struct ly_ctx *sysrepo_get_ctx();
-
-sr_session_ctx_t *sysrepo_get_session();
 
 int sysrepo_release_ctx();
 
@@ -34,6 +31,12 @@ char *sysrepo_get_error_msg();
 int sysrepo_insmod(char *mod);
 
 int sysrepo_rmmod(char *mod, int force);
+
+struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node);
+
+const struct ly_ctx *sysrepo_get_ctx();
+
+sr_session_ctx_t *sysrepo_get_session();
 
 void sysrepo_set_module_path(char *path);
 

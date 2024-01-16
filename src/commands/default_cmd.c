@@ -31,10 +31,11 @@ int cmd_regular_callback(struct cli_def *cli) {
     return CLI_OK;
 }
 
-int cmd_no(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc){
-    cli_print(cli,"incomplete command!");
+int cmd_no(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    cli_print(cli, "incomplete command!");
     return CLI_ERROR;
 }
+
 int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct data_tree *config_dtree = get_config_root_tree();
@@ -161,7 +162,7 @@ int default_commands_init(struct cli_def *cli) {
 
     struct cli_command *print = cli_register_command(cli, NULL, NULL,
                                                      "show", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                     MODE_EXEC, NULL, "print the candidate/running config");
+                                                     MODE_ANY, NULL, "print the candidate/running config");
 
     struct cli_command *local_config = cli_register_command(cli, print, NULL,
                                                             "local-candidate-config", cmd_print_local_config,
@@ -181,7 +182,7 @@ int default_commands_init(struct cli_def *cli) {
     cli_register_command(cli, NULL, NULL,
                          "discard-changes", cmd_discard_changes, PRIVILEGE_UNPRIVILEGED,
                          MODE_ANY, NULL, "discard all current changes");
-    struct cli_command* no_cmd = cli_register_command(cli, NULL, NULL,
+    struct cli_command *no_cmd = cli_register_command(cli, NULL, NULL,
                                                       "no", cmd_no, PRIVILEGE_UNPRIVILEGED,
                                                       MODE_ANY, NULL, "delete configs");
 

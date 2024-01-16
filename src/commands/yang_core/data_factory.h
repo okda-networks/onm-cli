@@ -14,23 +14,23 @@
 #include "lib/libcli/libcli.h"
 
 
-
 struct data_tree *get_config_root_tree();
 
 void free_data_tree_all();
 
 void free_data_tree(struct data_tree *dtree);
 
-struct lyd_node *get_list_nodes(struct lysc_node *y_node);
+struct lyd_node *get_local_list_nodes(struct lysc_node *y_node);
 
-int add_data_node(struct lysc_node *y_node, char *value,struct cli_def *cli);
+struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node);
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index,struct cli_def *cli);
+int add_data_node(struct lysc_node *y_node, char *value, struct cli_def *cli);
 
-int delete_data_node(struct lysc_node *y_node, char *value,struct cli_def *cli);
+int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index, struct cli_def *cli);
 
-int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc,struct cli_def *cli);
+int delete_data_node(struct lysc_node *y_node, char *value, struct cli_def *cli);
 
-struct lyd_node *get_list_nodes2(struct lysc_node *y_node);
+int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc, struct cli_def *cli);
+
 
 #endif //ONMCLI_DATA_FACTORY_H

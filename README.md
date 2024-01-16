@@ -52,7 +52,7 @@ router(config-interface[eth0])# description "WAN INET"
 router(config-interface[eth0])# commit 
 [INF] There are no subscribers for changes of the module "ietf-interfaces" in running DS.
  changes applied successfully!
-router(config-interface[eth0])# print local-candidate-config format json
+router(config-interface[eth0])# show local-candidate-config format json
 {
   "ietf-interfaces:interfaces": {
     "interface": [      

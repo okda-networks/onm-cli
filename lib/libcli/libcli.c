@@ -1614,10 +1614,10 @@ int cli_loop(struct cli_def *cli, int sockfd) {
                     // Double tab
                     int i;
                     for (i = 0; i < comphelp.num_entries; i++) {
-                        if (i % 4 == 0)
+                        if (i % 1 == 0)
                             _write(sockfd, "\r\n", 2);
                         else
-                            _write(sockfd, " ", 1);
+                            _write(sockfd, " ", 2);
                         _write(sockfd, comphelp.entries[i], strlen(comphelp.entries[i]));
                     }
                     _write(sockfd, "\r\n", 2);
