@@ -11,7 +11,7 @@
 
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    if (y_node->parent != NULL) {
+    if (!is_root_node(y_node)) {
         cli_print(cli, "incomplete command, please use '?' for options cont ");
         return CLI_ERROR;
     }

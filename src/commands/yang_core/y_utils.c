@@ -87,6 +87,12 @@ struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_
     return find_parent_command(cli,y_node,1);
 }
 
+int is_root_node(const struct lysc_node *y_node){
+    if (y_node->parent == NULL)
+        return 1;
+    return 0;
+}
+
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {
 
     while (err) {

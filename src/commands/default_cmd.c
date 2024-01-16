@@ -80,7 +80,7 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     if (parent_data != NULL) {
         struct lyd_node *prev_parent = (struct lyd_node *) parent_data->parent;
         while (prev_parent != NULL) {
-            if (prev_parent->schema->nodetype == LYS_LIST)
+            if (prev_parent->schema->nodetype == LYS_LIST || is_root_node(prev_parent->schema))
                 break;
             prev_parent = (struct lyd_node *) prev_parent->parent;
         }

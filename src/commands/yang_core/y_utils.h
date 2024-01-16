@@ -12,6 +12,7 @@ struct cli_ctx_data {
     struct cli_command *print_order_cmd;
 };
 
+int is_root_node(const struct lysc_node *y_node);
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli);
 int y_get_curr_mode(struct lysc_node * y_node);
 int y_get_next_mode(struct lysc_node * y_node);
