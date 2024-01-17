@@ -44,8 +44,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             return CLI_ERROR_ARG;
         }
     }
-    
-    
+
+
     struct cli_optarg_pair *optargs = cli->found_optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int index = 0; // no index
@@ -68,7 +68,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     const struct lysc_node *child;
     // if list has none key nodes we will not update data parent_node and we will not go to new mode.
     LY_LIST_FOR(child_list, child) {
-        if (!lysc_is_key(child)){
+        if (!lysc_is_key(child)) {
             has_none_key_node = 1;
             break;
         }
@@ -88,7 +88,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         }
         return CLI_OK;
     } else {
-        ret = add_data_node_list(y_node, argv, argc, index, cli,has_none_key_node);
+        ret = add_data_node_list(y_node, argv, argc, index, cli, has_none_key_node);
     }
 
 
@@ -98,7 +98,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         free_argv(argv, argc);
         return CLI_ERROR;
     }
-    if (!has_none_key_node){
+    if (!has_none_key_node) {
         free_argv(argv, argc);
         return CLI_OK;
     }
@@ -154,6 +154,38 @@ int cmd_yang_no_list(struct cli_def *cli, struct cli_command *c, const char *cmd
     return CLI_OK;
 }
 
+int cmd_yang_show_candidate_config_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
+                                        int argc) {
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    if (argc >= 1) {
+        cli_print(cli, "ERROR: unknown argument(s)");
+        return CLI_ERROR_ARG;
+    }
+    char xpath[1028] = {0};
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
+
+    const struct lysc_node *child_list = lysc_node_child(y_node);
+    const struct lysc_node *child;
+
+    LY_LIST_FOR(child_list, child) {
+        if (lysc_is_key(child)) {
+            strcat(xpath, "[");
+            strcat(xpath, child->name);
+            strcat(xpath, "='");
+            strcat(xpath, cli_get_optarg_value(cli,child->name,NULL));
+            strcat(xpath, "']");
+        }
+    }
+
+    struct lyd_node *d_node = get_local_node_data(xpath);
+    if (d_node)
+        config_print(cli, d_node);
+    else
+        cli_print(cli, "no data found");
+
+    return CLI_OK;
+}
+
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     unsigned int mode;
@@ -161,11 +193,22 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_root_module->name;
 
-    char help[100], no_help[100];
+    char help[100], no_help[100], show_help[100];
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
     sprintf(no_help, "delete %s (%s) [list]", y_node->name, y_node->module->name);
+    sprintf(show_help, "show %s configurations (%s)", y_node->name, y_node->module->name);
+
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
     struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
+    struct cli_command *parent_cmd_show_conf_cand = find_parent_show_cmd(cli, y_node);
+
+    struct cli_command *show_cmd = NULL;
+    if (parent_cmd_show_conf_cand != NULL) {
+        show_cmd = cli_register_command(cli, parent_cmd_show_conf_cand, y_node, y_node->name,
+                                        cmd_yang_show_candidate_config_list, PRIVILEGE_PRIVILEGED,
+                                        MODE_ANY, cmd_hash, show_help);
+    }
+
 
     if (parent_cmd == NULL)
         mode = y_get_curr_mode(y_node);
@@ -185,7 +228,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
-    struct cli_optarg *o, *no_o;
+    struct cli_optarg *o, *no_o, *show_o;
 //    char *list_cmd_help = create_list_cmd_help(y_node, lysc_is_userordered(y_node));
 
     LY_LIST_FOR(child_list, child) {
@@ -209,6 +252,14 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                                        mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
             o->opt_model = (void *) child; // for get_completion
             no_o->opt_model = (void *) child; // for get_completion
+
+            if (parent_cmd_show_conf_cand != NULL) {
+                show_o = cli_register_optarg(show_cmd, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                                               mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+                show_o->opt_model = o->opt_model = (void *) child;// for get_completion
+            }
+
+
 
             free((char *) optarg_help);
         }

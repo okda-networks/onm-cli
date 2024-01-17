@@ -32,9 +32,19 @@ struct lyd_node *get_local_list_nodes(struct lysc_node *y_node) {
         sprintf(xpath, "%s", get_relative_path(y_node->parent));
         lyd_find_path(parent_data, xpath, 0, &match);
         // for leafref if node does not exist in parent_data, check all roots.
-        if (match == NULL)
-            return NULL;
+        if (match == NULL) {
+            struct data_tree *curr_node = config_root_tree;
+            lysc_path(y_node->parent, LYSC_PATH_DATA, xpath, 256);
+            while (curr_node != NULL && curr_node->node != NULL) {
+                lyd_find_path(curr_node->node, xpath, 0, &match);
+                if (match != NULL)
+                    break;
+                curr_node = curr_node->prev;  // Move to the next node
+            }
+        }
     }
+    if (match == NULL)
+        return NULL;
     struct lyd_node *list_node = lyd_child(match);
     struct lyd_node *next = NULL;
     LY_LIST_FOR(list_node, next) {
@@ -61,6 +71,18 @@ struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node) {
         }
     }
     return list_entries;
+}
+
+struct lyd_node *get_local_node_data(char *xpath) {
+    struct lyd_node *match= NULL;
+    struct data_tree *curr_node = config_root_tree;
+    while (curr_node != NULL && curr_node->node != NULL) {
+        lyd_find_path(curr_node->node, xpath, 0, &match);
+        if (match != NULL)
+            break;
+        curr_node = curr_node->prev;  // Move to the next node
+    }
+    return match;
 }
 
 char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc) {

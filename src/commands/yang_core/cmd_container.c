@@ -75,11 +75,30 @@ int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char
     return CLI_OK;
 }
 
+int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    if (argc >= 1) {
+        cli_print(cli, "ERROR: unknown argument(s)");
+        return CLI_ERROR_ARG;
+    }
+    char xpath[1028] = {0};
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
+    struct lyd_node *d_node = get_local_node_data(xpath);
+    if (d_node)
+        config_print(cli,d_node);
+    else
+        cli_print(cli,"no data found");
+
+    return CLI_OK;
+}
+
+
 
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
-    char help[100], no_help[100];
+    char help[100], no_help[100], show_help[100];
     sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
     sprintf(no_help, "delete %s (%s) [contain]", y_node->name, y_node->module->name);
+    sprintf(show_help, "show %s configurations (%s)", y_node->name, y_node->module->name);
 
     unsigned int mode;
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
@@ -91,6 +110,20 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
     struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
+
+    // show config currently support root container
+    if (y_node->parent == NULL){
+        struct cli_command *parent_cmd_show_conf_cand = find_parent_show_cmd(cli, y_node);
+        if (parent_cmd_show_conf_cand == NULL){
+            parent_cmd_show_conf_cand = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_cand_cmd;
+        }
+        cli_register_command(cli, parent_cmd_show_conf_cand, y_node, y_node->name,
+                             cmd_yang_show_candidate_config_container, PRIVILEGE_PRIVILEGED,
+                             MODE_ANY, cmd_hash, show_help);
+
+    }
+
+
 
     if (parent_cmd == NULL)
         mode = y_get_curr_mode(y_node);
