@@ -1615,7 +1615,7 @@ int cli_loop(struct cli_def *cli, int sockfd) {
                     int i;
                     for (i = 0; i < comphelp.num_entries; i++) {
                         if (i % 1 == 0)
-                            _write(sockfd, "\r\n", 2);
+                            _write(sockfd, "\r\n  ", 4);
                         else
                             _write(sockfd, " ", 2);
                         _write(sockfd, comphelp.entries[i], strlen(comphelp.entries[i]));

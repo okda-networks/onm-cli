@@ -156,6 +156,7 @@ int cmd_yang_no_list(struct cli_def *cli, struct cli_command *c, const char *cmd
 
 int cmd_yang_show_candidate_config_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                         int argc) {
+
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -255,7 +256,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
             if (parent_cmd_show_conf_cand != NULL) {
                 show_o = cli_register_optarg(show_cmd, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                               mode, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+                                               MODE_ANY, optarg_help, optagr_get_compl, yang_data_validator, NULL);
                 show_o->opt_model = o->opt_model = (void *) child;// for get_completion
             }
 

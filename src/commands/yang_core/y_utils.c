@@ -14,7 +14,7 @@ enum step_action {
 
 void config_print(struct cli_def *cli, struct lyd_node *d_node) {
     char *result;
-    lyd_print_mem(&result, d_node, LYD_JSON, 0);
+    lyd_print_mem(&result, d_node, LYD_XML, 0);
     cli_print(cli,result,NULL);
 }
 
