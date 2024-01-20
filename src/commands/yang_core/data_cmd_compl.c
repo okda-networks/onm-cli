@@ -37,14 +37,44 @@ void free_options(const char **options) {
     }
 }
 
-const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int local_only) {
+enum {
+    CANDIDATE_SRC,
+    RUNNING_SRC,
+    STARTUP_SRC,
+    CANDIDATE_OR_RUNNING_SRC,
+};
+
+const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int src) {
     const char **env_vars = NULL;
     struct lyd_node *list_data_node;
-    if (local_only)
-        list_data_node = get_local_list_nodes(y_node->parent);
-    else
-        list_data_node = get_local_or_sr_list_nodes(y_node->parent);
+    char xpath[1024]={0};
 
+    switch (src) {
+        case CANDIDATE_SRC:
+            list_data_node = get_local_list_nodes(y_node->parent);
+            break;
+        case CANDIDATE_OR_RUNNING_SRC: // for show config, if no data in candidate check startup and running
+            list_data_node = get_local_or_sr_list_nodes(y_node->parent);
+            if (list_data_node == NULL) {
+                if (y_node->parent != NULL && y_node->parent->parent != NULL)
+                    list_data_node = get_sysrepo_running_node(xpath);
+            }
+            break;
+            // running and startup auto complete will be only for show commands, so we can use xpath as we
+            // don't show beyond first two nodes.
+        case RUNNING_SRC:
+            if (y_node->parent != NULL && y_node->parent->parent != NULL) {
+                lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
+                list_data_node = lyd_child(get_sysrepo_running_node(xpath));
+            }
+            break;
+        case STARTUP_SRC:
+            if (y_node->parent != NULL && y_node->parent->parent != NULL) {
+                lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
+                list_data_node = lyd_child(get_sysrepo_startup_node(xpath));
+            }
+            break;
+    }
     struct lyd_node *next = NULL;
     LY_LIST_FOR(list_data_node, next) {
         struct lyd_node *entry_children = lyd_child(next);
@@ -65,7 +95,7 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
 }
 
 
-const char **create_type_options(struct lysc_node *y_node) {
+const char **create_type_options(struct lysc_node *y_node, int datastore) {
     LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
     int num_args = 0;
     const char **env_vars = NULL;
@@ -93,10 +123,10 @@ const char **create_type_options(struct lysc_node *y_node) {
         case LY_TYPE_STRING:
             if (!lysc_is_key(y_node))
                 break;
-            return get_list_key_values_array(y_node, num_args,1);
+            return get_list_key_values_array(y_node, num_args, datastore);
         case LY_TYPE_LEAFREF: {
             struct lysc_node *target_node = (struct lysc_node *) lysc_node_lref_target(y_node);
-            return get_list_key_values_array(target_node, num_args,0);
+            return get_list_key_values_array(target_node, num_args, CANDIDATE_OR_RUNNING_SRC);
         }
         default:
             LOG_DEBUG("completion not supported for nodetype %d", type);
@@ -110,14 +140,12 @@ const char **create_type_options(struct lysc_node *y_node) {
 
 }
 
-
-int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
-                     void *cmd_model) {
+int core_optagr_get_compl(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                          void *cmd_model, int datastore) {
     if (cmd_model == NULL)
         return 0;
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
     LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
-
     const char **next_option, **options;
     LY_ARRAY_COUNT_TYPE i;
     int rc = CLI_OK;
@@ -129,7 +157,7 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
         }
         return CLI_OK;
     }
-    options = (const char **) create_type_options(y_node);
+    options = (const char **) create_type_options(y_node, datastore);
     if (options == NULL) {
         LOG_DEBUG("failed to get available options for node %s", y_node->name);
         return CLI_OK;
@@ -142,5 +170,21 @@ int optagr_get_compl(struct cli_def *cli, const char *name, const char *word, st
     free_options(options);
 
     return rc;
+
+}
+
+int optagr_get_compl_candidate(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                               void *cmd_model) {
+    return core_optagr_get_compl(cli, name, word, comphelp, cmd_model, CANDIDATE_SRC);
+}
+
+int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                             void *cmd_model) {
+    return core_optagr_get_compl(cli, name, word, comphelp, cmd_model, RUNNING_SRC);
+}
+
+int optagr_get_compl_startup(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                             void *cmd_model) {
+    return core_optagr_get_compl(cli, name, word, comphelp, cmd_model, STARTUP_SRC);
 }
 

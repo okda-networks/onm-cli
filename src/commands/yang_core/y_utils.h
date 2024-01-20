@@ -13,6 +13,8 @@
 struct cli_ctx_data {
     struct cli_command *no_cmd;
     struct cli_command *show_conf_cand_cmd;
+    struct cli_command *show_conf_running_cmd;
+    struct cli_command *show_conf_startup_cmd;
     struct cli_command *print_order_cmd;
 };
 
@@ -34,6 +36,10 @@ struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_nod
 
 struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_node);
 
-struct cli_command *find_parent_show_cmd(struct cli_def *cli, struct lysc_node *y_node);
+struct cli_command *find_parent_show_candidate_cmd(struct cli_def *cli, struct lysc_node *y_node);
+
+struct cli_command *find_parent_show_running_cmd(struct cli_def *cli, struct lysc_node *y_node);
+
+struct cli_command *find_parent_show_startup_cmd(struct cli_def *cli, struct lysc_node *y_node);
 
 #endif //ONMCLI_Y_UTILS_H
