@@ -20,6 +20,8 @@ void free_data_tree_all();
 
 void free_data_tree(struct data_tree *dtree);
 
+struct lyd_node *get_sysrepo_running_node(char *xpath);
+
 struct lyd_node *get_local_node_data(char *xpath);
 
 struct lyd_node *get_local_list_nodes(struct lysc_node *y_node);

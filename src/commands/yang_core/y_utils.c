@@ -15,7 +15,7 @@ enum step_action {
 void config_print(struct cli_def *cli, struct lyd_node *d_node) {
     char *result;
     lyd_print_mem(&result, d_node, LYD_XML, 0);
-    cli_print(cli,result,NULL);
+    cli_print(cli, result, NULL);
 }
 
 const char *get_relative_path(struct lysc_node *y_node) {
@@ -61,7 +61,10 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
                 return found_c;
             }
         }
+        if (!strcmp((*y_node)->name, "interfaces") && !strcmp(c->command, "diff"))
+            printf("here");
         if ((struct lysc_node *) c->cmd_model != *y_node) continue;
+        if (strcmp(c->command, (*y_node)->name) != 0) continue;
         return c;
     }
 
@@ -123,6 +126,7 @@ struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_
 struct cli_command *find_parent_show_cmd(struct cli_def *cli, struct lysc_node *y_node) {
     return find_parent_command(cli, y_node, SHOW_CONFIG_CANDIDATE_PARENT);
 }
+
 
 int is_root_node(const struct lysc_node *y_node) {
     if (y_node->parent == NULL)

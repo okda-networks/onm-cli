@@ -75,7 +75,8 @@ int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char
     return CLI_OK;
 }
 
-int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
+                                             int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -85,13 +86,35 @@ int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_com
     lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
     struct lyd_node *d_node = get_local_node_data(xpath);
     if (d_node)
-        config_print(cli,d_node);
+        config_print(cli, d_node);
     else
-        cli_print(cli,"no data found");
+        cli_print(cli, "no data found");
 
     return CLI_OK;
 }
 
+int
+cmd_yang_show_candidate_config_diff_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
+                                              int argc) {
+    struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+    if (argc >= 1) {
+        cli_print(cli, "ERROR: unknown argument(s)");
+        return CLI_ERROR_ARG;
+    }
+    char xpath[1028] = {0};
+    lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
+    struct lyd_node *d_node = NULL;
+    struct lyd_node *candidate_node = get_local_node_data(xpath);
+    struct lyd_node *running_node = get_sysrepo_running_node(xpath);
+    lyd_diff_tree(running_node,candidate_node,0,&d_node);
+
+    if (d_node)
+        config_print(cli, d_node);
+    else
+        cli_print(cli, " no config diff between candidate and running");
+
+    return CLI_OK;
+}
 
 
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
@@ -111,18 +134,24 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
     struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
 
-    // show config currently support root container
-    if (y_node->parent == NULL){
+    // show config currently support root container only
+    if (y_node->parent == NULL) {
         struct cli_command *parent_cmd_show_conf_cand = find_parent_show_cmd(cli, y_node);
-        if (parent_cmd_show_conf_cand == NULL){
+        if (parent_cmd_show_conf_cand == NULL) {
             parent_cmd_show_conf_cand = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_cand_cmd;
         }
-        cli_register_command(cli, parent_cmd_show_conf_cand, y_node, y_node->name,
-                             cmd_yang_show_candidate_config_container, PRIVILEGE_PRIVILEGED,
-                             MODE_ANY, cmd_hash, show_help);
+        struct cli_command *show_cand_cont_c = cli_register_command(cli, parent_cmd_show_conf_cand, y_node,
+                                                                    y_node->name,
+                                                                    cmd_yang_show_candidate_config_container,
+                                                                    PRIVILEGE_PRIVILEGED,
+                                                                    MODE_ANY, cmd_hash, show_help);
+        cli_register_command(cli, show_cand_cont_c, y_node,
+                             "diff",
+                             cmd_yang_show_candidate_config_diff_container,
+                             PRIVILEGE_PRIVILEGED,
+                             MODE_ANY, "diff", "show config diff");
 
     }
-
 
 
     if (parent_cmd == NULL)
@@ -135,8 +164,8 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
 
 
     cli_register_command(cli, parent_cmd, y_node, y_node->name,
-                                                 cmd_yang_container, PRIVILEGE_PRIVILEGED,
-                                                 mode, cmd_hash, help);
+                         cmd_yang_container, PRIVILEGE_PRIVILEGED,
+                         mode, cmd_hash, help);
 
     cli_register_command(cli, parent_cmd_no, y_node, y_node->name,
                          cmd_yang_no_container, PRIVILEGE_PRIVILEGED,

@@ -177,12 +177,22 @@ int cmd_yang_show_candidate_config_list(struct cli_def *cli, struct cli_command 
             strcat(xpath, "']");
         }
     }
+    int is_diff = cli_get_optarg_value(cli,"diff",NULL)?1:0;
+    struct lyd_node *d_node= NULL;
+    if (is_diff){
+        struct lyd_node *candidate_node = get_local_node_data(xpath);
+        struct lyd_node *running_node = get_sysrepo_running_node(xpath);
+        lyd_diff_tree(running_node,candidate_node,0,&d_node);
 
-    struct lyd_node *d_node = get_local_node_data(xpath);
+    } else{
+        d_node = get_local_node_data(xpath);
+    }
+
+
     if (d_node)
         config_print(cli, d_node);
     else
-        cli_print(cli, "no data found");
+        cli_print(cli, " no config diff between candidate and running");
 
     return CLI_OK;
 }
@@ -257,6 +267,8 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             if (parent_cmd_show_conf_cand != NULL) {
                 show_o = cli_register_optarg(show_cmd, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                                MODE_ANY, optarg_help, optagr_get_compl, yang_data_validator, NULL);
+                cli_register_optarg(show_cmd, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
+                                    MODE_ANY, optarg_help, NULL, yang_data_validator, NULL);
                 show_o->opt_model = o->opt_model = (void *) child;// for get_completion
             }
 
