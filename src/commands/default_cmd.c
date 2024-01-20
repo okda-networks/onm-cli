@@ -90,7 +90,18 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     return cli_exit(cli, c, cmd, argv, argc);
 }
 
-int cmd_print_local_config(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+int cmd_show_config_running(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    cli_print(cli,"not implemented, use show config-running <node>");
+    return CLI_OK;
+}
+
+int cmd_show_config_startup(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    cli_print(cli,"not implemented, use show config-startup <node>");
+    return CLI_OK;
+}
+
+
+int cmd_show_config_candidate(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
     struct data_tree *config_dtree = get_config_root_tree();
     int is_xml = 1;
@@ -160,24 +171,30 @@ int default_commands_init(struct cli_def *cli) {
                          MODE_ANY, NULL, "commit changes to sysrepo cdb");
 
 
-    struct cli_command *print = cli_register_command(cli, NULL, NULL,
-                                                     "show", NULL, PRIVILEGE_UNPRIVILEGED,
-                                                     MODE_ANY, NULL, "print the candidate/running config");
+    struct cli_command *show = cli_register_command(cli, NULL, NULL,
+                                                    "show", NULL, PRIVILEGE_UNPRIVILEGED,
+                                                    MODE_ANY, NULL, "print the candidate/running config");
 
-    struct cli_command *local_config = cli_register_command(cli, print, NULL,
-                                                            "local-candidate-config", cmd_print_local_config,
-                                                            PRIVILEGE_UNPRIVILEGED,
-                                                            MODE_ANY, NULL, "print the local new config data tree");
-    cli_register_optarg(local_config, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
+//    struct cli_command *config_running = cli_register_command(cli, show, NULL,
+//                                                              "config-running", NULL, PRIVILEGE_UNPRIVILEGED,
+//                                                              MODE_ANY, NULL, "print the candidate/running config");
+
+    struct cli_command *config_candidate = cli_register_command(cli, show, NULL,
+                                                                "config-candidate", cmd_show_config_candidate, PRIVILEGE_UNPRIVILEGED,
+                                                                MODE_ANY, "config-candidate", "show the candidate configurations");
+    struct cli_command *config_running = cli_register_command(cli, show, NULL,
+                                                                "config-running", cmd_show_config_running, PRIVILEGE_UNPRIVILEGED,
+                                                                MODE_ANY, "config-running", "show the running configurations");
+    struct cli_command *config_startup = cli_register_command(cli, show, NULL,
+                                                                "config-startup", cmd_show_config_startup, PRIVILEGE_UNPRIVILEGED,
+                                                                MODE_ANY, NULL, "show the startup configurations");
+
+//    cli_register_optarg(config_running, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
+//                        "printed format [json|xml].", NULL, NULL, NULL);
+
+    cli_register_optarg(config_candidate, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
                         "printed format [json|xml].", NULL, NULL, NULL);
 
-    cli_register_command(cli, print, NULL,
-                         "cdb-candidate-config", NULL, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "print cdp candidate config");
-
-    cli_register_command(cli, print, NULL,
-                         "cdb-running-config", NULL, PRIVILEGE_UNPRIVILEGED,
-                         MODE_ANY, NULL, "print cdp running config");
 
     cli_register_command(cli, NULL, NULL,
                          "discard-changes", cmd_discard_changes, PRIVILEGE_UNPRIVILEGED,
@@ -188,6 +205,9 @@ int default_commands_init(struct cli_def *cli) {
 
     struct cli_ctx_data *ctx_data = (struct cli_ctx_data *) cli_get_context(cli);
     ctx_data->no_cmd = no_cmd;
+    ctx_data->show_conf_cand_cmd = config_candidate;
+    ctx_data->show_conf_running_cmd = config_running;
+    ctx_data->show_conf_startup_cmd = config_startup;
 
     return EXIT_SUCCESS;
 

@@ -6,7 +6,7 @@
 #include "onm_logger.h"
 
 static sr_conn_ctx_t *connection = NULL;
-static sr_session_ctx_t *session = NULL;
+static sr_session_ctx_t *session = NULL,*startup_session=NULL;
 
 struct data_tree *config_root_tree;
 
@@ -112,6 +112,16 @@ int sysrepo_start_session() {
     return EXIT_SUCCESS;
 }
 
+int sysrepo_start_session_startup() {
+    // Start a new session
+    if (sr_session_start(connection, SR_DS_STARTUP, &startup_session) != SR_ERR_OK) {
+        LOG_ERROR("Failed to start a new Sysrepo session");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+
 const struct ly_ctx *sysrepo_get_ctx() {
     LOG_DEBUG("sysrepo context acquired!");
     return sr_acquire_context(connection);
@@ -120,6 +130,13 @@ const struct ly_ctx *sysrepo_get_ctx() {
 
 sr_session_ctx_t *sysrepo_get_session() {
     return session;
+}
+
+sr_session_ctx_t *sysrepo_get_session_startup() {
+    if (startup_session == NULL)
+        if (sysrepo_start_session_startup() != SR_ERR_OK)
+            LOG_ERROR("failed to start session to startup DS.");
+    return startup_session;
 }
 
 struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node) {

@@ -1615,7 +1615,7 @@ int cli_loop(struct cli_def *cli, int sockfd) {
                     int i;
                     for (i = 0; i < comphelp.num_entries; i++) {
                         if (i % 1 == 0)
-                            _write(sockfd, "\r\n", 2);
+                            _write(sockfd, "\r\n  ", 4);
                         else
                             _write(sockfd, " ", 2);
                         _write(sockfd, comphelp.entries[i], strlen(comphelp.entries[i]));
@@ -3492,7 +3492,7 @@ static void cli_get_optarg_comphelp(struct cli_def *cli, struct cli_optarg *opta
         free_z(working);
     } else if (lastchar == CTRL('I')) {
         if (get_completions) {
-            (*get_completions)(cli, optarg->name, next_word, comphelp,optarg->opt_model);
+            (*get_completions)(cli, optarg->name, next_word, comphelp, optarg->opt_model);
         } else if ((!anchor_word || !strncmp(anchor_word, optarg->name, strlen(anchor_word))) &&
                    (asprintf(&tptr, "%s%s%s", delim_start, optarg->name, delim_end) != -1)) {
             cli_add_comphelp_entry(comphelp, tptr);

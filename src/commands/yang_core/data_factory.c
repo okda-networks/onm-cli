@@ -26,15 +26,29 @@ enum {
 struct lyd_node *get_local_list_nodes(struct lysc_node *y_node) {
     char xpath[256] = {0};
     struct lyd_node *match = NULL;
-    if (parent_data->schema == y_node->parent)
-        match = parent_data;
-    else {
-        sprintf(xpath, "%s", get_relative_path(y_node->parent));
-        lyd_find_path(parent_data, xpath, 0, &match);
-        // for leafref if node does not exist in parent_data, check all roots.
-        if (match == NULL)
-            return NULL;
+    if (parent_data != NULL) {
+        if (parent_data->schema == y_node->parent)
+            match = parent_data;
+        else {
+            sprintf(xpath, "%s", get_relative_path(y_node->parent));
+            lyd_find_path(parent_data, xpath, 0, &match);
+            // for leafref if node does not exist in parent_data, check all roots.
+
+        }
     }
+    if (match == NULL) {
+        struct data_tree *curr_node = config_root_tree;
+        lysc_path(y_node->parent, LYSC_PATH_DATA, xpath, 256);
+        while (curr_node != NULL && curr_node->node != NULL) {
+            lyd_find_path(curr_node->node, xpath, 0, &match);
+            if (match != NULL)
+                break;
+            curr_node = curr_node->prev;  // Move to the next node
+        }
+    }
+
+    if (match == NULL)
+        return NULL;
     struct lyd_node *list_node = lyd_child(match);
     struct lyd_node *next = NULL;
     LY_LIST_FOR(list_node, next) {
@@ -61,6 +75,40 @@ struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node) {
         }
     }
     return list_entries;
+}
+
+struct lyd_node *get_sysrepo_running_node(char *xpath) {
+    sr_data_t *sysrepo_subtree;
+    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
+    if (ret == SR_ERR_OK)
+        return sysrepo_subtree->tree;
+    if (ret == SR_ERR_NOT_FOUND)
+        return NULL;
+    LOG_ERROR("data_factory.c: error returning sysrepo data, code=%d", ret);
+    return NULL;
+}
+
+struct lyd_node *get_sysrepo_startup_node(char *xpath) {
+    sr_data_t *sysrepo_subtree;
+    int ret = sr_get_subtree(sysrepo_get_session_startup(), xpath, 0, &sysrepo_subtree);
+    if (ret == SR_ERR_OK)
+        return sysrepo_subtree->tree;
+    if (ret == SR_ERR_NOT_FOUND)
+        return NULL;
+    LOG_ERROR("data_factory.c: error returning sysrepo data, code=%d", ret);
+    return NULL;
+}
+
+struct lyd_node *get_local_node_data(char *xpath) {
+    struct lyd_node *match= NULL;
+    struct data_tree *curr_node = config_root_tree;
+    while (curr_node != NULL && curr_node->node != NULL) {
+        lyd_find_path(curr_node->node, xpath, 0, &match);
+        if (match != NULL)
+            break;
+        curr_node = curr_node->prev;  // Move to the next node
+    }
+    return match;
 }
 
 char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc) {
@@ -185,16 +233,7 @@ int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc, stru
 
 }
 
-struct lyd_node *get_sysrepo_root_node(char *xpath) {
-    sr_data_t *sysrepo_subtree;
-    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK)
-        return sysrepo_subtree->tree;
-    if (ret == SR_ERR_NOT_FOUND)
-        return NULL;
-    LOG_ERROR("data_factory.c: error returning sysrepo data, code=%d", ret);
-    return NULL;
-}
+
 
 static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type, struct cli_def *cli) {
     int ret;
@@ -222,7 +261,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             if (y_node->parent == NULL) {
                 if (config_root_tree == NULL) {
                     config_root_tree = malloc(sizeof(struct data_tree));
-                    config_root_tree->node = get_sysrepo_root_node(xpath);
+                    config_root_tree->node = get_sysrepo_running_node(xpath);
                     config_root_tree->prev = NULL;
                     curr_root = config_root_tree;
                     if (config_root_tree->node != NULL) {
@@ -247,7 +286,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     }
                     // create new root_tree node and link it to the list.
                     struct data_tree *new_root = malloc(sizeof(struct data_tree));
-                    new_root->node = get_sysrepo_root_node(xpath);
+                    new_root->node = get_sysrepo_running_node(xpath);
                     new_root->prev = config_root_tree;
                     config_root_tree = new_root;
                     curr_root = config_root_tree;

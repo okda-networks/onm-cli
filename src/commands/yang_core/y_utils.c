@@ -7,6 +7,16 @@
 
 #define CONFIG_MODE 1
 
+enum step_action {
+    STEP_FORWARD,
+    STEP_BACKWARD
+};
+
+void config_print(struct cli_def *cli, struct lyd_node *d_node) {
+    char *result;
+    lyd_print_mem(&result, d_node, LYD_XML, 0);
+    cli_print(cli, result, NULL);
+}
 
 const char *get_relative_path(struct lysc_node *y_node) {
     struct lysc_node *root_parent = y_node->parent;
@@ -51,7 +61,10 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
                 return found_c;
             }
         }
+        if (!strcmp((*y_node)->name, "interfaces") && !strcmp(c->command, "diff"))
+            printf("here");
         if ((struct lysc_node *) c->cmd_model != *y_node) continue;
+        if (strcmp(c->command, (*y_node)->name) != 0) continue;
         return c;
     }
 
@@ -63,10 +76,39 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
 //    return search_cmds(cli->commands, y_node,no_cmd);
 //}
 
-struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y_node, int no_cmd) {
-    struct cli_command *root_cmds = cli->commands;
-    if (no_cmd)
-        root_cmds = ((struct cli_ctx_data *)cli_get_context(cli))->no_cmd->children;
+typedef enum {
+    CONFIG_PARENT,
+    NO_CONFIG_PARENT,
+    SHOW_CONFIG_CANDIDATE_PARENT,
+    SHOW_CONFIG_RUNNING_PARENT,
+    SHOW_CONFIG_STARTUP_PARENT,
+} FIND_PARENT_T;
+
+struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y_node, FIND_PARENT_T parent_type) {
+    struct cli_command *root_cmds;
+
+    switch (parent_type) {
+        case CONFIG_PARENT:
+            root_cmds = cli->commands;
+            break;
+        case NO_CONFIG_PARENT:
+            root_cmds = ((struct cli_ctx_data *) cli_get_context(cli))->no_cmd->children;
+            break;
+        case SHOW_CONFIG_CANDIDATE_PARENT:
+            root_cmds = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_cand_cmd->children;
+            if (y_node->parent != NULL)
+                return search_cmds(root_cmds, &y_node->parent);
+        case SHOW_CONFIG_RUNNING_PARENT:
+            root_cmds = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_running_cmd->children;
+            if (y_node->parent != NULL)
+                return search_cmds(root_cmds, &y_node->parent);
+        case SHOW_CONFIG_STARTUP_PARENT:
+            root_cmds = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_startup_cmd->children;
+            if (y_node->parent != NULL)
+                return search_cmds(root_cmds, &y_node->parent);
+            break;
+    }
+
 
     if (y_node->parent != NULL && y_node->parent->parent != NULL
         && (y_node->parent->nodetype == LYS_CONTAINER || y_node->parent->nodetype == LYS_CHOICE ||
@@ -80,14 +122,27 @@ struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y
 }
 
 struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli,y_node,0);
+    return find_parent_command(cli, y_node, CONFIG_PARENT);
 }
 
 struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli,y_node,1);
+    return find_parent_command(cli, y_node, NO_CONFIG_PARENT);
 }
 
-int is_root_node(const struct lysc_node *y_node){
+struct cli_command *find_parent_show_candidate_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli, y_node, SHOW_CONFIG_CANDIDATE_PARENT);
+}
+
+struct cli_command *find_parent_show_running_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli, y_node, SHOW_CONFIG_RUNNING_PARENT);
+}
+
+struct cli_command *find_parent_show_startup_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command(cli, y_node, SHOW_CONFIG_STARTUP_PARENT);
+}
+
+
+int is_root_node(const struct lysc_node *y_node) {
     if (y_node->parent == NULL)
         return 1;
     return 0;
