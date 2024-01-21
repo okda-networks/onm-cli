@@ -12,13 +12,23 @@
 int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     if (!is_root_node(y_node)) {
-        cli_print(cli, "incomplete command, please use '?' for options cont ");
+        if (argc >= 1)
+            cli_print(cli, " invalid command, use '?' for valid options");
+        else
+            cli_print(cli, " incomplete command, please use '?' for options ");
         return CLI_ERROR;
     }
 
     int ret;
     int is_delete = 0;
 
+    if (argc==1){
+        if (!strcmp(argv[0],"?")){
+            cli_print(cli," <cr>");
+            return CLI_OK;
+        }
+
+    }
 
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -178,6 +188,17 @@ int cmd_yang_show_operational_container(struct cli_def *cli, struct cli_command 
     return core_cmd_yang_show_config(cli, c, OPERATIONAL_DS);
 }
 
+int has_list_in_parents(struct lysc_node *y_node){
+    struct lysc_node *curr_node= y_node->parent;
+    while (curr_node != NULL){
+        if (curr_node->nodetype == LYS_LIST)
+            return 1;
+        curr_node = curr_node->parent;
+    }
+    return 0;
+
+}
+
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_root_module->name;
@@ -214,7 +235,7 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
 
     // show config currently support root container only
-    if (y_node->parent == NULL) {
+    if (!has_list_in_parents(y_node)) {
         struct cli_command *parent_cmd_show_conf_cand = find_parent_show_candidate_cmd(cli, y_node);
         struct cli_command *parent_cmd_show_conf_run = find_parent_show_running_cmd(cli, y_node);
         struct cli_command *parent_cmd_show_conf_start = find_parent_show_startup_cmd(cli, y_node);

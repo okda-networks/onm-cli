@@ -256,7 +256,7 @@ int cmd_yang_show_startup_config_list(struct cli_def *cli, struct cli_command *c
 }
 
 int cmd_yang_show_operational_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
-                                      int argc) {
+                                   int argc) {
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
@@ -271,7 +271,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     if (has_oper_children(y_node)) {
         char show_oper_help[100] = {0};
-        char* oper_optarg_help;
+        char *oper_optarg_help;
         sprintf(show_oper_help, "show operational data for %s (%s) [list]", y_node->name, y_node->module->name);
         struct cli_command *show_oper_c, *show_oper_c_parent;
 
@@ -389,8 +389,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                 show_o = cli_register_optarg(show_cmd_cand, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_candidate, yang_data_validator,
                                              NULL);
-                cli_register_optarg(show_cmd_cand, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
-                                    MODE_ANY, "show difference", NULL, yang_data_validator, NULL);
+
                 show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_start != NULL) {
@@ -407,6 +406,12 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             }
             free((char *) optarg_help);
         }
+    }
+
+    // add diff optargs for parent_cmd_show_conf_cand
+    if (parent_cmd_show_conf_cand != NULL) {
+        cli_register_optarg(show_cmd_cand, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
+                            MODE_ANY, strdup("show difference"), NULL, yang_data_validator, NULL);
     }
     if (lysc_is_userordered(y_node)) {
         cli_register_optarg(c, "index", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_PRIVILEGED,
