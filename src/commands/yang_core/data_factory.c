@@ -328,10 +328,9 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
         case LYS_LEAF:
         case LYS_LEAFLIST:
             if (y_node->nodetype == LYS_LEAFLIST)
-                snprintf(xpath, 256, "%s:%s[.='%s']", y_node->module->name, get_relative_path(y_node), value);
+                snprintf(xpath, 256, "%s[.='%s']", get_relative_path(y_node), value);
             else
-                snprintf(xpath, 256, "%s:%s", y_node->module->name, get_relative_path(y_node));
-
+                snprintf(xpath, 256, "%s", get_relative_path(y_node));
 
             struct lyd_node *new_leaf;
 
