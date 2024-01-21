@@ -140,7 +140,7 @@ const char **create_type_options(struct lysc_node *y_node, int datastore) {
 
 }
 
-int core_optagr_get_compl(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
                           void *cmd_model, int datastore) {
     if (cmd_model == NULL)
         return 0;
@@ -175,16 +175,16 @@ int core_optagr_get_compl(struct cli_def *cli, const char *name, const char *wor
 
 int optagr_get_compl_candidate(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                                void *cmd_model) {
-    return core_optagr_get_compl(cli, name, word, comphelp, cmd_model, CANDIDATE_SRC);
+    return core_optagr_get_compl( word, comphelp, cmd_model, CANDIDATE_SRC);
 }
 
 int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model) {
-    return core_optagr_get_compl(cli, name, word, comphelp, cmd_model, RUNNING_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, RUNNING_SRC);
 }
 
 int optagr_get_compl_startup(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model) {
-    return core_optagr_get_compl(cli, name, word, comphelp, cmd_model, STARTUP_SRC);
+    return core_optagr_get_compl( word, comphelp, cmd_model, STARTUP_SRC);
 }
 

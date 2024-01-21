@@ -194,6 +194,11 @@ int default_commands_init(struct cli_def *cli) {
                                                               PRIVILEGE_UNPRIVILEGED,
                                                               MODE_ANY, NULL, "show the startup configurations");
 
+    struct cli_command *show_oper = cli_register_command(cli, show, NULL,
+                                                              "operational-data", cmd_show_config_startup,
+                                                              PRIVILEGE_UNPRIVILEGED,
+                                                              MODE_ANY, NULL, "show the operational data");
+
 //    cli_register_optarg(config_running, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
 //                        "printed format [json|xml].", NULL, NULL, NULL);
 
@@ -213,6 +218,7 @@ int default_commands_init(struct cli_def *cli) {
     ctx_data->show_conf_cand_cmd = config_candidate;
     ctx_data->show_conf_running_cmd = config_running;
     ctx_data->show_conf_startup_cmd = config_startup;
+    ctx_data->show_operational_data = show_oper;
 
     return EXIT_SUCCESS;
 

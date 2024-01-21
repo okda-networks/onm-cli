@@ -6,7 +6,7 @@
 #include "onm_logger.h"
 
 static sr_conn_ctx_t *connection = NULL;
-static sr_session_ctx_t *session = NULL, *startup_session = NULL;
+static sr_session_ctx_t *session = NULL, *startup_session = NULL,*operational_session = NULL;
 
 struct data_tree *config_root_tree;
 
@@ -121,6 +121,15 @@ int sysrepo_start_session_startup() {
     return EXIT_SUCCESS;
 }
 
+int sysrepo_start_session_operational() {
+    // Start a new session
+    if (sr_session_start(connection, SR_DS_OPERATIONAL, &operational_session) != SR_ERR_OK) {
+        LOG_ERROR("Failed to start a new Sysrepo session");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 
 const struct ly_ctx *sysrepo_get_ctx() {
     LOG_DEBUG("sysrepo context acquired!");
@@ -137,6 +146,13 @@ sr_session_ctx_t *sysrepo_get_session_startup() {
         if (sysrepo_start_session_startup() != SR_ERR_OK)
             LOG_ERROR("failed to start session to startup DS.");
     return startup_session;
+}
+
+sr_session_ctx_t *sysrepo_get_session_operational() {
+    if (operational_session == NULL)
+        if (sysrepo_start_session_operational() != SR_ERR_OK)
+            LOG_ERROR("failed to start session to operational DS.");
+    return operational_session;
 }
 
 struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node) {
@@ -224,6 +240,12 @@ int onm_sysrepo_init() {
         return EXIT_FAILURE;
 
     if (sysrepo_start_session() != EXIT_SUCCESS)
+        return EXIT_FAILURE;
+
+    if (sysrepo_start_session_startup() != EXIT_SUCCESS)
+        return EXIT_FAILURE;
+
+    if (sysrepo_start_session_operational() != EXIT_SUCCESS)
         return EXIT_FAILURE;
 
     return EXIT_SUCCESS;

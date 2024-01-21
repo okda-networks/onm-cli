@@ -78,7 +78,8 @@ int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char
 enum {
     RUNNING_DS,
     STARTUP_DS,
-    CANDIDATE_DS
+    CANDIDATE_DS,
+    OPERATIONAL_DS,
 };
 
 int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int datastore) {
@@ -98,6 +99,9 @@ int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int da
             break;
         case STARTUP_DS:
             d_node = get_sysrepo_startup_node(xpath);
+            break;
+        case OPERATIONAL_DS:
+            d_node = get_sysrepo_operational_node(xpath);
             break;
     }
 
@@ -165,16 +169,42 @@ cmd_yang_show_candidate_config_diff_container(struct cli_def *cli, struct cli_co
     return CLI_OK;
 }
 
+int cmd_yang_show_operational_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
+                                           int argc) {
+    if (argc >= 1) {
+        cli_print(cli, "ERROR: unknown argument(s)");
+        return CLI_ERROR_ARG;
+    }
+    return core_cmd_yang_show_config(cli, c, OPERATIONAL_DS);
+}
 
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
+    const struct lys_module *y_root_module = lysc_owner_module(y_node);
+    char *cmd_hash = (char *) y_root_module->name;
+    // show operational support root container only.
+    if (has_oper_children(y_node) && y_node->parent == NULL) {
+        char show_oper_help[100] = {0};
+        sprintf(show_oper_help, "show operational data for %s (%s) [contain]", y_node->name, y_node->module->name);
+        struct cli_command *show_oper_c_parent;
+        show_oper_c_parent = ((struct cli_ctx_data *) cli_get_context(cli))->show_operational_data;
+
+        cli_register_command(cli, show_oper_c_parent, y_node,
+                             y_node->name,
+                             cmd_yang_show_operational_container,
+                             PRIVILEGE_PRIVILEGED,
+                             MODE_ANY, cmd_hash, show_oper_help);
+
+    }
+    if (y_node->flags & LYS_CONFIG_R)
+        return CLI_OK;
+
     char help[100], no_help[100], show_help[100];
     sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
     sprintf(no_help, "delete %s (%s) [contain]", y_node->name, y_node->module->name);
     sprintf(show_help, "show %s configurations (%s)", y_node->name, y_node->module->name);
 
     unsigned int mode;
-    const struct lys_module *y_root_module = lysc_owner_module(y_node);
-    char *cmd_hash = (char *) y_root_module->name;
+
     // there is ietf-yang where container and choice has same name.
     // we don't want to register this container to avoid duplication.
     if (y_node->parent != NULL && !strcmp(y_node->parent->name, y_node->name))
@@ -215,7 +245,6 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
                              MODE_ANY, "diff", "show config diff");
 
     }
-
 
     if (parent_cmd == NULL)
         mode = y_get_curr_mode(y_node);

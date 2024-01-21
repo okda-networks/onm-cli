@@ -80,7 +80,18 @@ struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node) {
 struct lyd_node *get_sysrepo_running_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK)
+    if (ret == SR_ERR_OK && sysrepo_subtree!=NULL)
+        return sysrepo_subtree->tree;
+    if (ret == SR_ERR_NOT_FOUND)
+        return NULL;
+    LOG_ERROR("data_factory.c: error returning sysrepo data, code=%d", ret);
+    return NULL;
+}
+
+struct lyd_node *get_sysrepo_operational_node(char *xpath){
+    sr_data_t *sysrepo_subtree;
+    int ret = sr_get_subtree(sysrepo_get_session_operational(), xpath, 0, &sysrepo_subtree);
+    if (ret == SR_ERR_OK && sysrepo_subtree!=NULL)
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
         return NULL;
@@ -91,7 +102,7 @@ struct lyd_node *get_sysrepo_running_node(char *xpath) {
 struct lyd_node *get_sysrepo_startup_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session_startup(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK)
+    if (ret == SR_ERR_OK && sysrepo_subtree!=NULL)
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
         return NULL;

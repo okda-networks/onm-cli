@@ -82,6 +82,7 @@ typedef enum {
     SHOW_CONFIG_CANDIDATE_PARENT,
     SHOW_CONFIG_RUNNING_PARENT,
     SHOW_CONFIG_STARTUP_PARENT,
+    SHOW_OPERATIONAL,
 } FIND_PARENT_T;
 
 struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y_node, FIND_PARENT_T parent_type) {
@@ -106,7 +107,12 @@ struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y
             root_cmds = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_startup_cmd->children;
             if (y_node->parent != NULL)
                 return search_cmds(root_cmds, &y_node->parent);
-            break;
+        case SHOW_OPERATIONAL:
+            root_cmds = ((struct cli_ctx_data *) cli_get_context(cli))->show_operational_data->children;
+            if (y_node->parent != NULL)
+                return search_cmds(root_cmds, &y_node->parent);
+        default:
+            return NULL;
     }
 
 
@@ -141,6 +147,19 @@ struct cli_command *find_parent_show_startup_cmd(struct cli_def *cli, struct lys
     return find_parent_command(cli, y_node, SHOW_CONFIG_STARTUP_PARENT);
 }
 
+struct cli_command *find_parent_show_oper_cmd(struct cli_def *cli, struct lysc_node *y_node){
+    return find_parent_command(cli, y_node, SHOW_OPERATIONAL);
+}
+
+int has_oper_children(struct lysc_node *y_node){
+    struct lysc_node *child;
+    LYSC_TREE_DFS_BEGIN(y_node, child) {
+            if (child->flags & LYS_CONFIG_R)
+                return 1;
+        LYSC_TREE_DFS_END(y_node, child);
+    }
+    return 0;
+}
 
 int is_root_node(const struct lysc_node *y_node) {
     if (y_node->parent == NULL)

@@ -24,6 +24,8 @@ struct lyd_node *get_sysrepo_running_node(char *xpath);
 
 struct lyd_node *get_sysrepo_startup_node(char *xpath);
 
+struct lyd_node *get_sysrepo_operational_node(char *xpath);
+
 struct lyd_node *get_local_node_data(char *xpath);
 
 struct lyd_node *get_local_list_nodes(struct lysc_node *y_node);
