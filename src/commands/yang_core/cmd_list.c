@@ -390,7 +390,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                                              MODE_ANY, optarg_help, optagr_get_compl_candidate, yang_data_validator,
                                              NULL);
                 cli_register_optarg(show_cmd_cand, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
-                                    MODE_ANY, optarg_help, NULL, yang_data_validator, NULL);
+                                    MODE_ANY, "show difference", NULL, yang_data_validator, NULL);
                 show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_start != NULL) {
