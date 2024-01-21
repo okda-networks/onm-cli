@@ -271,6 +271,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     if (has_oper_children(y_node)) {
         char show_oper_help[100] = {0};
+        char* oper_optarg_help;
         sprintf(show_oper_help, "show operational data for %s (%s) [list]", y_node->name, y_node->module->name);
         struct cli_command *show_oper_c, *show_oper_c_parent;
 
@@ -286,12 +287,19 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             LY_LIST_FOR(child_list, child) {
                 if (lysc_is_key(child)) {
                     if (lysc_is_key(child)) {
+                        if (child->dsc != NULL)
+                            oper_optarg_help = strdup(child->dsc);
+                        else {
+                            oper_optarg_help = malloc(strlen(child->name) + strlen("configure ") + 2);
+                            sprintf((char *) oper_optarg_help, "configure %s", strdup(child->name));
+                        }
                         struct cli_optarg *show_oper_o = cli_register_optarg(show_oper_c, child->name, CLI_CMD_ARGUMENT,
                                                                              PRIVILEGE_PRIVILEGED,
-                                                                             MODE_ANY, child->dsc,
+                                                                             MODE_ANY, oper_optarg_help,
                                                                              optagr_get_compl_running,
                                                                              yang_data_validator, NULL);
                         show_oper_o->opt_model = (void *) child;
+                        free(oper_optarg_help);
 
                     }
                 }
