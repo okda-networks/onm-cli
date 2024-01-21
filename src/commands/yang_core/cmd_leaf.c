@@ -78,6 +78,9 @@ int cmd_yang_no_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd
 }
 
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
+    if (y_node->flags & LYS_CONFIG_R)
+        return 1;
+
     char help[100], no_help[100];
     sprintf(help, "configure %s (%s) [leaf-list]", y_node->name, y_node->module->name);
     sprintf(no_help, "delete %s (%s) [leaf-list]", y_node->name, y_node->module->name);
@@ -133,6 +136,9 @@ int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node) {
 
 
 int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
+    if (y_node->flags & LYS_CONFIG_R)
+        return 1;
+
     char help[100], no_help[100];
     sprintf(help, "configure %s (%s) [leaf]", y_node->name, y_node->module->name);
     sprintf(no_help, "delete %s (%s) [leaf]", y_node->name, y_node->module->name);

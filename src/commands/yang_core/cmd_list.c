@@ -157,7 +157,8 @@ int cmd_yang_no_list(struct cli_def *cli, struct cli_command *c, const char *cmd
 enum {
     RUNNING_DS,
     STARTUP_DS,
-    CANDIDATE_DS
+    CANDIDATE_DS,
+    OPERATIONAL_DS
 };
 
 int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datastore) {
@@ -210,6 +211,9 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
             case STARTUP_DS:
                 d_node = get_sysrepo_startup_node(xpath);
                 break;
+            case OPERATIONAL_DS:
+                d_node = get_sysrepo_operational_node(xpath);
+                break;
         }
     }
 
@@ -217,7 +221,7 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
     if (d_node)
         config_print(cli, d_node);
     else
-        cli_print(cli, " no config found for node '%s'", xpath);
+        cli_print(cli, " no data found for node '%s'", xpath);
 
     return CLI_OK;
 }
@@ -249,15 +253,65 @@ int cmd_yang_show_startup_config_list(struct cli_def *cli, struct cli_command *c
         return CLI_ERROR_ARG;
     }
     return core_yand_show_config(cli, c, STARTUP_DS);
+}
+
+int cmd_yang_show_operational_list(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
+                                   int argc) {
+    if (argc >= 1) {
+        cli_print(cli, "ERROR: unknown argument(s)");
+        return CLI_ERROR_ARG;
+    }
+    return core_yand_show_config(cli, c, OPERATIONAL_DS);
 
 }
 
 int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
+    const struct lys_module *y_root_module = lysc_owner_module(y_node);
+    char *cmd_hash = (char *) y_root_module->name;
+
+    if (has_oper_children(y_node)) {
+        char show_oper_help[100] = {0};
+        char *oper_optarg_help;
+        sprintf(show_oper_help, "show operational data for %s (%s) [list]", y_node->name, y_node->module->name);
+        struct cli_command *show_oper_c, *show_oper_c_parent;
+
+        show_oper_c_parent = find_parent_show_oper_cmd(cli, y_node);
+        if (show_oper_c_parent != NULL) {
+            show_oper_c = cli_register_command(cli, show_oper_c_parent, y_node,
+                                               y_node->name,
+                                               cmd_yang_show_operational_list,
+                                               PRIVILEGE_PRIVILEGED,
+                                               MODE_ANY, cmd_hash, show_oper_help);
+            const struct lysc_node *child_list = lysc_node_child(y_node);
+            const struct lysc_node *child;
+            LY_LIST_FOR(child_list, child) {
+                if (lysc_is_key(child)) {
+                    if (lysc_is_key(child)) {
+                        if (child->dsc != NULL)
+                            oper_optarg_help = strdup(child->dsc);
+                        else {
+                            oper_optarg_help = malloc(strlen(child->name) + strlen("configure ") + 2);
+                            sprintf((char *) oper_optarg_help, "configure %s", strdup(child->name));
+                        }
+                        struct cli_optarg *show_oper_o = cli_register_optarg(show_oper_c, child->name, CLI_CMD_ARGUMENT,
+                                                                             PRIVILEGE_PRIVILEGED,
+                                                                             MODE_ANY, oper_optarg_help,
+                                                                             optagr_get_compl_running,
+                                                                             yang_data_validator, NULL);
+                        show_oper_o->opt_model = (void *) child;
+                        free(oper_optarg_help);
+
+                    }
+                }
+            }
+        }
+
+    }
+    if (y_node->flags & LYS_CONFIG_R)
+        return CLI_OK;
 
     unsigned int mode;
 
-    const struct lys_module *y_root_module = lysc_owner_module(y_node);
-    char *cmd_hash = (char *) y_root_module->name;
 
     char help[100], no_help[100], show_help[100];
     sprintf(help, "configure %s (%s) [list]", y_node->name, y_node->module->name);
@@ -335,24 +389,29 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                 show_o = cli_register_optarg(show_cmd_cand, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_candidate, yang_data_validator,
                                              NULL);
-                cli_register_optarg(show_cmd_cand, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
-                                    MODE_ANY, optarg_help, NULL, yang_data_validator, NULL);
-                show_o->opt_model = o->opt_model = (void *) child;// for get_completion
+
+                show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_start != NULL) {
                 show_o = cli_register_optarg(show_cmd_start, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_startup, yang_data_validator,
                                              NULL);
-                show_o->opt_model = o->opt_model = (void *) child;// for get_completion
+                show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_run != NULL) {
                 show_o = cli_register_optarg(show_cmd_run, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_running, yang_data_validator,
                                              NULL);
-                show_o->opt_model = o->opt_model = (void *) child;// for get_completion
+                show_o->opt_model = (void *) child;// for get_completion
             }
             free((char *) optarg_help);
         }
+    }
+
+    // add diff optargs for parent_cmd_show_conf_cand
+    if (parent_cmd_show_conf_cand != NULL) {
+        cli_register_optarg(show_cmd_cand, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
+                            MODE_ANY, strdup("show difference"), NULL, yang_data_validator, NULL);
     }
     if (lysc_is_userordered(y_node)) {
         cli_register_optarg(c, "index", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_PRIVILEGED,

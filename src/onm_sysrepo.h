@@ -40,6 +40,8 @@ sr_session_ctx_t *sysrepo_get_session();
 
 sr_session_ctx_t *sysrepo_get_session_startup();
 
+sr_session_ctx_t *sysrepo_get_session_operational();
+
 void sysrepo_set_module_path(char *path);
 
 void free_data_tree(struct data_tree *dtree);

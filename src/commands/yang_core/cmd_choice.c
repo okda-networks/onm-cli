@@ -213,6 +213,8 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
 }
 
 int register_cmd_choice(struct cli_def *cli, struct lysc_node *y_node) {
+    if (y_node->flags & LYS_CONFIG_R)
+        return CLI_OK;
     int mode = -1;
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
     struct cli_command *parent_no_cmd = find_parent_no_cmd(cli, y_node);

@@ -15,10 +15,10 @@ enum register_node_routine_signals {
 };
 
 static int register_node_routine(struct cli_def *cli, struct lysc_node *schema) {
-    if (schema->flags & LYS_CONFIG_R) {
-        LOG_DEBUG("cmd_generator: skipping none config node: %s", schema->name);
-        return REG_NO_SIG;
-    }
+//    if (schema->flags & LYS_CONFIG_R) {
+//        LOG_DEBUG("cmd_generator: skipping none config node: %s", schema->name);
+//        return REG_NO_SIG;
+//    }
     switch (schema->nodetype) {
         case LYS_CONTAINER:
             LOG_DEBUG("register CLI command for container: %s", schema->name);
