@@ -6,7 +6,7 @@
 #include "onm_logger.h"
 
 static sr_conn_ctx_t *connection = NULL;
-static sr_session_ctx_t *session = NULL,*startup_session=NULL;
+static sr_session_ctx_t *session = NULL, *startup_session = NULL;
 
 struct data_tree *config_root_tree;
 

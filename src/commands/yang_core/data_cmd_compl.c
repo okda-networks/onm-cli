@@ -47,7 +47,7 @@ enum {
 const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int src) {
     const char **env_vars = NULL;
     struct lyd_node *list_data_node;
-    char xpath[1024]={0};
+    char xpath[1024] = {0};
 
     switch (src) {
         case CANDIDATE_SRC:

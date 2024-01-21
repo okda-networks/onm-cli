@@ -91,12 +91,12 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
 }
 
 int cmd_show_config_running(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_print(cli,"not implemented, use show config-running <node>");
+    cli_print(cli, "not implemented, use show config-running <node>");
     return CLI_OK;
 }
 
 int cmd_show_config_startup(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_print(cli,"not implemented, use show config-startup <node>");
+    cli_print(cli, "not implemented, use show config-startup <node>");
     return CLI_OK;
 }
 
@@ -180,14 +180,19 @@ int default_commands_init(struct cli_def *cli) {
 //                                                              MODE_ANY, NULL, "print the candidate/running config");
 
     struct cli_command *config_candidate = cli_register_command(cli, show, NULL,
-                                                                "config-candidate", cmd_show_config_candidate, PRIVILEGE_UNPRIVILEGED,
-                                                                MODE_ANY, "config-candidate", "show the candidate configurations");
+                                                                "config-candidate", cmd_show_config_candidate,
+                                                                PRIVILEGE_UNPRIVILEGED,
+                                                                MODE_ANY, "config-candidate",
+                                                                "show the candidate configurations");
     struct cli_command *config_running = cli_register_command(cli, show, NULL,
-                                                                "config-running", cmd_show_config_running, PRIVILEGE_UNPRIVILEGED,
-                                                                MODE_ANY, "config-running", "show the running configurations");
+                                                              "config-running", cmd_show_config_running,
+                                                              PRIVILEGE_UNPRIVILEGED,
+                                                              MODE_ANY, "config-running",
+                                                              "show the running configurations");
     struct cli_command *config_startup = cli_register_command(cli, show, NULL,
-                                                                "config-startup", cmd_show_config_startup, PRIVILEGE_UNPRIVILEGED,
-                                                                MODE_ANY, NULL, "show the startup configurations");
+                                                              "config-startup", cmd_show_config_startup,
+                                                              PRIVILEGE_UNPRIVILEGED,
+                                                              MODE_ANY, NULL, "show the startup configurations");
 
 //    cli_register_optarg(config_running, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
 //                        "printed format [json|xml].", NULL, NULL, NULL);

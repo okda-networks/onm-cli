@@ -113,7 +113,8 @@ int yang_cmd_loader_init(struct cli_def *cli) {
     struct cli_command *sysrepo_set_path = cli_register_command(cli, sysrepo_cmd, NULL,
                                                                 "set-module-path", cmd_sysrepo_set_module_path,
                                                                 PRIVILEGE_PRIVILEGED,
-                                                                MODE_EXEC, NULL, "set yang modules path search to install in sysrepo");
+                                                                MODE_EXEC, NULL,
+                                                                "set yang modules path search to install in sysrepo");
 
     cli_register_optarg(sysrepo_set_path, "absolute-path", CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED, MODE_EXEC,
                         "full absolute path to yang modules", NULL, NULL, NULL);

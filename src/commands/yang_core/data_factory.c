@@ -100,7 +100,7 @@ struct lyd_node *get_sysrepo_startup_node(char *xpath) {
 }
 
 struct lyd_node *get_local_node_data(char *xpath) {
-    struct lyd_node *match= NULL;
+    struct lyd_node *match = NULL;
     struct data_tree *curr_node = config_root_tree;
     while (curr_node != NULL && curr_node->node != NULL) {
         lyd_find_path(curr_node->node, xpath, 0, &match);
@@ -232,7 +232,6 @@ int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc, stru
     return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, 0, cli, 0);// no index use key for delete
 
 }
-
 
 
 static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type, struct cli_def *cli) {

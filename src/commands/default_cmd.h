@@ -22,7 +22,6 @@
 #include "src/commands/yang_core/y_utils.h"
 
 
-
 int default_commands_init(struct cli_def *cli);
 
 #endif //ONMCLI_COMMANDS_H

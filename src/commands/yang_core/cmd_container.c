@@ -81,7 +81,7 @@ enum {
     CANDIDATE_DS
 };
 
-int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c,int datastore){
+int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int datastore) {
 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
@@ -114,25 +114,27 @@ int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_com
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
-    return core_cmd_yang_show_config(cli,c,CANDIDATE_DS);
+    return core_cmd_yang_show_config(cli, c, CANDIDATE_DS);
 
 }
+
 int cmd_yang_show_running_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
-                                             int argc) {
+                                           int argc) {
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
-    return core_cmd_yang_show_config(cli,c,RUNNING_DS);
+    return core_cmd_yang_show_config(cli, c, RUNNING_DS);
 
 }
+
 int cmd_yang_show_startup_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
-                                             int argc) {
+                                           int argc) {
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
-    return core_cmd_yang_show_config(cli,c,STARTUP_DS);
+    return core_cmd_yang_show_config(cli, c, STARTUP_DS);
 
 }
 
@@ -148,12 +150,12 @@ cmd_yang_show_candidate_config_diff_container(struct cli_def *cli, struct cli_co
     lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
     struct lyd_node *d_node = NULL;
     struct lyd_node *candidate_node = get_local_node_data(xpath);
-    if (candidate_node == NULL){
+    if (candidate_node == NULL) {
         cli_print(cli, " no config diff between candidate and running!");
         return CLI_OK;
     }
     struct lyd_node *running_node = get_sysrepo_running_node(xpath);
-    lyd_diff_tree(running_node,candidate_node,0,&d_node);
+    lyd_diff_tree(running_node, candidate_node, 0, &d_node);
 
     if (d_node)
         config_print(cli, d_node);
@@ -188,8 +190,8 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
         struct cli_command *parent_cmd_show_conf_start = find_parent_show_startup_cmd(cli, y_node);
         if (parent_cmd_show_conf_cand == NULL) {
             parent_cmd_show_conf_cand = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_cand_cmd;
-            parent_cmd_show_conf_run= ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_running_cmd;
-            parent_cmd_show_conf_start= ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_startup_cmd;
+            parent_cmd_show_conf_run = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_running_cmd;
+            parent_cmd_show_conf_start = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_startup_cmd;
         }
         struct cli_command *show_cand_cont_c = cli_register_command(cli, parent_cmd_show_conf_cand, y_node,
                                                                     y_node->name,
