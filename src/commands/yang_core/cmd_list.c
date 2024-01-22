@@ -76,8 +76,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     int ret;
 
-    ret = add_data_node_list(y_node,  index, cli, has_none_key_node);
-
+    ret = add_data_node_list(y_node, index, cli, has_none_key_node);
 
 
     if (ret != LY_SUCCESS) {
@@ -89,11 +88,11 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         return CLI_OK;
     }
 
-    char mode_str[100]={0};
+    char mode_str[100] = {0};
 
-    char *predicate = create_list_predicate_from_optargs(cli,y_node);
-    strcat(mode_str,y_node->name);
-    strcat(mode_str,predicate);
+    char *predicate = create_list_predicate_from_optargs(cli, y_node);
+    strcat(mode_str, y_node->name);
+    strcat(mode_str, predicate);
 
 
     int mode = y_get_next_mode(y_node);
@@ -137,7 +136,7 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
     char xpath[1028] = {0};
     lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
 
-    strcat(xpath, create_list_predicate_from_optargs(cli,y_node));
+    strcat(xpath, create_list_predicate_from_optargs(cli, y_node));
 
     int is_diff = cli_get_optarg_value(cli, "diff", NULL) ? 1 : 0;
     struct lyd_node *d_node = NULL;
@@ -221,6 +220,43 @@ int cmd_yang_show_operational_list(struct cli_def *cli, struct cli_command *c, c
         return CLI_ERROR_ARG;
     }
     return core_yand_show_config(cli, c, OPERATIONAL_DS);
+
+}
+
+struct cli_command *current_print_order_c = NULL;
+
+void
+register_print_order(struct cli_def *cli, struct lysc_node *y_node, int mode, char *cmd_hash, struct cli_command **c) {
+    if (c == NULL) {
+        c = malloc(sizeof(struct cli_command *));
+        *c = NULL;
+    }
+
+    if (y_node->parent != NULL && y_node->parent->nodetype != LYS_LIST)
+        register_print_order(cli, y_node->parent, mode, cmd_hash, c);
+
+    // in the same mode we might have more than one ordered list, so we want to use the same print_order command.
+    if (current_print_order_c != NULL && current_print_order_c->mode == mode) {
+    } else {
+        current_print_order_c = cli_register_command(cli, NULL, NULL, "print-order", NULL,
+                                                     PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+                                                     "print ordered entries of the list");
+    }
+
+    // if this is the ordered node we want to add "cmd_print_list_order" as callback, else callback should be NULL.
+    int (*callback)(struct cli_def *cli, struct cli_command *c, const char *, char **, int) = NULL;
+    if (lysc_is_userordered(y_node))
+        callback = cmd_print_list_order;
+
+    // attach the y_node_cmd to current_print_order_c if was initialized for this mode.
+    if (*c == NULL) {
+        *c = cli_register_command(cli, current_print_order_c, y_node, y_node->name, callback,
+                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+                                  "show ordered list for node");
+    } else
+        *c = cli_register_command(cli, *c, y_node, y_node->name, callback,
+                                  PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+                                  "show ordered list for node");
 
 }
 
@@ -376,15 +412,42 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
         cli_register_optarg(c, "index", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_PRIVILEGED,
                             mode, "to delete the list entry", NULL, NULL, NULL);
 
-        // add print order command
 
-        struct cli_command *print_order = cli_register_command(cli, NULL, NULL, "print-order", NULL,
-                                                               PRIVILEGE_PRIVILEGED, mode, cmd_hash,
-                                                               "print ordered entries of the list");
-
-        cli_register_command(cli, print_order, y_node, y_node->name, cmd_print_list_order,
-                             PRIVILEGE_PRIVILEGED, mode, cmd_hash,
-                             "print ordered entries of the list");
+        register_print_order(cli, y_node, mode, cmd_hash, NULL);
+//        // in the same mode we might have more than one ordered list, so we want to use the same print_order command
+//        if (current_print_order_c != NULL && current_print_order_c->mode == mode) {
+//        } else {
+//            current_print_order_c = cli_register_command(cli, NULL, NULL, "print-order", NULL,
+//                                                         PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+//                                                         "print ordered entries of the list");
+//        }
+//        // we create command chain for the mode till the ordered list
+//        // for example: "print-order egress acl-sets acl-set", acl-set is the ordered list.
+//        struct lysc_node *mode_root = y_node->parent;
+//        struct cli_command *current_root_c = NULL;
+//        while (mode_root != NULL) {
+//            // we stop at list, as the list is the line breaker in onmcli.
+//            if (mode_root->nodetype == LYS_LIST)
+//                break;
+//            if (current_root_c == NULL)
+//                current_root_c = cli_register_command(cli, current_print_order_c, NULL, mode_root->name, NULL,
+//                                                      PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+//                                                      mode_root->name);
+//            else
+//                current_root_c = cli_register_command(cli, current_root_c, NULL, mode_root->name, NULL,
+//                                                      PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+//                                                      mode_root->name);
+//            mode_root = mode_root->parent;
+//        }
+//
+//        if (current_root_c == NULL)
+//            cli_register_command(cli, current_print_order_c, y_node, y_node->name, cmd_print_list_order,
+//                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+//                                 "print ordered entries of the list");
+//        else
+//            cli_register_command(cli, current_root_c, y_node, y_node->name, cmd_print_list_order,
+//                                 PRIVILEGE_PRIVILEGED, mode, cmd_hash,
+//                                 "print ordered entries of the list");
 
     }
 

@@ -6,6 +6,14 @@
 #include "uthash.h"
 
 #define CONFIG_MODE 1
+typedef enum {
+    CONFIG_PARENT,
+    NO_CONFIG_PARENT,
+    SHOW_CONFIG_CANDIDATE_PARENT,
+    SHOW_CONFIG_RUNNING_PARENT,
+    SHOW_CONFIG_STARTUP_PARENT,
+    SHOW_OPERATIONAL,
+} FIND_PARENT_T;
 
 char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node) {
     char *predicate = malloc(1);
@@ -27,12 +35,6 @@ char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *
         }
     }
     return predicate;
-}
-
-void config_print(struct cli_def *cli, struct lyd_node *d_node) {
-    char *result;
-    lyd_print_mem(&result, d_node, LYD_XML, 0);
-    cli_print(cli, result, NULL);
 }
 
 const char *get_relative_path(struct lysc_node *y_node) {
@@ -63,6 +65,11 @@ const char *get_relative_path(struct lysc_node *y_node) {
     return strdup(result);
 }
 
+void config_print(struct cli_def *cli, struct lyd_node *d_node) {
+    char *result;
+    lyd_print_mem(&result, d_node, LYD_XML, 0);
+    cli_print(cli, result, NULL);
+}
 
 struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node **y_node) {
     struct cli_command *c;
@@ -88,21 +95,7 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
     return NULL;
 }
 
-//struct cli_command *get_cli_yang_command(struct cli_def *cli, struct lysc_node **y_node) {
-//    struct cli_command * no_cmd = ((struct cli_ctx_data *)cli_get_context(cli))->no_cmd;
-//    return search_cmds(cli->commands, y_node,no_cmd);
-//}
-
-typedef enum {
-    CONFIG_PARENT,
-    NO_CONFIG_PARENT,
-    SHOW_CONFIG_CANDIDATE_PARENT,
-    SHOW_CONFIG_RUNNING_PARENT,
-    SHOW_CONFIG_STARTUP_PARENT,
-    SHOW_OPERATIONAL,
-} FIND_PARENT_T;
-
-struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y_node, FIND_PARENT_T parent_type) {
+struct cli_command *find_parent_command_core(struct cli_def *cli, struct lysc_node *y_node, FIND_PARENT_T parent_type) {
     struct cli_command *root_cmds;
 
     switch (parent_type) {
@@ -145,30 +138,30 @@ struct cli_command *find_parent_command(struct cli_def *cli, struct lysc_node *y
 }
 
 struct cli_command *find_parent_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli, y_node, CONFIG_PARENT);
+    return find_parent_command_core(cli, y_node, CONFIG_PARENT);
 }
 
 struct cli_command *find_parent_no_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli, y_node, NO_CONFIG_PARENT);
+    return find_parent_command_core(cli, y_node, NO_CONFIG_PARENT);
 }
 
 struct cli_command *find_parent_show_candidate_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli, y_node, SHOW_CONFIG_CANDIDATE_PARENT);
+    return find_parent_command_core(cli, y_node, SHOW_CONFIG_CANDIDATE_PARENT);
 }
 
 struct cli_command *find_parent_show_running_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli, y_node, SHOW_CONFIG_RUNNING_PARENT);
+    return find_parent_command_core(cli, y_node, SHOW_CONFIG_RUNNING_PARENT);
 }
 
 struct cli_command *find_parent_show_startup_cmd(struct cli_def *cli, struct lysc_node *y_node) {
-    return find_parent_command(cli, y_node, SHOW_CONFIG_STARTUP_PARENT);
+    return find_parent_command_core(cli, y_node, SHOW_CONFIG_STARTUP_PARENT);
 }
 
-struct cli_command *find_parent_show_oper_cmd(struct cli_def *cli, struct lysc_node *y_node){
-    return find_parent_command(cli, y_node, SHOW_OPERATIONAL);
+struct cli_command *find_parent_show_oper_cmd(struct cli_def *cli, struct lysc_node *y_node) {
+    return find_parent_command_core(cli, y_node, SHOW_OPERATIONAL);
 }
 
-int has_oper_children(struct lysc_node *y_node){
+int has_oper_children(struct lysc_node *y_node) {
     struct lysc_node *child;
     LYSC_TREE_DFS_BEGIN(y_node, child) {
             if (child->flags & LYS_CONFIG_R)
@@ -185,7 +178,6 @@ int is_root_node(const struct lysc_node *y_node) {
 }
 
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli) {
-
     while (err) {
         if (err->level == LY_LLERR)
             cli_print(cli, "ERROR: YANG: %s", err->msg);
