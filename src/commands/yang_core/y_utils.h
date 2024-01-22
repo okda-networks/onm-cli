@@ -19,6 +19,8 @@ struct cli_ctx_data {
     struct cli_command *print_order_cmd;
 };
 
+char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node);
+
 int is_root_node(const struct lysc_node *y_node);
 
 int has_oper_children(struct lysc_node *y_node);

@@ -122,50 +122,6 @@ struct lyd_node *get_local_node_data(char *xpath) {
     return match;
 }
 
-char *create_list_path_predicate(struct lysc_node *y_node, char *argv[], int argc) {
-    const struct lysc_node *child_list = lysc_node_child(y_node);
-    const struct lysc_node *child;
-    int arg_pos = -1;
-    size_t total_len = 0;
-    // Calculate the total length needed for the string
-//    if (with_module_name)
-//        total_len = strlen(y_node->module->name) + strlen(y_node->name) + 2; // +2 for ":", "]", and null terminator
-
-    LY_LIST_FOR(child_list, child) {
-        if (lysc_is_key(child)) {
-            arg_pos++;
-            total_len += strlen(child->name) + 6 +
-                         strlen(argv[arg_pos]);// +7 for "[='']", separator characters, and the length of argv
-
-        }
-    }
-
-    // Allocate memory for the string
-    char *predicate_str = (char *) malloc(total_len);
-    memset(predicate_str, '\0', total_len);
-    if (!predicate_str) {
-        LOG_ERROR("Memory allocation failed");
-        return NULL;
-    }
-
-//    // Construct the string
-//    if (with_module_name)
-//        sprintf(predicate_str, "%s:%s", y_node->module->name, y_node->name);
-    arg_pos = -1;
-    LY_LIST_FOR(child_list, child) {
-        if (lysc_is_key(child)) {
-            arg_pos++;
-            strcat(predicate_str, "[");
-            strcat(predicate_str, child->name);
-            strcat(predicate_str, "=");
-            strcat(predicate_str, "'");
-            strcat(predicate_str, argv[arg_pos]);
-            strcat(predicate_str, "'");
-            strcat(predicate_str, "]");
-        }
-    }
-    return predicate_str;
-}
 
 int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, int edit_type,
                              int index, struct cli_def *cli, int is_update_parent) {
@@ -189,7 +145,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     } else
         curr_parent = parent_data;
 
-    predicate_str = create_list_path_predicate(y_node, argv, argc);
+    predicate_str =create_list_predicate_from_optargs(cli,y_node);
     strcat(xpath, predicate_str);
 
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);

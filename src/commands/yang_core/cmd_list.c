@@ -103,7 +103,6 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         return CLI_OK;
     }
 
-
     char *mod_str;
     ssize_t mod_str_len = strlen(cmd) + 3;
     for (int i = 0; i < argc; i++) {
@@ -166,18 +165,8 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
     char xpath[1028] = {0};
     lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
 
-    const struct lysc_node *child_list = lysc_node_child(y_node);
-    const struct lysc_node *child;
+    strcat(xpath, create_list_predicate_from_optargs(cli,y_node));
 
-    LY_LIST_FOR(child_list, child) {
-        if (lysc_is_key(child)) {
-            strcat(xpath, "[");
-            strcat(xpath, child->name);
-            strcat(xpath, "='");
-            strcat(xpath, cli_get_optarg_value(cli, child->name, NULL));
-            strcat(xpath, "']");
-        }
-    }
     int is_diff = cli_get_optarg_value(cli, "diff", NULL) ? 1 : 0;
     struct lyd_node *d_node = NULL;
 
@@ -216,8 +205,6 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
                 break;
         }
     }
-
-
     if (d_node)
         config_print(cli, d_node);
     else

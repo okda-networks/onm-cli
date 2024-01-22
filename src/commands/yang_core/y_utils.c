@@ -7,10 +7,27 @@
 
 #define CONFIG_MODE 1
 
-enum step_action {
-    STEP_FORWARD,
-    STEP_BACKWARD
-};
+char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node) {
+    char *predicate = malloc(1);
+    predicate[0] = '\0';
+    const struct lysc_node *child_list = lysc_node_child(y_node);
+    const struct lysc_node *child;
+    LY_LIST_FOR(child_list, child) {
+        if (lysc_is_key(child)) {
+            char *value = cli_get_optarg_value(cli, child->name, NULL);
+            size_t new_size = strlen(predicate) + strlen(child->name) + strlen(value) + 6;
+
+            predicate = realloc(predicate, new_size);
+
+            strcat(predicate, "[");
+            strcat(predicate, child->name);
+            strcat(predicate, "='");
+            strcat(predicate, value);
+            strcat(predicate, "']");
+        }
+    }
+    return predicate;
+}
 
 void config_print(struct cli_def *cli, struct lyd_node *d_node) {
     char *result;
