@@ -73,21 +73,3 @@ void free_argv(char **argv, int argc) {
 
     free(argv);  // Free the array itself
 }
-
-void create_argv_from_optpair(struct cli_optarg_pair *head, char ***argv, int *argc) {
-    int count = count_optargs(head);
-
-    *argv = (char **) malloc((count + 1) * sizeof(char *));  // +1 for the NULL pointer at the end
-    if (*argv == NULL) {
-        LOG_ERROR("Memory allocation error");
-        exit(EXIT_FAILURE);
-    }
-
-    *argc = count;
-
-    for (int i = 0; i < count; i++) {
-        (*argv)[i] = strdup(head->value);
-        head = head->next;
-    }
-    (*argv)[count] = NULL;  // NULL-terminate the array
-}

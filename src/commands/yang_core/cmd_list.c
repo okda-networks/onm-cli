@@ -50,7 +50,6 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     int index = 0; // no index
 
-    int is_delete = cli_get_optarg_value(cli, "delete", NULL) ? 1 : 0;
     char *idx_char = cli_get_optarg_value(cli, "index", NULL);
     if (idx_char != NULL) {
         char *idx_endptr;
@@ -76,52 +75,30 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     }
 
     int ret;
-    optargs = cli->found_optargs;
-    create_argv_from_optpair(optargs, &argv, &argc);
-    if (is_delete) {
-        ret = delete_data_node_list(y_node, argv, argc, cli);
-        if (ret != LY_SUCCESS) {
-            LOG_ERROR("Failed to delete the data tree");
-            cli_print(cli, "failed to execute command, error with adding the data node.");
-            free_argv(argv, argc);
-            return CLI_ERROR;
-        }
-        return CLI_OK;
-    } else {
-        ret = add_data_node_list(y_node, argv, argc, index, cli, has_none_key_node);
-    }
+
+    ret = add_data_node_list(y_node,  index, cli, has_none_key_node);
+
 
 
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to create/delete the data tree");
         cli_print(cli, "failed to execute command, error with adding the data node. list");
-        free_argv(argv, argc);
         return CLI_ERROR;
     }
     if (!has_none_key_node) {
-        free_argv(argv, argc);
         return CLI_OK;
     }
 
-    char *mod_str;
-    ssize_t mod_str_len = strlen(cmd) + 3;
-    for (int i = 0; i < argc; i++) {
-        mod_str_len += strlen(argv[i]) + 2;
-    }
-    mod_str = malloc(mod_str_len);
-    memset(mod_str, 0, mod_str_len);
-    strcat(mod_str, (char *) cmd);
-    for (int i = 0; i < argc; i++) {
-        strcat(mod_str, "[");
-        strcat(mod_str, argv[i]);
-        strcat(mod_str, "]");
-    }
+    char mode_str[100]={0};
+
+    char *predicate = create_list_predicate_from_optargs(cli,y_node);
+    strcat(mode_str,y_node->name);
+    strcat(mode_str,predicate);
+
 
     int mode = y_get_next_mode(y_node);
-    cli_push_configmode(cli, mode, mod_str);
-
-    free(mod_str);
-    free_argv(argv, argc);
+    cli_push_configmode(cli, mode, mode_str);
+    free(predicate);
     return CLI_OK;
 }
 
@@ -136,20 +113,15 @@ int cmd_yang_no_list(struct cli_def *cli, struct cli_command *c, const char *cmd
         }
     }
     int ret;
-    struct cli_optarg_pair *optargs = cli->found_optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
 
-    create_argv_from_optpair(optargs, &argv, &argc);
-
-    ret = delete_data_node_list(y_node, argv, argc, cli);
+    ret = delete_data_node_list(y_node, cli);
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to delete the data tree");
         cli_print(cli, "failed to execute command, error with adding the data node.");
-        free_argv(argv, argc);
         return CLI_ERROR;
     }
-    free_argv(argv, argc);
     return CLI_OK;
 }
 

@@ -80,7 +80,7 @@ struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node) {
 struct lyd_node *get_sysrepo_running_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK && sysrepo_subtree!=NULL)
+    if (ret == SR_ERR_OK && sysrepo_subtree != NULL)
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
         return NULL;
@@ -88,10 +88,10 @@ struct lyd_node *get_sysrepo_running_node(char *xpath) {
     return NULL;
 }
 
-struct lyd_node *get_sysrepo_operational_node(char *xpath){
+struct lyd_node *get_sysrepo_operational_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session_operational(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK && sysrepo_subtree!=NULL)
+    if (ret == SR_ERR_OK && sysrepo_subtree != NULL)
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
         return NULL;
@@ -102,7 +102,7 @@ struct lyd_node *get_sysrepo_operational_node(char *xpath){
 struct lyd_node *get_sysrepo_startup_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session_startup(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK && sysrepo_subtree!=NULL)
+    if (ret == SR_ERR_OK && sysrepo_subtree != NULL)
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
         return NULL;
@@ -123,7 +123,7 @@ struct lyd_node *get_local_node_data(char *xpath) {
 }
 
 
-int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, int edit_type,
+int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
                              int index, struct cli_def *cli, int is_update_parent) {
     int ret;
     char xpath[265];
@@ -145,7 +145,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
     } else
         curr_parent = parent_data;
 
-    predicate_str =create_list_predicate_from_optargs(cli,y_node);
+    predicate_str = create_list_predicate_from_optargs(cli, y_node);
     strcat(xpath, predicate_str);
 
     ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
@@ -189,14 +189,14 @@ int edit_node_data_tree_list(struct lysc_node *y_node, char *argv[], int argc, i
 }
 
 
-int add_data_node_list(struct lysc_node *y_node, char *argv[], int argc, int index, struct cli_def *cli,
+int add_data_node_list(struct lysc_node *y_node, int index, struct cli_def *cli,
                        int has_none_key_nodes) {
-    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_ADD, index, cli, has_none_key_nodes);
+    return edit_node_data_tree_list(y_node, EDIT_DATA_ADD, index, cli, has_none_key_nodes);
 }
 
-int delete_data_node_list(struct lysc_node *y_node, char *argv[], int argc, struct cli_def *cli) {
+int delete_data_node_list(struct lysc_node *y_node, struct cli_def *cli) {
 
-    return edit_node_data_tree_list(y_node, argv, argc, EDIT_DATA_DEL, 0, cli, 0);// no index use key for delete
+    return edit_node_data_tree_list(y_node, EDIT_DATA_DEL, 0, cli, 0);// no index use key for delete
 
 }
 
@@ -317,15 +317,6 @@ int add_data_node(struct lysc_node *y_node, char *value, struct cli_def *cli) {
     return edit_node_data_tree(y_node, value, EDIT_DATA_ADD, cli);
 }
 
-void get_xpath(struct lysc_node *y_node, char xpath[]) {
-    // get the parent path
-    lyd_path(parent_data, LYD_PATH_STD, xpath, 1024);
-    strcat(xpath, "/");
-    strcat(xpath, y_node->module->name);
-    strcat(xpath, ":");
-    strcat(xpath, y_node->name);
-
-}
 
 int delete_data_node(struct lysc_node *y_node, char *value, struct cli_def *cli) {
     return edit_node_data_tree(y_node, value, EDIT_DATA_DEL, cli);
