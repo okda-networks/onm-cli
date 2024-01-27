@@ -33,8 +33,8 @@ $ ./onmcli
 [INF] Session 381 (user "ali", CID 394) created.
 
 
-onmcli version: 0.1.0
-by Okda networks (c) 2023
+onmcli version: 0.2.0
+by Okda networks (c) 2024
 router> en
 router# sysrepo load-modules 
   yang commands generated successfully for module=ietf-interfaces
@@ -70,7 +70,7 @@ router(config-interface[eth0])#
 
 [+] to modify installed modules in sysrepo:
 ```commandline
-router# sysrepo set-module-path /home/ali/CLionProjects/xain/DentOS/okda/onm_cli/yang/standard/ietf/RFC
+router# sysrepo set-module-path /path/to/yang/standard/ietf/RFC
 router# sysrepo install-module ietf-vrrp.yang
 [INF] Module "ietf-vrrp" was installed.
 [INF] File "ietf-vrrp@2018-03-13.yang" was installed.
