@@ -91,7 +91,9 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     char mode_str[100] = {0};
 
     char *predicate = create_list_predicate_from_optargs(cli, y_node);
-    strcat(mode_str, y_node->name);
+    // list predicate might be too long, in that case we skip adding the y_node->name in the prompt.
+    if (strlen(predicate)<15)
+        strcat(mode_str, y_node->name);
     strcat(mode_str, predicate);
 
 

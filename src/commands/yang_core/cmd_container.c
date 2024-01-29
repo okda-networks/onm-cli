@@ -202,15 +202,23 @@ int has_list_in_parents(struct lysc_node *y_node){
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_root_module->name;
+    char cmd_str[100]={0};
+
+    // special case for frr where all root containers named lib,
+    if (strstr(y_node->module->name,"frr") != NULL && y_node->parent == NULL)
+        sprintf(cmd_str,"%s-%s",y_node->name,y_node->module->name);
+    else
+        sprintf(cmd_str,"%s",y_node->name);
+
     // show operational support root container only.
     if (has_oper_children(y_node) && y_node->parent == NULL) {
-        char show_oper_help[100] = {0};
-        sprintf(show_oper_help, "show operational data for %s (%s) [contain]", y_node->name, y_node->module->name);
+        char show_oper_help[1024] = {0};
+        sprintf(show_oper_help, "show operational data for %s (%s) [contain]", cmd_str, y_node->module->name);
         struct cli_command *show_oper_c_parent;
         show_oper_c_parent = ((struct cli_ctx_data *) cli_get_context(cli))->show_operational_data;
 
         cli_register_command(cli, show_oper_c_parent, y_node,
-                             y_node->name,
+                             cmd_str,
                              cmd_yang_show_operational_container,
                              PRIVILEGE_PRIVILEGED,
                              MODE_ANY, cmd_hash, show_oper_help);
@@ -219,16 +227,16 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     if (y_node->flags & LYS_CONFIG_R)
         return CLI_OK;
 
-    char help[100], no_help[100], show_help[100];
-    sprintf(help, "configure %s (%s) [contain]", y_node->name, y_node->module->name);
-    sprintf(no_help, "delete %s (%s) [contain]", y_node->name, y_node->module->name);
-    sprintf(show_help, "show %s configurations (%s)", y_node->name, y_node->module->name);
+    char help[1024], no_help[1024], show_help[1024];
+    sprintf(help, "configure %s (%s) [contain]",cmd_str, y_node->module->name);
+    sprintf(no_help, "delete %s (%s) [contain]", cmd_str, y_node->module->name);
+    sprintf(show_help, "show %s configurations (%s)", cmd_str, y_node->module->name);
 
     unsigned int mode;
 
     // there is ietf-yang where container and choice has same name.
     // we don't want to register this container to avoid duplication.
-    if (y_node->parent != NULL && !strcmp(y_node->parent->name, y_node->name))
+    if (y_node->parent != NULL && !strcmp(y_node->parent->name, cmd_str))
         return 1;
     // check if parent is container or choice and is not the root module ,if yes attach the command to the container command.
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
@@ -245,17 +253,17 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
             parent_cmd_show_conf_start = ((struct cli_ctx_data *) cli_get_context(cli))->show_conf_startup_cmd;
         }
         struct cli_command *show_cand_cont_c = cli_register_command(cli, parent_cmd_show_conf_cand, y_node,
-                                                                    y_node->name,
+                                                                    cmd_str,
                                                                     cmd_yang_show_candidate_config_container,
                                                                     PRIVILEGE_PRIVILEGED,
                                                                     MODE_ANY, cmd_hash, show_help);
         cli_register_command(cli, parent_cmd_show_conf_run, y_node,
-                             y_node->name,
+                             cmd_str,
                              cmd_yang_show_running_config_container,
                              PRIVILEGE_PRIVILEGED,
                              MODE_ANY, cmd_hash, show_help);
         cli_register_command(cli, parent_cmd_show_conf_start, y_node,
-                             y_node->name,
+                             cmd_str,
                              cmd_yang_show_startup_config_container,
                              PRIVILEGE_PRIVILEGED,
                              MODE_ANY, cmd_hash, show_help);
@@ -276,11 +284,11 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
         parent_cmd_no = ((struct cli_ctx_data *) cli_get_context(cli))->no_cmd;
 
 
-    cli_register_command(cli, parent_cmd, y_node, y_node->name,
+    cli_register_command(cli, parent_cmd, y_node, cmd_str,
                          cmd_yang_container, PRIVILEGE_PRIVILEGED,
                          mode, cmd_hash, help);
 
-    cli_register_command(cli, parent_cmd_no, y_node, y_node->name,
+    cli_register_command(cli, parent_cmd_no, y_node, cmd_str,
                          cmd_yang_no_container, PRIVILEGE_PRIVILEGED,
                          mode, cmd_hash, no_help);
 
