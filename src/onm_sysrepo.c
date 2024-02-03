@@ -160,7 +160,7 @@ struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node) {
     char xpath[1028];
     lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
     int ret = sr_get_subtree(session, xpath, 0, &sr_data);
-    if (ret != SR_ERR_OK)
+    if (ret != SR_ERR_OK || sr_data == NULL)
         return NULL;
     return sr_data->tree;
 }

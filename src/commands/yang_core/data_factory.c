@@ -199,7 +199,6 @@ int add_data_node_list(struct lysc_node *y_node, int index, struct cli_def *cli,
 }
 
 int delete_data_node_list(struct lysc_node *y_node, struct cli_def *cli) {
-
     return edit_node_data_tree_list(y_node, EDIT_DATA_DEL, 0, cli, 0);// no index use key for delete
 
 }
