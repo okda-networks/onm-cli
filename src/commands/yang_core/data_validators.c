@@ -44,9 +44,9 @@ int validate_uint(struct cli_def *cli, const char *word, const char *value, stru
     }
 
 
-    int num = atoi(value);
-    int min = num_t->range->parts->min_u64;
-    int max = num_t->range->parts->max_u64;
+    unsigned int num = atoi(value);
+    unsigned int min = num_t->range->parts->min_u64;
+    unsigned int max = num_t->range->parts->max_u64;
 
     if (min <= num && num <= max)
         return CLI_OK;

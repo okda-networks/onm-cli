@@ -51,7 +51,8 @@ struct lyd_node *get_local_list_nodes(struct lysc_node *y_node) {
         return NULL;
     struct lyd_node *list_node = lyd_child(match);
     struct lyd_node *next = NULL;
-    LY_LIST_FOR(list_node, next) {
+    LY_LIST_FOR(list_node, next)
+    {
         if (next->schema->nodetype == LYS_LIST) {
             if (!strcmp(y_node->name, next->schema->name))
                 return next;
@@ -67,7 +68,8 @@ struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node) {
         list_entries = sysrepo_get_data_subtree(y_node->parent);
         struct lyd_node *list_node = lyd_child(list_entries);
         struct lyd_node *next = NULL;
-        LY_LIST_FOR(list_node, next) {
+        LY_LIST_FOR(list_node, next)
+        {
             if (next->schema->nodetype == LYS_LIST) {
                 if (!strcmp(y_node->name, next->schema->name))
                     return next;
@@ -153,13 +155,18 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
         ret = lyd_new_path2(curr_parent, sysrepo_ctx, xpath, NULL, 0,
                             0, LYD_NEW_PATH_UPDATE, NULL, &new_parent);
 
+    if (ret != LY_SUCCESS) {
+        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
+        goto done;
+    }
     if (index) {
         // index start from 10 and the step is 10, 10,20,30...
         int curr_indx = 10;
         struct lyd_node *next = NULL;
         struct lyd_node *orderd_nodes = lyd_first_sibling(new_parent);
 
-        LY_LIST_FOR(orderd_nodes, next) {
+        LY_LIST_FOR(orderd_nodes, next)
+        {
             if (index < curr_indx) {
                 ret = lyd_insert_before(next, new_parent);
                 if (ret != LY_SUCCESS) {
@@ -181,9 +188,6 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
 
     done:
     free(predicate_str);
-    if (ret != LY_SUCCESS) {
-        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
-    }
     sysrepo_release_ctx();
     return ret;
 }
@@ -225,6 +229,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             // set the config_data_tree
             // check if this is first node in the schema, to set the root node.
             if (y_node->parent == NULL) {
+                // check if config_tree is empty
                 if (config_root_tree == NULL) {
                     config_root_tree = malloc(sizeof(struct data_tree));
                     config_root_tree->node = get_sysrepo_running_node(xpath);
@@ -241,7 +246,9 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     // and link it to config_data_tree
                     curr_root = config_root_tree;
                     while (curr_root != NULL) {
-                        if (strcmp(curr_root->node->schema->name, y_node->name) == 0 && y_node->parent == NULL) {
+                        if (strcmp(curr_root->node->schema->name, y_node->name) == 0 &&
+                            strcmp(curr_root->node->schema->module->name, y_node->module->name) == 0 &&
+                            y_node->parent == NULL) {
                             // root data tree found, we just set parent_data to the found root and exit without creating
                             // new path.
                             parent_data = curr_root->node;
@@ -268,7 +275,8 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             if (new_parent == NULL || ret == LY_EINCOMPLETE) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
-
+            if (ret != LY_SUCCESS)
+                break;
             // if the edit operation is 'add', then update the parent_node, else (which is 'delete' operation) then just set the out node.
             if (edit_type == EDIT_DATA_ADD)
                 parent_data = new_parent;

@@ -72,7 +72,12 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
 
 int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+
     if (argc >= 1) {
+        if (!strcmp(argv[0],"?")){
+            cli_print(cli," <cr>");
+            return CLI_OK;
+        }
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
@@ -125,6 +130,10 @@ int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int da
 int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                              int argc) {
     if (argc >= 1) {
+        if (!strcmp(argv[0],"?")){
+            cli_print(cli," <cr>");
+            return CLI_OK;
+        }
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
@@ -135,6 +144,10 @@ int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_com
 int cmd_yang_show_running_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                            int argc) {
     if (argc >= 1) {
+        if (!strcmp(argv[0],"?")){
+            cli_print(cli," <cr>");
+            return CLI_OK;
+        }
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }
@@ -145,6 +158,10 @@ int cmd_yang_show_running_config_container(struct cli_def *cli, struct cli_comma
 int cmd_yang_show_startup_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                            int argc) {
     if (argc >= 1) {
+        if (!strcmp(argv[0],"?")){
+            cli_print(cli," <cr>");
+            return CLI_OK;
+        }
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
     }

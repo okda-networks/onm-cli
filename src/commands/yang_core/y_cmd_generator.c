@@ -63,14 +63,20 @@ static void unregister_node_routine(struct cli_def *cli, struct lysc_node *y_nod
     if (y_node->flags & LYS_CONFIG_R) {
         return;
     }
+    char cmd_str[100]={0};
     const struct lys_module *y_owner_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_owner_module->name;
     // we add "print-order" command for userordered node, we need to unregister.
+    // special case for frr where all root containers named lib,
+    if (strstr(y_node->module->name,"frr") != NULL && y_node->parent == NULL)
+        sprintf(cmd_str,"%s-%s",y_node->name,y_node->module->name);
+    else
+        sprintf(cmd_str,"%s",y_node->name);
     if (lysc_is_userordered(y_node)) {
         cli_unregister_command(cli, "print-order", cmd_hash);
     }
 
-    cli_unregister_command(cli, y_node->name, cmd_hash);
+    cli_unregister_command(cli, cmd_str, cmd_hash);
 }
 
 int unregister_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
