@@ -15,6 +15,12 @@ typedef enum {
     SHOW_OPERATIONAL,
 } FIND_PARENT_T;
 
+char *get_model_org_prefix(char *module_name) {
+    char *token = strtok(module_name, "-");
+    return token;
+}
+
+
 char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node) {
     char *predicate = malloc(1);
     predicate[0] = '\0';

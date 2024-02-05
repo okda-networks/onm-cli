@@ -22,9 +22,9 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     int ret;
     int is_delete = 0;
 
-    if (argc==1){
-        if (!strcmp(argv[0],"?")){
-            cli_print(cli," <cr>");
+    if (argc == 1) {
+        if (!strcmp(argv[0], "?")) {
+            cli_print(cli, " <cr>");
             return CLI_OK;
         }
 
@@ -74,8 +74,8 @@ int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
 
     if (argc >= 1) {
-        if (!strcmp(argv[0],"?")){
-            cli_print(cli," <cr>");
+        if (!strcmp(argv[0], "?")) {
+            cli_print(cli, " <cr>");
             return CLI_OK;
         }
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -130,8 +130,8 @@ int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int da
 int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                              int argc) {
     if (argc >= 1) {
-        if (!strcmp(argv[0],"?")){
-            cli_print(cli," <cr>");
+        if (!strcmp(argv[0], "?")) {
+            cli_print(cli, " <cr>");
             return CLI_OK;
         }
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -144,8 +144,8 @@ int cmd_yang_show_candidate_config_container(struct cli_def *cli, struct cli_com
 int cmd_yang_show_running_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                            int argc) {
     if (argc >= 1) {
-        if (!strcmp(argv[0],"?")){
-            cli_print(cli," <cr>");
+        if (!strcmp(argv[0], "?")) {
+            cli_print(cli, " <cr>");
             return CLI_OK;
         }
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -158,8 +158,8 @@ int cmd_yang_show_running_config_container(struct cli_def *cli, struct cli_comma
 int cmd_yang_show_startup_config_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
                                            int argc) {
     if (argc >= 1) {
-        if (!strcmp(argv[0],"?")){
-            cli_print(cli," <cr>");
+        if (!strcmp(argv[0], "?")) {
+            cli_print(cli, " <cr>");
             return CLI_OK;
         }
         cli_print(cli, "ERROR: unknown argument(s)");
@@ -197,7 +197,7 @@ cmd_yang_show_candidate_config_diff_container(struct cli_def *cli, struct cli_co
 }
 
 int cmd_yang_show_operational_container(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[],
-                                           int argc) {
+                                        int argc) {
     if (argc >= 1) {
         cli_print(cli, "ERROR: unknown argument(s)");
         return CLI_ERROR_ARG;
@@ -205,9 +205,9 @@ int cmd_yang_show_operational_container(struct cli_def *cli, struct cli_command 
     return core_cmd_yang_show_config(cli, c, OPERATIONAL_DS);
 }
 
-int has_list_in_parents(struct lysc_node *y_node){
-    struct lysc_node *curr_node= y_node->parent;
-    while (curr_node != NULL){
+int has_list_in_parents(struct lysc_node *y_node) {
+    struct lysc_node *curr_node = y_node->parent;
+    while (curr_node != NULL) {
         if (curr_node->nodetype == LYS_LIST)
             return 1;
         curr_node = curr_node->parent;
@@ -216,16 +216,26 @@ int has_list_in_parents(struct lysc_node *y_node){
 
 }
 
+
 int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_root_module->name;
-    char cmd_str[100]={0};
+    char cmd_str[100] = {0};
 
     // special case for frr where all root containers named lib,
-    if (strstr(y_node->module->name,"frr") != NULL && y_node->parent == NULL)
-        sprintf(cmd_str,"%s-%s",y_node->name,y_node->module->name);
-    else
-        sprintf(cmd_str,"%s",y_node->name);
+    sprintf(cmd_str, "%s", y_node->name);
+    if (y_node->parent == NULL) {
+        if (strstr(y_node->name, "lib") != NULL) {
+            strcat(cmd_str, "-");
+            strcat(cmd_str, y_node->module->name);
+        } else {
+            char *model_org_prefix = get_model_org_prefix((char *) strdup(y_node->module->name));
+            if (model_org_prefix != NULL) {
+                strcat(cmd_str, "-");
+                strcat(cmd_str, model_org_prefix);
+            }
+        }
+    }
 
     // show operational support root container only.
     if (has_oper_children(y_node) && y_node->parent == NULL) {
@@ -245,7 +255,7 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
         return CLI_OK;
 
     char help[1024], no_help[1024], show_help[1024];
-    sprintf(help, "configure %s (%s) [contain]",cmd_str, y_node->module->name);
+    sprintf(help, "configure %s (%s) [contain]", cmd_str, y_node->module->name);
     sprintf(no_help, "delete %s (%s) [contain]", cmd_str, y_node->module->name);
     sprintf(show_help, "show %s configurations (%s)", cmd_str, y_node->module->name);
 

@@ -13,6 +13,7 @@
 #include <libyang/log.h>
 #include "lib/libcli/libcli.h"
 
+char *get_model_org_prefix(char *module_name);
 
 int register_cmd_leaf_list(struct cli_def *cli, struct lysc_node *y_node);
 
