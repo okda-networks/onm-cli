@@ -20,13 +20,30 @@ char *get_model_org_prefix(char *module_name) {
     return token;
 }
 
+// this function to handle root node cmd name special cases, for example frr's root named "lib"
+char *get_root_ynode_cmd_name(struct lysc_node *y_node) {
+    char cmd_str[100] = {0};
+    sprintf(cmd_str, "%s", y_node->name);
+    if (strstr(y_node->name, "lib") != NULL) {
+        strcat(cmd_str, "-");
+        strcat(cmd_str, y_node->module->name);
+    } else {
+        char *model_org_prefix = get_model_org_prefix((char *) strdup(y_node->module->name));
+        if (model_org_prefix != NULL) {
+            strcat(cmd_str, "-");
+            strcat(cmd_str, model_org_prefix);
+        }
+    }
+    return strdup(cmd_str);
+}
 
 char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node) {
     char *predicate = malloc(1);
     predicate[0] = '\0';
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
-    LY_LIST_FOR(child_list, child) {
+    LY_LIST_FOR(child_list, child)
+    {
         if (lysc_is_key(child)) {
             char *value = cli_get_optarg_value(cli, child->name, NULL);
             size_t new_size = strlen(predicate) + strlen(child->name) + strlen(value) + 6;
@@ -91,10 +108,15 @@ struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node *
                 return found_c;
             }
         }
-        if (!strcmp((*y_node)->name, "interfaces") && !strcmp(c->command, "diff"))
-            printf("here");
+        // for root node we prepend the module prefix to the cmd
+        char y_node_name[100] = {0};
+        if ((*y_node)->parent == NULL)
+            sprintf(y_node_name, "%s", get_root_ynode_cmd_name(*y_node));
+        else
+            sprintf(y_node_name, "%s", (*y_node)->name);
+
         if ((struct lysc_node *) c->cmd_model != *y_node) continue;
-        if (strcmp(c->command, (*y_node)->name) != 0) continue;
+        if (strcmp(c->command, y_node_name) != 0) continue;
         return c;
     }
 
@@ -169,9 +191,10 @@ struct cli_command *find_parent_show_oper_cmd(struct cli_def *cli, struct lysc_n
 
 int has_oper_children(struct lysc_node *y_node) {
     struct lysc_node *child;
-    LYSC_TREE_DFS_BEGIN(y_node, child) {
-            if (child->flags & LYS_CONFIG_R)
-                return 1;
+    LYSC_TREE_DFS_BEGIN(y_node, child)
+    {
+        if (child->flags & LYS_CONFIG_R)
+            return 1;
         LYSC_TREE_DFS_END(y_node, child);
     }
     return 0;
@@ -221,7 +244,8 @@ size_t calculate_identities_length(struct lysc_ident *identity) {
     LY_ARRAY_COUNT_TYPE i;
 
 
-    LY_ARRAY_FOR(identity->derived, i) {
+    LY_ARRAY_FOR(identity->derived, i)
+    {
         length += strlen(" [+] ") + strlen(identity->derived[i]->module->name) + strlen(identity->derived[i]->name) + 2;
         // Recursively calculate derived identities
         length += calculate_identities_length(identity->derived[i]);
@@ -237,7 +261,8 @@ void add_identities_recursive(struct lysc_ident *identity, char *help) {
     LY_ARRAY_COUNT_TYPE i;
 
 
-    LY_ARRAY_FOR(identity->derived, i) {
+    LY_ARRAY_FOR(identity->derived, i)
+    {
         char *id_str = malloc(strlen(identity->derived[i]->name) + strlen(identity->derived[i]->module->name) + 2);
         sprintf(id_str, "%s:%s", identity->derived[i]->module->name, identity->derived[i]->name);
         strcat(help, " [+] ");
@@ -261,7 +286,8 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
     // Allocate memory for the help string
     size_t help_len = strlen(y_dsc) + strlen("Available options:\n");
 
-    LY_ARRAY_FOR(identities, i) {
+    LY_ARRAY_FOR(identities, i)
+    {
         help_len += strlen("[+] ") + strlen(identities[i]->module->name) + strlen(identities[i]->name) +
                     2; // +2 for newline and ":"
         help_len += calculate_identities_length(identities[i]); // Calculate additional length
@@ -277,7 +303,8 @@ const char *creat_help_for_identity_type(struct lysc_node *y_node) {
     strcpy(help, y_dsc);
     strcat(help, "\nAvailable options:\n");
 
-    LY_ARRAY_FOR(identities, i) {
+    LY_ARRAY_FOR(identities, i)
+    {
         add_identities_recursive(identities[i], help);
     }
     return help;

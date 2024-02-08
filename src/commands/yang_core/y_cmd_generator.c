@@ -4,6 +4,7 @@
 
 #include "yang_core.h"
 #include "src/onm_logger.h"
+#include "y_utils.h"
 
 extern struct ly_ctx *yang_ctx;
 
@@ -68,19 +69,11 @@ static void unregister_node_routine(struct cli_def *cli, struct lysc_node *y_nod
     char *cmd_hash = (char *) y_owner_module->name;
 
     // special case for frr where all root containers named lib,
-    sprintf(cmd_str, "%s", y_node->name);
+
     if (y_node->parent == NULL) {
-        if (strstr(y_node->name, "lib") != NULL) {
-            strcat(cmd_str, "-");
-            strcat(cmd_str, y_node->module->name);
-        } else {
-            char *model_org_prefix = get_model_org_prefix((char *) strdup(y_node->module->name));
-            if (model_org_prefix != NULL) {
-                strcat(cmd_str, "-");
-                strcat(cmd_str, model_org_prefix);
-            }
-        }
-    }
+        sprintf(cmd_str, "%s", get_root_ynode_cmd_name(y_node));
+    } else
+        sprintf(cmd_str, "%s", y_node->name);
     // we add "print-order" command for userordered node, we need to unregister.
     if (lysc_is_userordered(y_node)) {
         cli_unregister_command(cli, "print-order", cmd_hash);

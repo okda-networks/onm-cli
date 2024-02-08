@@ -19,6 +19,7 @@ struct cli_ctx_data {
     struct cli_command *print_order_cmd;
 };
 
+char *get_root_ynode_cmd_name(struct lysc_node *y_node);
 
 char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node);
 
