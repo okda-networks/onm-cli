@@ -1,4 +1,4 @@
-CC := gcc
+CC ?= gcc
 CFLAGS := -Wall
 LIB_PATH := -L/usr/local/lib/
 INCLUDE_PATH := -I$(CURDIR)

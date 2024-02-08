@@ -23,6 +23,15 @@ $ make
 # run
 $ ./onm_cli
 ```
+
+The default compiler is gcc. It can be changed to clang using:
+```bash
+# build
+$ CC=clang make
+# run
+$ ./onm_cli
+```
+
 ## usage
 
 [+] usage example of `onmcli`:
