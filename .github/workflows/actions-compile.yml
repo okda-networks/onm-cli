@@ -17,7 +17,7 @@ jobs:
       - name: add missing packages
         uses: ConorMacBride/install-package@v1
         with:
-          apt: uthash-dev libyang2-dev
+          apt: uthash-dev libyang2-dev libsysrepo-dev
       - name: checkout
         uses: actions/checkout@v4
       - name: make
