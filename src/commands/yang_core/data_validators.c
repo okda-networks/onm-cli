@@ -63,7 +63,7 @@ int yang_data_validator(struct cli_def *cli, const char *word, const char *value
         return CLI_OK;
     int ret = CLI_OK;
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
-    struct lysc_node_leaf *leaf;
+    struct lysc_node_leaf *leaf = NULL;
     // the value might be leaf value, list key leaf value or case node, need to be handled.
     if (y_node->nodetype == LYS_LEAF)
         leaf = (struct lysc_node_leaf *) y_node;
