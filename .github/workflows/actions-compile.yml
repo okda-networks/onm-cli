@@ -1,0 +1,47 @@
+name: Onm-Cli CI
+run-name: ${{ github.actor }} basic compilation and test ⚗️
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+jobs:
+  build-onm-cli:
+    name: Build onm-cli
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [ gcc, clang ]
+    steps:
+      - name: add missing packages
+        uses: ConorMacBride/install-package@v1
+        with:
+          apt: libelf-dev libbpf-dev libbsd-dev libcap-dev libmnl-dev libselinux-dev clang-format
+      - name: libyang v2.1.148 from upstream
+        uses: actions/checkout@v4
+        with:
+          repository: 'CESNET/libyang.git'
+          ref: 'v2.1.148'
+      - name: make libyang v2.1.148 from upstream
+        run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE:String="Release" .. && make -j $(nproc) && sudo make install
+      - name: sysrepo v2.2.150 from upstream
+        uses: actions/checkout@v4
+        with:
+          repository: 'sysrepo/sysrepo.git'
+          ref: 'v2.2.150'
+      - name: make sysrepo v2.2.150 from upstream
+        run : mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE:String="Release" .. && make -j $(nproc) && sudo make install
+      - name: run ldconfig
+        run : sudo ldconfig
+      - name: check sysrepo running ok
+        run : sudo ldconfig && sudo sysrepoctl -l
+      - name: onm-cli checkout
+        uses: actions/checkout@v4
+      - name: make onm-cli
+        run : CC=${{ matrix.compiler }} make -j $(nproc)
+      - name: basic compilation check
+        run : ldd onmcli
+      - name: basic test run for onmcli executable
+        run : ./onmcli > /dev/null 2>&1 &
