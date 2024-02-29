@@ -13,7 +13,6 @@
 
 #include "y_utils.h"
 #include "src/onm_logger.h"
-#include "uthash.h"
 
 #define CONFIG_MODE 1
 typedef enum {
