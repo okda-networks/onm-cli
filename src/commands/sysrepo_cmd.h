@@ -1,6 +1,4 @@
-//
-// Created by ali on 10/9/23.
-//
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #ifndef ONMCLI_YANG_CMD_GENERATOR_H
 #define ONMCLI_YANG_CMD_GENERATOR_H

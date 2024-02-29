@@ -1,6 +1,16 @@
-//
-// Created by ali on 10/4/23.
-//
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/*
+ * Authors:     Ali Aqrabawi, <aaqrbaw@okdanetworks.com>
+ *
+ *              This program is free software; you can redistribute it and/or
+ *              modify it under the terms of the GNU Affero General Public
+ *              License Version 3.0 as published by the Free Software Foundation;
+ *              either version 3.0 of the License, or (at your option) any later
+ *              version.
+ *
+ * Copyright (C) 2024 Okda Networks, <aaqrbaw@okdanetworks.com>
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include "onm_cli.h"

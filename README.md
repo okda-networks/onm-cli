@@ -21,7 +21,7 @@ require: [sysrepo](https://github.com/sysrepo/sysrepo).
 # build
 $ make
 # run
-$ ./onm_cli
+$ ./onmcli
 ```
 
 The default compiler is gcc. It can be changed to clang using:
@@ -29,7 +29,7 @@ The default compiler is gcc. It can be changed to clang using:
 # build
 $ CC=clang make
 # run
-$ ./onm_cli
+$ ./onmcli
 ```
 
 ## usage

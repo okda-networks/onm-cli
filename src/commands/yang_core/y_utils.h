@@ -1,6 +1,4 @@
-//
-// Created by ali on 10/21/23.
-//
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #ifndef ONMCLI_Y_UTILS_H
 #define ONMCLI_Y_UTILS_H

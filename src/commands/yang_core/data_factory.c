@@ -1,6 +1,16 @@
-//
-// Created by ali on 11/17/23.
-//
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/*
+ * Authors:     Ali Aqrabawi, <aaqrbaw@okdanetworks.com>
+ *
+ *              This program is free software; you can redistribute it and/or
+ *              modify it under the terms of the GNU Affero General Public
+ *              License Version 3.0 as published by the Free Software Foundation;
+ *              either version 3.0 of the License, or (at your option) any later
+ *              version.
+ *
+ * Copyright (C) 2024 Okda Networks, <aaqrbaw@okdanetworks.com>
+ */
+
 #include "data_factory.h"
 #include "src/onm_sysrepo.h"
 #include "y_utils.h"

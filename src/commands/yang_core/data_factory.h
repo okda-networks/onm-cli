@@ -1,6 +1,4 @@
-//
-// Created by ali on 11/17/23.
-//
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 #ifndef ONMCLI_DATA_FACTORY_H
 #define ONMCLI_DATA_FACTORY_H
