@@ -17,13 +17,14 @@
 #include "data_cmd_compl.h"
 
 
-int identityref_add_comphelp(struct lysc_ident *identity, const char *word, struct cli_comphelp *comphelp) {
+void identityref_add_comphelp(struct lysc_ident *identity, const char *word, struct cli_comphelp *comphelp) {
     if (!identity) {
-        return 0;
+        return ;
     }
     char **id_entry;
     LY_ARRAY_COUNT_TYPE i;
-    LY_ARRAY_FOR(identity->derived, i) {
+    LY_ARRAY_FOR(identity->derived, i)
+    {
         char *id_str = malloc(strlen(identity->derived[i]->name) + strlen(identity->derived[i]->module->name) + 2);
         sprintf(id_str, "%s:%s", identity->derived[i]->module->name, identity->derived[i]->name);
 
@@ -34,7 +35,7 @@ int identityref_add_comphelp(struct lysc_ident *identity, const char *word, stru
         free(id_str);
         identityref_add_comphelp(identity->derived[i], word, comphelp);
     }
-    return EXIT_SUCCESS;
+    return ;
 }
 
 
@@ -54,12 +55,12 @@ enum {
     CANDIDATE_OR_RUNNING_SRC,
 };
 
-const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int src) {
+const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int ds) {
     const char **env_vars = NULL;
     struct lyd_node *list_data_node = NULL;
     char xpath[1024] = {0};
 
-    switch (src) {
+    switch (ds) {
         case CANDIDATE_SRC:
             list_data_node = get_local_list_nodes(y_node->parent);
             break;
@@ -86,11 +87,14 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
             break;
     }
     struct lyd_node *next = NULL;
-    LY_LIST_FOR(list_data_node, next) {
+    LY_LIST_FOR(list_data_node, next)
+    {
         struct lyd_node *entry_children = lyd_child(next);
         struct lyd_node *entry_child = NULL;
-        LY_LIST_FOR(entry_children, entry_child) {
-            if (lysc_is_key(entry_child->schema) && !strcmp(entry_child->schema->name, y_node->name)) {
+        LY_LIST_FOR(entry_children, entry_child)
+        {
+            if (lysc_is_key(entry_child->schema) && !strcmp(entry_child->schema->name, y_node->name)
+                && !strcmp(next->schema->name, y_node->parent->name)) {
                 num_args++;
                 env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
                 env_vars[num_args - 1] = strdup(lyd_get_value(entry_child));
@@ -115,7 +119,8 @@ const char **create_type_options(struct lysc_node *y_node, int datastore) {
         case LY_TYPE_ENUM: {
             struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) ((struct lysc_node_leaf *) y_node)->type;
             // Populate the array with enum names
-            LY_ARRAY_FOR(y_enum_type->enums, i_sized) {
+            LY_ARRAY_FOR(y_enum_type->enums, i_sized)
+            {
                 num_args++;
                 env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
                 env_vars[num_args - 1] = strdup(y_enum_type->enums[i_sized].name);
@@ -162,7 +167,8 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
     // LY_TYPE_IDENT has special case where we need to add recursively.
     if (type == LY_TYPE_IDENT) {
         struct lysc_type_identityref *y_id_type = (struct lysc_type_identityref *) ((struct lysc_node_leaf *) y_node)->type;
-        LY_ARRAY_FOR(y_id_type->bases, i) {
+        LY_ARRAY_FOR(y_id_type->bases, i)
+        {
             identityref_add_comphelp(y_id_type->bases[i], word, comphelp);
         }
         return CLI_OK;
@@ -185,7 +191,7 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
 
 int optagr_get_compl_candidate(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                                void *cmd_model) {
-    return core_optagr_get_compl( word, comphelp, cmd_model, CANDIDATE_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_SRC);
 }
 
 int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
@@ -195,6 +201,6 @@ int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *
 
 int optagr_get_compl_startup(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model) {
-    return core_optagr_get_compl( word, comphelp, cmd_model, STARTUP_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, STARTUP_SRC);
 }
 
