@@ -238,7 +238,7 @@ int register_cmd_container(struct cli_def *cli, struct lysc_node *y_node) {
         sprintf(cmd_str, "%s", y_node->name);
 
     // show operational support root container only.
-    if (has_oper_children(y_node) && y_node->parent == NULL) {
+    if (y_node->parent == NULL) {
         char show_oper_help[1024] = {0};
         sprintf(show_oper_help, "show operational data for %s (%s) [contain]", cmd_str, y_node->module->name);
         struct cli_command *show_oper_c_parent;

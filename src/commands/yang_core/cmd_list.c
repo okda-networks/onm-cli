@@ -25,10 +25,12 @@ int cmd_print_list_order(struct cli_def *cli, struct cli_command *c, const char 
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     struct lyd_node *list_entries = get_local_list_nodes(y_node);
     char line[265] = {'\0'};
-    LY_LIST_FOR(list_entries, next) {
+    LY_LIST_FOR(list_entries, next)
+    {
         struct lyd_node *entry_children = lyd_child(next);
         strcat(line, next->schema->name);
-        LY_LIST_FOR(entry_children, entry_child) {
+        LY_LIST_FOR(entry_children, entry_child)
+        {
             if (lysc_is_key(entry_child->schema)) {
                 strcat(line, " ");
                 strcat(line, lyd_get_value(entry_child));
@@ -76,7 +78,8 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     const struct lysc_node *child_list = lysc_node_child(y_node);
     const struct lysc_node *child;
     // if list has none key nodes we will not update data parent_node and we will not go to new mode.
-    LY_LIST_FOR(child_list, child) {
+    LY_LIST_FOR(child_list, child)
+    {
         if (!lysc_is_key(child)) {
             has_none_key_node = 1;
             break;
@@ -102,7 +105,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     char *predicate = create_list_predicate_from_optargs(cli, y_node);
     // list predicate might be too long, in that case we skip adding the y_node->name in the prompt.
-    if (strlen(predicate)<15)
+    if (strlen(predicate) < 15)
         strcat(mode_str, y_node->name);
     strcat(mode_str, predicate);
 
@@ -276,44 +279,45 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     const struct lys_module *y_root_module = lysc_owner_module(y_node);
     char *cmd_hash = (char *) y_root_module->name;
 
-    if (has_oper_children(y_node)) {
-        char show_oper_help[100] = {0};
-        char *oper_optarg_help;
-        sprintf(show_oper_help, "show operational data for %s (%s) [list]", y_node->name, y_node->module->name);
-        struct cli_command *show_oper_c, *show_oper_c_parent;
+    // register oper_data.
+    char show_oper_help[100] = {0};
+    char *oper_optarg_help;
+    sprintf(show_oper_help, "show operational data for %s (%s) [list]", y_node->name, y_node->module->name);
+    struct cli_command *show_oper_c, *show_oper_c_parent;
 
-        show_oper_c_parent = find_parent_show_oper_cmd(cli, y_node);
-        if (show_oper_c_parent != NULL) {
-            show_oper_c = cli_register_command(cli, show_oper_c_parent, y_node,
-                                               y_node->name,
-                                               cmd_yang_show_operational_list,
-                                               PRIVILEGE_PRIVILEGED,
-                                               MODE_ANY, cmd_hash, show_oper_help);
-            const struct lysc_node *child_list = lysc_node_child(y_node);
-            const struct lysc_node *child;
-            LY_LIST_FOR(child_list, child) {
+    show_oper_c_parent = find_parent_show_oper_cmd(cli, y_node);
+    if (show_oper_c_parent != NULL) {
+        show_oper_c = cli_register_command(cli, show_oper_c_parent, y_node,
+                                           y_node->name,
+                                           cmd_yang_show_operational_list,
+                                           PRIVILEGE_PRIVILEGED,
+                                           MODE_ANY, cmd_hash, show_oper_help);
+        const struct lysc_node *child_list = lysc_node_child(y_node);
+        const struct lysc_node *child;
+        LY_LIST_FOR(child_list, child)
+        {
+            if (lysc_is_key(child)) {
                 if (lysc_is_key(child)) {
-                    if (lysc_is_key(child)) {
-                        if (child->dsc != NULL)
-                            oper_optarg_help = strdup(child->dsc);
-                        else {
-                            oper_optarg_help = malloc(strlen(child->name) + strlen("configure ") + 2);
-                            sprintf((char *) oper_optarg_help, "configure %s", strdup(child->name));
-                        }
-                        struct cli_optarg *show_oper_o = cli_register_optarg(show_oper_c, child->name, CLI_CMD_ARGUMENT,
-                                                                             PRIVILEGE_PRIVILEGED,
-                                                                             MODE_ANY, oper_optarg_help,
-                                                                             optagr_get_compl_running,
-                                                                             yang_data_validator, NULL);
-                        show_oper_o->opt_model = (void *) child;
-                        free(oper_optarg_help);
-
+                    if (child->dsc != NULL)
+                        oper_optarg_help = strdup(child->dsc);
+                    else {
+                        oper_optarg_help = malloc(strlen(child->name) + strlen("configure ") + 2);
+                        sprintf((char *) oper_optarg_help, "configure %s", strdup(child->name));
                     }
+                    struct cli_optarg *show_oper_o = cli_register_optarg(show_oper_c, child->name, CLI_CMD_ARGUMENT,
+                                                                         PRIVILEGE_PRIVILEGED,
+                                                                         MODE_ANY, oper_optarg_help,
+                                                                         optagr_get_compl_running,
+                                                                         yang_data_validator, NULL);
+                    show_oper_o->opt_model = (void *) child;
+                    free(oper_optarg_help);
+
                 }
             }
         }
-
     }
+
+
     if (y_node->flags & LYS_CONFIG_R)
         return CLI_OK;
 
@@ -370,7 +374,8 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     struct cli_optarg *o, *no_o, *show_o;
 //    char *list_cmd_help = create_list_cmd_help(y_node, lysc_is_userordered(y_node));
 
-    LY_LIST_FOR(child_list, child) {
+    LY_LIST_FOR(child_list, child)
+    {
         if (lysc_is_key(child)) {
             const char *optarg_help;
             LY_DATA_TYPE type = ((struct lysc_node_leaf *) child)->type->basetype;
