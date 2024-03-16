@@ -112,7 +112,7 @@ int cmd_sysrepo_remove_module(struct cli_def *cli, struct cli_command *c, const 
     return CLI_OK;
 }
 
-int yang_cmd_loader_init(struct cli_def *cli) {
+int sysrepo_commands_init(struct cli_def *cli) {
 
 
     struct cli_command *sysrepo_cmd = cli_register_command(cli, NULL, NULL,
