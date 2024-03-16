@@ -146,24 +146,48 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
         cli_print(cli, " no modification to commit!");
         return CLI_OK;
     }
-    int change_pushed = 0;
+    int ret;
+    int change_added = 0;
+    struct lyd_node *all_dnodes = NULL;
     struct data_tree *curr_root = config_dtree;
     while (curr_root != NULL) {
-        if (sysrepo_has_uncommited_changes(curr_root->node) == 0)
-            goto next;;
-        if (sysrepo_commit(curr_root->node) != EXIT_SUCCESS) {
-            cli_print(cli, "commit_failed: failed to commit changes!");
-            return CLI_ERROR;
-        } else {
-            change_pushed = 1;
+        if (sysrepo_has_uncommited_changes(curr_root->node) == 1) {
+            struct lyd_node *curr_node_cpy = NULL;
+            ret = lyd_dup_single(curr_root->node,
+                                     NULL, LYD_DUP_RECURSIVE | LYD_DUP_WITH_FLAGS, &curr_node_cpy);
+            if (ret != LY_SUCCESS) {
+                LOG_ERROR("ERROR: failed to duplicate child: %s", ly_strerrcode(ret));
+                cli_print(cli, " commit_failed: failed to commit changes!");
+                if (all_dnodes)
+                    lyd_free_all(all_dnodes);
+                return CLI_ERROR;
+            }
+
+            ret = lyd_insert_sibling(all_dnodes, curr_node_cpy, &all_dnodes);
+            if (ret != LY_SUCCESS) {
+                LOG_ERROR("ERROR: failed to group edited modules: %s", ly_strerrcode(ret));
+                cli_print(cli, " commit_failed: failed to commit changes!");
+                if (all_dnodes)
+                    lyd_free_all(all_dnodes);
+                return CLI_ERROR;
+            }
+            change_added = 1;
         }
-        next:
         curr_root = curr_root->prev;
     }
-    if (change_pushed)
-        cli_print(cli, " changes applied successfully!");
-    else
+    if (change_added) {
+        if (sysrepo_commit(all_dnodes) == EXIT_SUCCESS)
+            cli_print(cli, " changes applied successfully!");
+        else {
+            cli_print(cli, " commit_failed: failed to commit changes!");
+            lyd_free_all(all_dnodes);
+            return CLI_ERROR;
+        }
+    } else
         cli_print(cli, " no modification to commit!");
+
+    lyd_free_all(all_dnodes);
+
     return CLI_OK;
 }
 
@@ -204,9 +228,9 @@ int default_commands_init(struct cli_def *cli) {
                                                               MODE_ANY, NULL, "show the startup configurations");
 
     struct cli_command *show_oper = cli_register_command(cli, show, NULL,
-                                                              "operational-data", cmd_show_config_startup,
-                                                              PRIVILEGE_UNPRIVILEGED,
-                                                              MODE_ANY, NULL, "show the operational data");
+                                                         "operational-data", cmd_show_config_startup,
+                                                         PRIVILEGE_UNPRIVILEGED,
+                                                         MODE_ANY, NULL, "show the operational data");
 
 //    cli_register_optarg(config_running, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
 //                        "printed format [json|xml].", NULL, NULL, NULL);
