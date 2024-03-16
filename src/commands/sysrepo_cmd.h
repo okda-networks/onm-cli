@@ -8,6 +8,6 @@
 #include <libyang/log.h>
 #include "lib/libcli/libcli.h"
 
-int yang_cmd_loader_init(struct cli_def *cli);
+int sysrepo_commands_init(struct cli_def *cli);
 
 #endif //ONMCLI_YANG_CMD_GENERATOR_H

@@ -56,7 +56,7 @@ int onm_cli_init() {
     struct cli_ctx_data *cli_ctx = malloc(sizeof(struct cli_ctx_data));
     cli_set_context(cli, cli_ctx);
     default_commands_init(cli);
-    yang_cmd_loader_init(cli);
+    sysrepo_commands_init(cli);
     return EXIT_SUCCESS;
 
 
