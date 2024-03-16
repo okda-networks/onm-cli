@@ -34,58 +34,25 @@ $ ./onmcli
 
 ## usage
 
-[+] usage example of `onmcli`:
+[+] demo
 
+![demo](demo.gif)
+
+[+] you can manage sysrepo:
 ```commandline
-$ ./onmcli 
-[INF] Connection 394 created.
-[INF] Session 381 (user "ali", CID 394) created.
-
-
-onmcli version: 0.2.0
-by Okda networks (c) 2024
-router> en
-router# sysrepo load-modules 
-  yang commands generated successfully for module=ietf-interfaces
-  yang commands generated successfully for module=ietf-system
-  yang commands generated successfully for module=ietf-access-control-list
-  yang commands generated successfully for module=ietf-routing
-router# configure terminal 
-router(config)# interfaces 
-router(config-interfaces)# interface eth0
-router(config-interface[eth0])# enabled true
-router(config-interface[eth0])# commit
-[INF] There are no subscribers for changes of the module "ietf-interfaces" in running DS.
- changes applied successfully!
-router(config-interface[eth0])# description "WAN INET"
-router(config-interface[eth0])# commit 
-[INF] There are no subscribers for changes of the module "ietf-interfaces" in running DS.
- changes applied successfully!
-router(config-interface[eth0])# show config-running interfaces
-{
-  "ietf-interfaces:interfaces": {
-    "interface": [      
-      {
-        "name": "eth0",
-        "description": "WAN INET",
-        "type": "iana-if-type:other",
-        "enabled": true
-      }
-    ]
-  }
-}
-router(config-interface[eth0])# 
-```
-
-[+] to modify installed modules in sysrepo:
-```commandline
-router# sysrepo set-module-path /path/to/yang/standard/ietf/RFC
-router# sysrepo install-module ietf-vrrp.yang
+pc# sysrepo ?
+  set-module-path      set yang modules path search to install in sysrepo
+  list-modules         list all sysrepo yang modules
+  load-modules         load all yang modules from sysrepo and generate the cmds.
+  install-module       install yang module in sysrepo
+  remove-module        remove yang module from sysrepo
+pc# sysrepo set-module-path /path/to/yang/standard/ietf/RFC
+pc# sysrepo install-module ietf-vrrp.yang
 [INF] Module "ietf-vrrp" was installed.
 [INF] File "ietf-vrrp@2018-03-13.yang" was installed.
-router# sysrepo list-modules
+pc# sysrepo list-modules
 [+] ietf-ipv4-unicast-routing
 [+] ietf-routing
 [+] ietf-vrrp
-router#
+pc#
 ```
