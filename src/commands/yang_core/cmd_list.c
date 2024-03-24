@@ -391,9 +391,9 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             }
 
             o = cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                    mode, optarg_help, optagr_get_compl_candidate, yang_data_validator, NULL);
+                                    mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator, NULL);
             no_o = cli_register_optarg(no_c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                       mode, optarg_help, optagr_get_compl_candidate, yang_data_validator, NULL);
+                                       mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator, NULL);
             o->opt_model = (void *) child; // for get_completion
             no_o->opt_model = (void *) child; // for get_completion
 

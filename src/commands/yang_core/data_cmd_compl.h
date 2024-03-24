@@ -14,4 +14,7 @@ int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *
 int optagr_get_compl_startup(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model);
 
+int optagr_get_compl_candidate_running(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                                       void *cmd_model);
+
 #endif //ONMCLI_DATA_CMD_COMPL_H

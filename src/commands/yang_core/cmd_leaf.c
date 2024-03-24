@@ -198,7 +198,7 @@ int register_cmd_leaf(struct cli_def *cli, struct lysc_node *y_node) {
 
     struct cli_optarg *o = cli_register_optarg(c, "value", CLI_CMD_ARGUMENT,
                                                PRIVILEGE_PRIVILEGED, mode,
-                                               optarg_help, optagr_get_compl_candidate, yang_data_validator, NULL);
+                                               optarg_help, optagr_get_compl_candidate_running, yang_data_validator, NULL);
     o->opt_model = (void *) y_node;
     free((char *) optarg_help);
 
