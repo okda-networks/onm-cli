@@ -208,7 +208,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
                 struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
                                                            CLI_CMD_ARGUMENT,
                                                            PRIVILEGE_PRIVILEGED,
-                                                           mode, optarg_help, optagr_get_compl_candidate,
+                                                           mode, optarg_help, optagr_get_compl_candidate_running,
                                                            yang_data_validator,
                                                            NULL);
                 o->opt_model = (void *) case_child;

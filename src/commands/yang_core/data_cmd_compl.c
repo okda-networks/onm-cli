@@ -11,6 +11,7 @@
  * Copyright (C) 2024 Okda Networks, <aaqrbaw@okdanetworks.com>
  */
 
+#include <libyang/parser_schema.h>
 #include "src/onm_logger.h"
 #include "src/onm_sysrepo.h"
 #include "data_factory.h"
@@ -19,7 +20,7 @@
 
 void identityref_add_comphelp(struct lysc_ident *identity, const char *word, struct cli_comphelp *comphelp) {
     if (!identity) {
-        return ;
+        return;
     }
     char **id_entry;
     LY_ARRAY_COUNT_TYPE i;
@@ -35,7 +36,7 @@ void identityref_add_comphelp(struct lysc_ident *identity, const char *word, str
         free(id_str);
         identityref_add_comphelp(identity->derived[i], word, comphelp);
     }
-    return ;
+    return;
 }
 
 
@@ -108,16 +109,43 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
     return env_vars;
 }
 
+/**
+ * @brief check if str exist in options (used to avoid duplications)
+ * @param options options strings
+ * @param str string to check if exist in options
+ * @param size size of options
+ * @return 1 if exist
+ * @return 0 if does not exist
+ */
+int options_contain(const char **options,const char *str, int size) {
+    for (int i = 0; i < size; i++) {
+        if (strcmp(str, options[i]) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
-const char **create_type_options(struct lysc_node *y_node, int datastore) {
-    LY_DATA_TYPE type = ((struct lysc_node_leaf *) y_node)->type->basetype;
+const char **create_type_options(struct lysc_node *y_node, int datastore, struct lysc_type *in_y_node_type) {
+
+    if (y_node == NULL)
+        return NULL;
+
     int num_args = 0;
     const char **env_vars = NULL;
     LY_ARRAY_COUNT_TYPE i_sized;
+    struct lysc_type *y_node_type;
 
+    // this will hanlde the union case, as in union we want to use multiple types for same node,
+    // union case will call create_type_options for each type inside the union.
+    if (in_y_node_type == NULL)
+        y_node_type = (struct lysc_type *) ((struct lysc_node_leaf *) y_node)->type;
+    else
+        y_node_type = in_y_node_type;
+    LY_DATA_TYPE type = y_node_type->basetype;
     switch (type) {
         case LY_TYPE_ENUM: {
-            struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) ((struct lysc_node_leaf *) y_node)->type;
+            struct lysc_type_enum *y_enum_type = (struct lysc_type_enum *) y_node_type;
             // Populate the array with enum names
             LY_ARRAY_FOR(y_enum_type->enums, i_sized)
             {
@@ -135,16 +163,65 @@ const char **create_type_options(struct lysc_node *y_node, int datastore) {
             env_vars[2] = NULL;
             return env_vars;
 
-        case LY_TYPE_STRING:
-            if (!lysc_is_key(y_node))
-                break;
-            return get_list_key_values_array(y_node, num_args, datastore);
         case LY_TYPE_LEAFREF: {
             struct lysc_node *target_node = (struct lysc_node *) lysc_node_lref_target(y_node);
             return get_list_key_values_array(target_node, num_args, CANDIDATE_OR_RUNNING_SRC);
         }
+
+        case LY_TYPE_UNION: {
+            struct lysc_type_union *y_union_type = (struct lysc_type_union *) y_node_type;
+
+
+            LY_ARRAY_FOR(y_union_type->types, i_sized)
+            {
+                const char **tmp_env_vars;
+                if (y_union_type->types[i_sized]->basetype != LY_TYPE_LEAFREF) {
+                    tmp_env_vars = create_type_options(y_node, datastore,
+                                                       (struct lysc_type *) y_union_type->types[i_sized]);
+                    if (tmp_env_vars != NULL) {
+                        for (int i = 0; tmp_env_vars[i] != NULL; i++) {
+                            // check if the option already exist in the collected optoins.
+                            if (options_contain(env_vars, tmp_env_vars[i],num_args) == 0) {
+                                num_args++;
+                                env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
+                                env_vars[num_args - 1] = strdup(tmp_env_vars[i]);
+                            }
+                        }
+                        free_options(tmp_env_vars);
+                    }
+                } else {
+                    struct ly_set *s_set;
+                    struct lysc_node *target_node = NULL;
+                    struct lysc_type_leafref *lref_t = (struct lysc_type_leafref *) y_union_type->types[i_sized];
+
+                    int ret = lys_find_expr_atoms(y_node, y_node->module, lref_t->path,
+                                                  lref_t->prefixes, 0, &s_set);
+                    if (s_set == NULL || ret != LY_SUCCESS) {
+                        LOG_ERROR("%s: failed to get target leafref for node \"%s\": %s\n",
+                                  __func__, y_node->name, ly_strerrcode(ret));
+                        return NULL;
+                    }
+                    target_node = s_set->snodes[s_set->count - 2];
+                    tmp_env_vars = create_type_options((struct lysc_node *) lysc_node_child(target_node), datastore,
+                                                       NULL);
+                    if (tmp_env_vars != NULL) {
+                        for (int i = 0; tmp_env_vars[i] != NULL; i++) {
+                            num_args++;
+                            env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
+                            env_vars[num_args - 1] = strdup(tmp_env_vars[i]);
+                        }
+                        free_options(tmp_env_vars);
+                    }
+                }
+            }
+            break;
+        }
+
         default:
-            LOG_DEBUG("completion not supported for nodetype %d", type);
+            // check if node is list key, then get the available keys from the ds.
+            if (!lysc_is_key(y_node))
+                break;
+            return get_list_key_values_array(y_node, num_args, datastore);
     }
     if (env_vars != NULL) {
         env_vars = realloc(env_vars, sizeof(env_vars) * (num_args + 1));
@@ -173,7 +250,7 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
         }
         return CLI_OK;
     }
-    options = (const char **) create_type_options(y_node, datastore);
+    options = (const char **) create_type_options(y_node, datastore,NULL);
     if (options == NULL) {
         LOG_DEBUG("failed to get available options for node %s", y_node->name);
         return CLI_OK;
@@ -202,5 +279,11 @@ int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *
 int optagr_get_compl_startup(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model) {
     return core_optagr_get_compl(word, comphelp, cmd_model, STARTUP_SRC);
+}
+
+int optagr_get_compl_candidate_running(struct cli_def *cli, const char *name, const char *word,
+                                       struct cli_comphelp *comphelp,
+                                       void *cmd_model) {
+    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_OR_RUNNING_SRC);
 }
 
