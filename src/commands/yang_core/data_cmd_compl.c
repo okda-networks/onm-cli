@@ -117,7 +117,7 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
  * @return 1 if exist
  * @return 0 if does not exist
  */
-int options_contain(const char **options,const char *str, int size) {
+int options_contain(const char **options, const char *str, int size) {
     for (int i = 0; i < size; i++) {
         if (strcmp(str, options[i]) == 0) {
             return 1;
@@ -126,7 +126,8 @@ int options_contain(const char **options,const char *str, int size) {
     return 0;
 }
 
-const char **create_type_options(struct lysc_node *y_node, int datastore, struct lysc_type *in_y_node_type) {
+const char **create_type_options(struct lysc_node *y_node, int datastore, struct lysc_type *in_y_node_type,
+                                 int dnode_list_values_only) {
 
     if (y_node == NULL)
         return NULL;
@@ -135,6 +136,11 @@ const char **create_type_options(struct lysc_node *y_node, int datastore, struct
     const char **env_vars = NULL;
     LY_ARRAY_COUNT_TYPE i_sized;
     struct lysc_type *y_node_type;
+
+    if (dnode_list_values_only) {
+        if (lysc_is_key(y_node))
+            return get_list_key_values_array(y_node, num_args, datastore);
+    }
 
     // this will hanlde the union case, as in union we want to use multiple types for same node,
     // union case will call create_type_options for each type inside the union.
@@ -177,11 +183,11 @@ const char **create_type_options(struct lysc_node *y_node, int datastore, struct
                 const char **tmp_env_vars;
                 if (y_union_type->types[i_sized]->basetype != LY_TYPE_LEAFREF) {
                     tmp_env_vars = create_type_options(y_node, datastore,
-                                                       (struct lysc_type *) y_union_type->types[i_sized]);
+                                                       (struct lysc_type *) y_union_type->types[i_sized], 0);
                     if (tmp_env_vars != NULL) {
                         for (int i = 0; tmp_env_vars[i] != NULL; i++) {
                             // check if the option already exist in the collected optoins.
-                            if (options_contain(env_vars, tmp_env_vars[i],num_args) == 0) {
+                            if (options_contain(env_vars, tmp_env_vars[i], num_args) == 0) {
                                 num_args++;
                                 env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
                                 env_vars[num_args - 1] = strdup(tmp_env_vars[i]);
@@ -203,7 +209,7 @@ const char **create_type_options(struct lysc_node *y_node, int datastore, struct
                     }
                     target_node = s_set->snodes[s_set->count - 2];
                     tmp_env_vars = create_type_options((struct lysc_node *) lysc_node_child(target_node), datastore,
-                                                       NULL);
+                                                       NULL, 0);
                     if (tmp_env_vars != NULL) {
                         for (int i = 0; tmp_env_vars[i] != NULL; i++) {
                             num_args++;
@@ -233,7 +239,7 @@ const char **create_type_options(struct lysc_node *y_node, int datastore, struct
 }
 
 int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
-                          void *cmd_model, int datastore) {
+                          void *cmd_model, int datastore, int dnode_list_values_only) {
     if (cmd_model == NULL)
         return 0;
     struct lysc_node *y_node = (struct lysc_node *) cmd_model;
@@ -242,7 +248,7 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
     LY_ARRAY_COUNT_TYPE i;
     int rc = CLI_OK;
     // LY_TYPE_IDENT has special case where we need to add recursively.
-    if (type == LY_TYPE_IDENT) {
+    if (type == LY_TYPE_IDENT && !dnode_list_values_only) {
         struct lysc_type_identityref *y_id_type = (struct lysc_type_identityref *) ((struct lysc_node_leaf *) y_node)->type;
         LY_ARRAY_FOR(y_id_type->bases, i)
         {
@@ -250,7 +256,7 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
         }
         return CLI_OK;
     }
-    options = (const char **) create_type_options(y_node, datastore,NULL);
+    options = (const char **) create_type_options(y_node, datastore, NULL, dnode_list_values_only);
     if (options == NULL) {
         LOG_DEBUG("failed to get available options for node %s", y_node->name);
         return CLI_OK;
@@ -268,22 +274,28 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
 
 int optagr_get_compl_candidate(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                                void *cmd_model) {
-    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_SRC, 0);
 }
 
 int optagr_get_compl_running(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model) {
-    return core_optagr_get_compl(word, comphelp, cmd_model, RUNNING_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, RUNNING_SRC, 0);
 }
 
 int optagr_get_compl_startup(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
                              void *cmd_model) {
-    return core_optagr_get_compl(word, comphelp, cmd_model, STARTUP_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, STARTUP_SRC, 0);
 }
 
 int optagr_get_compl_candidate_running(struct cli_def *cli, const char *name, const char *word,
                                        struct cli_comphelp *comphelp,
                                        void *cmd_model) {
-    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_OR_RUNNING_SRC);
+    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_OR_RUNNING_SRC, 0);
 }
 
+// special case for nocmd: we get only the values for the list keys already configured.
+int optagr_get_compl_nocmd_candidate_running(struct cli_def *cli, const char *name, const char *word,
+                                             struct cli_comphelp *comphelp,
+                                             void *cmd_model) {
+    return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_OR_RUNNING_SRC, 1);
+}
