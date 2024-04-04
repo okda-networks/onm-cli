@@ -49,6 +49,23 @@ void free_options(const char **options) {
     }
 }
 
+/**
+ * @brief check if str exist in options (used to avoid duplications)
+ * @param options options strings
+ * @param str string to check if exist in options
+ * @param size size of options
+ * @return 1 if exist
+ * @return 0 if does not exist
+ */
+int options_contain(const char **options, const char *str, int size) {
+    for (int i = 0; i < size; i++) {
+        if (strcmp(str, options[i]) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 enum {
     CANDIDATE_SRC,
     RUNNING_SRC,
@@ -96,9 +113,13 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
         {
             if (lysc_is_key(entry_child->schema) && !strcmp(entry_child->schema->name, y_node->name)
                 && !strcmp(next->schema->name, y_node->parent->name)) {
-                num_args++;
-                env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
-                env_vars[num_args - 1] = strdup(lyd_get_value(entry_child));
+                // check if the optoin is already there to avoid duplicate. this might happen in case of list with
+                // multiple keys.
+                if (options_contain(env_vars, lyd_get_value(entry_child), num_args) == 0) {
+                    num_args++;
+                    env_vars = realloc(env_vars, sizeof(env_vars) * num_args);
+                    env_vars[num_args - 1] = strdup(lyd_get_value(entry_child));
+                }
             }
         }
     }
@@ -107,23 +128,6 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
         env_vars[num_args] = NULL;
     }
     return env_vars;
-}
-
-/**
- * @brief check if str exist in options (used to avoid duplications)
- * @param options options strings
- * @param str string to check if exist in options
- * @param size size of options
- * @return 1 if exist
- * @return 0 if does not exist
- */
-int options_contain(const char **options, const char *str, int size) {
-    for (int i = 0; i < size; i++) {
-        if (strcmp(str, options[i]) == 0) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 const char **create_type_options(struct lysc_node *y_node, int datastore, struct lysc_type *in_y_node_type,
