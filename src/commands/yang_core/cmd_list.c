@@ -286,7 +286,8 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     struct cli_command *show_oper_c, *show_oper_c_parent;
 
     show_oper_c_parent = find_parent_show_oper_cmd(cli, y_node);
-    if (show_oper_c_parent != NULL) {
+    // we need to check also that the show_oper_c_parent has no optargs, otherwise it will be dropped.
+    if (show_oper_c_parent != NULL && show_oper_c_parent->optargs == NULL) {
         show_oper_c = cli_register_command(cli, show_oper_c_parent, y_node,
                                            y_node->name,
                                            cmd_yang_show_operational_list,
@@ -331,9 +332,19 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
 
     struct cli_command *parent_cmd = find_parent_cmd(cli, y_node);
     struct cli_command *parent_cmd_no = find_parent_no_cmd(cli, y_node);
+
+    // all the following cmds parent are liner and available on all modes,
+    // we don't want to register child list if the parent cmd has
+    // optargs, if we do the aptargs will be dropped.
     struct cli_command *parent_cmd_show_conf_cand = find_parent_show_candidate_cmd(cli, y_node);
+    if (parent_cmd_show_conf_cand != NULL && parent_cmd_show_conf_cand->optargs != NULL)
+        parent_cmd_show_conf_cand = NULL;
     struct cli_command *parent_cmd_show_conf_run = find_parent_show_running_cmd(cli, y_node);
+    if (parent_cmd_show_conf_run != NULL && parent_cmd_show_conf_run->optargs != NULL)
+        parent_cmd_show_conf_run = NULL;
     struct cli_command *parent_cmd_show_conf_start = find_parent_show_startup_cmd(cli, y_node);
+    if (parent_cmd_show_conf_start != NULL && parent_cmd_show_conf_start->optargs != NULL)
+        parent_cmd_show_conf_start = NULL;
 
     struct cli_command *show_cmd_cand = NULL, *show_cmd_run = NULL, *show_cmd_start = NULL;
     if (parent_cmd_show_conf_cand != NULL) {
@@ -393,7 +404,8 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             o = cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                     mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator, NULL);
             no_o = cli_register_optarg(no_c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                       mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator, NULL);
+                                       mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
+                                       NULL);
             o->opt_model = (void *) child; // for get_completion
             no_o->opt_model = (void *) child; // for get_completion
 
