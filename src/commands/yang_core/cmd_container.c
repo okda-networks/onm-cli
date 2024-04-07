@@ -35,7 +35,6 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
             cli_print(cli, " <cr>");
             return CLI_OK;
         }
-
     }
 
     if (argc >= 1) {
