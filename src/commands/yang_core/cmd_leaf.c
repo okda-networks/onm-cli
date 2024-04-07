@@ -78,6 +78,16 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 int cmd_yang_no_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
     int ret;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
+
+    if (argc >= 1) {
+        if (!strcmp(argv[0], "?")) {
+            cli_print(cli, " <cr>");
+            return CLI_OK;
+        } else{
+            cli_print(cli, " ERROR: invalid input %s",argv[0]);
+            return CLI_ERROR;
+        }
+    }
     ret = delete_data_node(y_node, NULL, cli);
     if (ret != LY_SUCCESS) {
         cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
