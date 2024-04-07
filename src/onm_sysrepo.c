@@ -16,7 +16,7 @@
 #include "onm_logger.h"
 
 static sr_conn_ctx_t *connection = NULL;
-static sr_session_ctx_t *session = NULL, *startup_session = NULL,*operational_session = NULL;
+static sr_session_ctx_t *session = NULL, *startup_session = NULL, *operational_session = NULL;
 
 struct data_tree *config_root_tree;
 
@@ -165,11 +165,10 @@ sr_session_ctx_t *sysrepo_get_session_operational() {
     return operational_session;
 }
 
-struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node) {
+
+struct lyd_node *sysrepo_get_data_subtree(const char *path) {
     sr_data_t *sr_data;
-    char xpath[1028];
-    lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-    int ret = sr_get_subtree(session, xpath, 0, &sr_data);
+    int ret = sr_get_subtree(session, path, 0, &sr_data);
     if (ret != SR_ERR_OK || sr_data == NULL)
         return NULL;
     return sr_data->tree;
