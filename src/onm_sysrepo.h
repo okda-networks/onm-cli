@@ -30,7 +30,7 @@ int sysrepo_insmod(char *mod);
 
 int sysrepo_rmmod(char *mod, int force);
 
-struct lyd_node *sysrepo_get_data_subtree(struct lysc_node *y_node);
+struct lyd_node *sysrepo_get_data_subtree(const char *path);
 
 const struct ly_ctx *sysrepo_get_ctx();
 
