@@ -24,6 +24,24 @@ typedef enum {
     SHOW_OPERATIONAL,
 } FIND_PARENT_T;
 
+int get_extension(char *ext_name, const struct lysc_node *snode, char **value) {
+    struct lysc_ext_instance *ys_extenstions = snode->exts;
+    if (ys_extenstions == NULL)
+        return EXIT_FAILURE;
+
+    LY_ARRAY_COUNT_TYPE i;
+    LY_ARRAY_FOR(ys_extenstions, i)
+    {
+        if (!strcmp(ys_extenstions[i].def->name, ext_name)) {
+            if (value != NULL)
+                *value = strdup(ys_extenstions[i].argument);
+            return EXIT_SUCCESS;
+        }
+    }
+    return EXIT_FAILURE;
+}
+
+
 char *get_model_org_prefix(char *module_name) {
     char *token = strtok(module_name, "-");
     return token;
@@ -55,6 +73,13 @@ char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *
     {
         if (lysc_is_key(child)) {
             char *value = cli_get_optarg_value(cli, child->name, NULL);
+            if (value == NULL) {
+                char *dflt_val = NULL;
+                get_extension("key-default-val", child, &dflt_val);
+                if (dflt_val != NULL)
+                    value = dflt_val;
+            }
+
             size_t new_size = strlen(predicate) + strlen(child->name) + strlen(value) + 6;
 
             predicate = realloc(predicate, new_size);
@@ -64,6 +89,7 @@ char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *
             strcat(predicate, "='");
             strcat(predicate, value);
             strcat(predicate, "']");
+
         }
     }
     return predicate;

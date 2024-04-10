@@ -401,12 +401,25 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                 }
             }
 
-            o = cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                    mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator, NULL);
+            // key has onmcli's default value extension, then the key will be optional arg.
+            if (get_extension("key-default-val", child, NULL) == EXIT_SUCCESS) {
+                o = cli_register_optarg(c, child->name, CLI_CMD_OPTIONAL_ARGUMENT,
+                                        PRIVILEGE_PRIVILEGED,
+                                        mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
+                                        NULL);
+
+            } else {
+                o = cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                                        mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
+                                        NULL);
+
+            }
+            o->opt_model = (void *) child; // for get_completion
+
             no_o = cli_register_optarg(no_c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
                                        mode, optarg_help, optagr_get_compl_nocmd_candidate_running, yang_data_validator,
                                        NULL);
-            o->opt_model = (void *) child; // for get_completion
+
             no_o->opt_model = (void *) child; // for get_completion
 
             if (parent_cmd_show_conf_cand != NULL) {
