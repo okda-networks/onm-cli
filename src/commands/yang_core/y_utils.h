@@ -4,6 +4,7 @@
 #define ONMCLI_Y_UTILS_H
 
 #include "src/utils.h"
+#include <libyang/libyang.h>
 #include <libyang/tree_schema.h>
 #include <libyang/tree_data.h>
 #include <libyang/printer_data.h>
@@ -16,6 +17,8 @@ struct cli_ctx_data {
     struct cli_command *show_operational_data;
     struct cli_command *print_order_cmd;
 };
+
+int get_extension(char *ext_name, const struct lysc_node *snode, char **value);
 
 char *get_root_ynode_cmd_name(struct lysc_node *y_node);
 

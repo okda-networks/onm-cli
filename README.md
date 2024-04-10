@@ -56,3 +56,6 @@ pc# sysrepo list-modules
 [+] ietf-vrrp
 pc#
 ```
+
+## extension
+[+] key-default-val: add support for list key default value.
