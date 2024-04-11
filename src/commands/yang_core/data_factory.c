@@ -71,31 +71,6 @@ struct lyd_node *get_local_list_nodes(struct lysc_node *y_node) {
     return NULL;
 }
 
-// get list data node for y_node from local data_tree, if no data get from sysrepo.
-struct lyd_node *get_local_or_sr_list_nodes(struct lysc_node *y_node) {
-    struct lyd_node *list_entries = get_local_list_nodes(y_node);
-
-    if (list_entries == NULL) {
-        char xpath[1024] = {0};
-        if (parent_data->schema == y_node->parent) {
-            lyd_path(parent_data, LYD_PATH_STD, xpath, 1024);
-        } else {
-            return NULL;
-        }
-        list_entries = sysrepo_get_data_subtree(xpath);
-        struct lyd_node *list_node = lyd_child(list_entries);
-        struct lyd_node *next = NULL;
-        LY_LIST_FOR(list_node, next)
-        {
-            if (next->schema->nodetype == LYS_LIST) {
-                if (!strcmp(y_node->name, next->schema->name))
-                    return next;
-            }
-        }
-    }
-    return list_entries;
-}
-
 struct lyd_node *get_sysrepo_running_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);

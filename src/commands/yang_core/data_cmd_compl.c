@@ -82,15 +82,10 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
         case CANDIDATE_SRC:
             list_data_node = get_local_list_nodes(y_node->parent);
             break;
-        case CANDIDATE_OR_RUNNING_SRC: // for show config, if no data in candidate check startup and running
-            list_data_node = get_local_or_sr_list_nodes(y_node->parent);
-            if (list_data_node == NULL) {
-                if (y_node->parent != NULL && y_node->parent->parent != NULL)
-                    list_data_node = get_sysrepo_running_node(xpath);
-            }
-            break;
-            // running and startup auto complete will be only for show commands, so we can use xpath as we
-            // don't show beyond first two nodes.
+        case CANDIDATE_OR_RUNNING_SRC:
+            list_data_node = get_local_list_nodes(y_node->parent);
+            if (list_data_node) // if list_data found in candidate break, else try the running ds.
+                break;
         case RUNNING_SRC:
             if (y_node->parent != NULL && y_node->parent->parent != NULL) {
                 lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
