@@ -63,7 +63,7 @@ int register_commands_schema(struct lysc_node *schema, struct cli_def *cli) {
             signal = register_node_routine(cli, child);
             if (signal == REG_SKIP_NEXT_SIG)
                 LYSC_TREE_DFS_continue = 1;
-        LYSC_TREE_DFS_END(schema, child);
+        LYSC_TREE_DFS_END(schema, child)
     }
     return EXIT_SUCCESS;
 

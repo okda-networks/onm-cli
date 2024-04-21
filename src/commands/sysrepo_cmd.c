@@ -26,10 +26,14 @@ int mod2cmd_generate(struct cli_def *cli, const struct lys_module *module) {
     if (module->compiled->data == NULL)
         return CLI_OK;
     // if the module is already registered remove it first
+    struct lysc_node *y_root_node;
+    LY_LIST_FOR(module->compiled->data, y_root_node)
+    {
 
-    unregister_commands_schema(module->compiled->data, cli);
+        unregister_commands_schema(y_root_node, cli);
 
-    register_commands_schema(module->compiled->data, cli);
+        register_commands_schema(y_root_node, cli);
+    }
     cli_print(cli, "  yang commands generated successfully for module=%s", module->name);
     return CLI_OK;
 }
