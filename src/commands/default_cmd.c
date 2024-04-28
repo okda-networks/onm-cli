@@ -109,16 +109,22 @@ int cmd_show_config_startup(struct cli_def *cli, struct cli_command *c, const ch
     return CLI_OK;
 }
 
+#include "yang_core/data_print.h"
 
 int cmd_show_config_candidate(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-
+    enum FORMAT {
+        F_XML,
+        F_JSON,
+        F_CONFIG_LINE,
+    } format = F_CONFIG_LINE;
     struct data_tree *config_dtree = get_config_root_tree();
-    int is_xml = 1;
-    char *format = cli_get_optarg_value(cli, "format", NULL);
-    if (format != NULL) {
-        to_lower(format);
-        if (strcmp(format, "json") == 0)
-            is_xml = 0;
+    char *format_opt = cli_get_optarg_value(cli, "format", NULL);
+    if (format_opt != NULL) {
+        to_lower(format_opt);
+        if (strcmp(format_opt, "json") == 0)
+            format = F_JSON;
+        else if (strcmp(format_opt, "xml") == 0)
+            format = F_XML;
     }
     // commit changes.
     if (config_dtree == NULL) {
@@ -128,11 +134,14 @@ int cmd_show_config_candidate(struct cli_def *cli, struct cli_command *c, const 
     struct data_tree *curr_root = config_dtree;
     while (curr_root != NULL) {
         char *result;
-        if (is_xml == 0)
+        if (format == F_JSON)
             lyd_print_mem(&result, curr_root->node, LYD_JSON, 0);
-        else
+        else if (format == F_XML)
             lyd_print_mem(&result, curr_root->node, LYD_XML, 0);
+        else
+            config_print_mem(&result, curr_root->node);
         cli_print(cli, result, NULL);
+
         curr_root = curr_root->prev;
     }
 
@@ -154,7 +163,7 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
         if (sysrepo_has_uncommited_changes(curr_root->node) == 1) {
             struct lyd_node *curr_node_cpy = NULL;
             ret = lyd_dup_single(curr_root->node,
-                                     NULL, LYD_DUP_RECURSIVE | LYD_DUP_WITH_FLAGS, &curr_node_cpy);
+                                 NULL, LYD_DUP_RECURSIVE | LYD_DUP_WITH_FLAGS, &curr_node_cpy);
             if (ret != LY_SUCCESS) {
                 LOG_ERROR("ERROR: failed to duplicate child: %s", ly_strerrcode(ret));
                 cli_print(cli, " commit_failed: failed to commit changes!");
@@ -236,7 +245,7 @@ int default_commands_init(struct cli_def *cli) {
 //                        "printed format [json|xml].", NULL, NULL, NULL);
 
     cli_register_optarg(config_candidate, "format", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_UNPRIVILEGED, MODE_ANY,
-                        "printed format [json|xml].", NULL, NULL, NULL);
+                        "printed format [config-line|json|xml].", NULL, NULL, NULL);
 
 
     cli_register_command(cli, NULL, NULL,

@@ -13,6 +13,7 @@
 
 #include "y_utils.h"
 #include "yang_core.h"
+#include "data_print.h"
 #include "data_factory.h"
 #include "src/onm_logger.h"
 
@@ -127,9 +128,12 @@ int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int da
             break;
     }
 
-    if (d_node)
-        config_print(cli, d_node);
-    else
+    if (d_node) {
+        char *result;
+        config_print_mem(&result, d_node);
+        cli_print(cli, "%s", result);
+        free(result);
+    } else
         cli_print(cli, "no data found");
     return CLI_OK;
 }
@@ -195,9 +199,12 @@ cmd_yang_show_candidate_config_diff_container(struct cli_def *cli, struct cli_co
     struct lyd_node *running_node = get_sysrepo_running_node(xpath);
     lyd_diff_tree(running_node, candidate_node, 0, &d_node);
 
-    if (d_node)
-        config_print(cli, d_node);
-    else
+    if (d_node) {
+        char *result;
+        config_print_mem(&result, d_node);
+        cli_print(cli, "%s", result);
+        free(result);
+    } else
         cli_print(cli, " no config diff between candidate and running!");
 
     return CLI_OK;

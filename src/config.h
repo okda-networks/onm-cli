@@ -9,7 +9,7 @@
 #define LEVEL_DEBUG   4
 
 #define ONM_LOG_LEVEL LEVEL_DEBUG
-#define CLI_TIMEOUT 900 // 15min
+#define CLI_TIMEOUT 3600 // 1hour
 #define LIBYANG_LOG_DEBUG 1
 
 #endif //ONMCLI_CONFIG_H
