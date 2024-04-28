@@ -30,8 +30,6 @@ int has_oper_children(struct lysc_node *y_node);
 
 void print_ly_err(const struct ly_err_item *err, char *component, struct cli_def *cli);
 
-void config_print(struct cli_def *cli, struct lyd_node *d_node);
-
 int y_get_curr_mode(struct lysc_node *y_node);
 
 int y_get_next_mode(struct lysc_node *y_node);

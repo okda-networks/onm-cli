@@ -14,7 +14,7 @@ CC ?= gcc
 CFLAGS := -Wall
 LIB_PATH := -L/usr/local/lib/
 INCLUDE_PATH := -I$(CURDIR)
-LIBS := -lyang -lsysrepo -lcrypt
+LIBS := -lyang -lsysrepo -lcrypt -lbsd
 
 # Directories
 SRC_DIR := src

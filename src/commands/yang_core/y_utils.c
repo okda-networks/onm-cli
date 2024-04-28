@@ -123,12 +123,6 @@ const char *get_relative_path(struct lysc_node *y_node) {
     return strdup(result);
 }
 
-void config_print(struct cli_def *cli, struct lyd_node *d_node) {
-    char *result;
-    lyd_print_mem(&result, d_node, LYD_XML, 0);
-    cli_print(cli, result, NULL);
-}
-
 struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node **y_node) {
     struct cli_command *c;
     const char *root_module = lysc_owner_module(*y_node)->name;

@@ -16,6 +16,7 @@
 #include "yang_core.h"
 #include "data_validators.h"
 #include "data_factory.h"
+#include "data_print.h"
 #include "src/onm_logger.h"
 #include "data_cmd_compl.h"
 
@@ -168,9 +169,12 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
         }
         struct lyd_node *running_node = get_sysrepo_running_node(xpath);
         lyd_diff_tree(running_node, candidate_node, 0, &d_node);
-        if (d_node)
-            config_print(cli, d_node);
-        else {
+        if (d_node) {
+            char *result;
+            config_print_mem(&result, d_node);
+            cli_print(cli, "%s", result);
+            free(result);
+        } else {
             cli_print(cli, " no config diff between candidate and running for node '%s'", xpath);
             return CLI_OK;
         }
@@ -191,9 +195,12 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
                 break;
         }
     }
-    if (d_node)
-        config_print(cli, d_node);
-    else
+    if (d_node) {
+        char *result;
+        config_print_mem(&result, d_node);
+        cli_print(cli, "%s", result);
+        free(result);
+    } else
         cli_print(cli, " no data found for node '%s'", xpath);
 
     return CLI_OK;
