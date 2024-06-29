@@ -408,42 +408,39 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                 }
             }
 
-            // key has onmcli's default value extension, then the key will be optional arg.
-            if (get_extension("key-default-val", child, NULL) == EXIT_SUCCESS) {
-                o = cli_register_optarg(c, child->name, CLI_CMD_OPTIONAL_ARGUMENT,
-                                        PRIVILEGE_PRIVILEGED,
-                                        mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
-                                        NULL);
+            int opt_flag = CLI_CMD_ARGUMENT;
+            // if the key has onmcli's default value extension, then the key will be optional arg.
+            if (get_extension("key-default-val", child, NULL) == EXIT_SUCCESS)
+                opt_flag = CLI_CMD_OPTIONAL_ARGUMENT;
 
-            } else {
-                o = cli_register_optarg(c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
-                                        mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
-                                        NULL);
+            o = cli_register_optarg(c, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
+                                    mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
+                                    NULL);
 
-            }
+
             o->opt_model = (void *) child; // for get_completion
 
-            no_o = cli_register_optarg(no_c, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+            no_o = cli_register_optarg(no_c, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                        mode, optarg_help, optagr_get_compl_nocmd_candidate_running, yang_data_validator,
                                        NULL);
 
             no_o->opt_model = (void *) child; // for get_completion
 
             if (parent_cmd_show_conf_cand != NULL) {
-                show_o = cli_register_optarg(show_cmd_cand, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                show_o = cli_register_optarg(show_cmd_cand, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_candidate, yang_data_validator,
                                              NULL);
 
                 show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_start != NULL) {
-                show_o = cli_register_optarg(show_cmd_start, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                show_o = cli_register_optarg(show_cmd_start, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_startup, yang_data_validator,
                                              NULL);
                 show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_run != NULL) {
-                show_o = cli_register_optarg(show_cmd_run, child->name, CLI_CMD_ARGUMENT, PRIVILEGE_PRIVILEGED,
+                show_o = cli_register_optarg(show_cmd_run, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_running, yang_data_validator,
                                              NULL);
                 show_o->opt_model = (void *) child;// for get_completion

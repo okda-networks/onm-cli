@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <bsd/string.h>
 #include "data_print.h"
+#include "y_utils.h"
 
 void print_indentation(int pos, char **result) {
     if (pos > 0) {
@@ -71,8 +72,19 @@ void print_list_dnode(struct lyd_node *dnode, int pos, char **result) {
     LY_LIST_FOR(childs, next)
     {
         if (lysc_is_key(next->schema)) {
-            strlcat(line, lyd_get_value(next), sizeof(line));
-            strlcat(line, " ", sizeof(line));
+            char *key_dflt_val;
+            if (get_extension("key-default-val", next->schema, &key_dflt_val) == EXIT_SUCCESS){
+                // if the value of the key is same as it's default value it print it.
+                if (strcmp(key_dflt_val,lyd_get_value(next)) != 0) {
+                    strlcat(line, next->schema->name, sizeof(line));
+                    strlcat(line, " ", sizeof(line));
+                    strlcat(line, lyd_get_value(next), sizeof(line));
+                    strlcat(line, " ", sizeof(line));
+                }
+            } else {
+                strlcat(line, lyd_get_value(next), sizeof(line));
+                strlcat(line, " ", sizeof(line));
+            }
         }
     }
     strlcat(line, "\n", sizeof(line));
