@@ -60,9 +60,9 @@ void set_input_mode(void) {
 int main() {
     int ret;
 
-    ret = onm_cli_init();
+    ret = onm_logger_init();
     if (ret != EXIT_SUCCESS) {
-        LOG_ERROR("failed to initialize cli: existing...");
+        LOG_ERROR("failed to initialize logger: existing...");
         return -1;
     }
 
@@ -72,11 +72,12 @@ int main() {
         return -1;
     }
 
-    ret = onm_logger_init();
+    ret = onm_cli_init();
     if (ret != EXIT_SUCCESS) {
-        LOG_ERROR("failed to initialize logger: existing...");
+        LOG_ERROR("failed to initialize cli: existing...");
         return -1;
     }
+
     int fd = dup(STDIN_FILENO);
     set_input_mode();
     handle_session(fd);

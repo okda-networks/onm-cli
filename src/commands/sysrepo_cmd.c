@@ -73,6 +73,10 @@ int cmd_sysrepo_list_modules(struct cli_def *cli, struct cli_command *c, const c
 }
 
 int cmd_sysrepo_load_module(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    if (c) {
+        cli_print(cli, "Command Deprecated - modules already generated at startup...");
+        return CLI_OK;
+    }
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
     if (argc == 1) {
         if (strcmp(argv[0], "?") == 0) {
@@ -160,7 +164,7 @@ int sysrepo_commands_init(struct cli_def *cli) {
                         "If there are other installed modules depending on module_name, remove them, too", NULL, NULL,
                         NULL);
 
-
+    cmd_sysrepo_load_module(cli, NULL, NULL, NULL, 0);
     return 0;
 }
 
