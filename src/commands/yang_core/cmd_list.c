@@ -312,10 +312,15 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
                         oper_optarg_help = malloc(strlen(child->name) + strlen("configure ") + 2);
                         sprintf((char *) oper_optarg_help, "configure %s", strdup(child->name));
                     }
-                    struct cli_optarg *show_oper_o = cli_register_optarg(show_oper_c, child->name, CLI_CMD_ARGUMENT,
+                    int oper_opt_flag = CLI_CMD_ARGUMENT;
+                    // if the key has onmcli's default value extension, then the key will be optional arg.
+                    if (get_extension("key-default-val", child, NULL) == EXIT_SUCCESS)
+                        oper_opt_flag = CLI_CMD_OPTIONAL_ARGUMENT;
+
+                    struct cli_optarg *show_oper_o = cli_register_optarg(show_oper_c, child->name, oper_opt_flag,
                                                                          PRIVILEGE_PRIVILEGED,
                                                                          MODE_ANY, oper_optarg_help,
-                                                                         optagr_get_compl_running,
+                                                                         optagr_get_compl_oper,
                                                                          yang_data_validator, NULL);
                     show_oper_o->opt_model = (void *) child;
                     free(oper_optarg_help);
@@ -325,9 +330,6 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
         }
     }
 
-
-    if (y_node->flags & LYS_CONFIG_R)
-        return CLI_OK;
 
     unsigned int mode;
 
