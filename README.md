@@ -20,16 +20,20 @@ require: [sysrepo](https://github.com/sysrepo/sysrepo).
 ```bash
 # build
 $ make
+# install
+$ sudo make install
 # run
-$ ./onmcli
+$ onmcli
 ```
 
 The default compiler is gcc. It can be changed to clang using:
 ```bash
 # build
 $ CC=clang make
+# install
+$ sudo make install
 # run
-$ ./onmcli
+$ onmcli
 ```
 
 ## usage
@@ -43,7 +47,6 @@ $ ./onmcli
 pc# sysrepo ?
   set-module-path      set yang modules path search to install in sysrepo
   list-modules         list all sysrepo yang modules
-  load-modules         load all yang modules from sysrepo and generate the cmds.
   install-module       install yang module in sysrepo
   remove-module        remove yang module from sysrepo
 pc# sysrepo set-module-path /path/to/yang/standard/ietf/RFC
