@@ -44,7 +44,7 @@ int onm_cli_init() {
 
     cli_telnet_protocol(cli, 0);
     cli_set_banner(cli, banner);
-    char hostname[64];
+    char hostname[64] = "unknown";
 
     if (gethostname(hostname, sizeof(hostname)) < 0)
         LOG_ERROR("gethostname:");
