@@ -149,6 +149,7 @@ int cmd_show_config_candidate(struct cli_def *cli, struct cli_command *c, const 
 }
 
 int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    sr_log_stderr(SR_LL_INF);
     struct data_tree *config_dtree = get_config_root_tree();
     // commit changes.
     if (config_dtree == NULL) {
@@ -169,6 +170,7 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
                 cli_print(cli, " commit_failed: failed to commit changes!");
                 if (all_dnodes)
                     lyd_free_all(all_dnodes);
+                sr_log_stderr(SR_LL_NONE);
                 return CLI_ERROR;
             }
 
@@ -178,6 +180,7 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
                 cli_print(cli, " commit_failed: failed to commit changes!");
                 if (all_dnodes)
                     lyd_free_all(all_dnodes);
+                sr_log_stderr(SR_LL_NONE);
                 return CLI_ERROR;
             }
             change_added = 1;
@@ -190,13 +193,14 @@ int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char
         else {
             cli_print(cli, " commit_failed: failed to commit changes!");
             lyd_free_all(all_dnodes);
+            sr_log_stderr(SR_LL_NONE);
             return CLI_ERROR;
         }
     } else
         cli_print(cli, " no modification to commit!");
 
     lyd_free_all(all_dnodes);
-
+    sr_log_stderr(SR_LL_NONE);
     return CLI_OK;
 }
 

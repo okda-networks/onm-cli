@@ -71,6 +71,7 @@ enum {
     RUNNING_SRC,
     STARTUP_SRC,
     CANDIDATE_OR_RUNNING_SRC,
+    OPERATION_SRC
 };
 
 const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int ds) {
@@ -96,6 +97,12 @@ const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, i
             if (y_node->parent != NULL && y_node->parent->parent != NULL) {
                 lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
                 list_data_node = lyd_child(get_sysrepo_startup_node(xpath));
+            }
+            break;
+        case OPERATION_SRC:
+            if (y_node->parent != NULL && y_node->parent->parent != NULL) {
+                lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
+                list_data_node = lyd_child(get_sysrepo_operational_node(xpath));
             }
             break;
     }
@@ -263,7 +270,7 @@ int core_optagr_get_compl(const char *word, struct cli_comphelp *comphelp,
         }
         return CLI_OK;
     }
-    options = (const char **) create_type_options(y_node, datastore, NULL, dnode_list_values_only,0);
+    options = (const char **) create_type_options(y_node, datastore, NULL, dnode_list_values_only, 0);
     if (options == NULL) {
         LOG_DEBUG("failed to get available options for node %s", y_node->name);
         return CLI_OK;
@@ -305,4 +312,9 @@ int optagr_get_compl_nocmd_candidate_running(struct cli_def *cli, const char *na
                                              struct cli_comphelp *comphelp,
                                              void *cmd_model) {
     return core_optagr_get_compl(word, comphelp, cmd_model, CANDIDATE_OR_RUNNING_SRC, 1);
+}
+
+int optagr_get_compl_oper(struct cli_def *cli, const char *name, const char *word, struct cli_comphelp *comphelp,
+                          void *cmd_model) {
+    return core_optagr_get_compl(word, comphelp, cmd_model, OPERATION_SRC, 1);
 }

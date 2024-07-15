@@ -232,7 +232,7 @@ int onm_sysrepo_done() {
 }
 
 int onm_sysrepo_init() {
-    sr_log_stderr(SR_LL_INF);
+    sr_log_stderr(SR_LL_NONE);
 
     // Set up signal handler for SIGINT (Ctrl+C)
     if (signal(SIGINT, cleanup_handler) == SIG_ERR) {
