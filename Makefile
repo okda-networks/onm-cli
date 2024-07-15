@@ -10,6 +10,9 @@
 # Copyright (C) 2024 Okda Networks, <aaqrabaw@okdanetworks.com>
 #
 
+INSTALL_DIR = /usr/local/bin
+LOG_DIR := /var/log/onmcli
+
 CC ?= gcc
 CFLAGS := -Wall
 LIB_PATH := -L/usr/local/lib/
@@ -35,7 +38,9 @@ OBJ := $(COMMANDS_SRC:.c=.o) $(UTILS_SRC:.c=.o)
 # Executable
 EXEC := onmcli
 
-.PHONY: all clean run debug
+
+
+.PHONY: all clean run debug install uninstall
 
 all: $(EXEC)
 
@@ -53,3 +58,25 @@ run: all
 
 clean:
 	rm -f $(OBJ) $(EXEC) onmcli.log valgrind-out.txt
+
+install: $(EXEC)
+	# Create the log directory and set permissions
+	install -d $(LOG_DIR)
+	chown $(USER):$(USER) $(LOG_DIR)
+	chmod 755 $(LOG_DIR)
+
+	# Create the log file and set permissions
+	touch $(LOG_DIR)/onmcli.log
+	chown $(USER):$(USER) $(LOG_DIR)/onmcli.log
+	chmod 666 $(LOG_DIR)/onmcli.log
+
+	# Copy the binary to /usr/local/bin
+	install -d $(INSTALL_DIR)
+	install $(EXEC) $(INSTALL_DIR)
+
+uninstall:
+	# Remove the binary from /usr/local/bin
+	rm -f $(INSTALL_DIR)/$(EXEC)
+
+	# Remove the log file and directory
+	rm -rf $(LOG_DIR)

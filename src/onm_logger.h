@@ -3,7 +3,7 @@
 #ifndef ONMCLI_ONM_LOGGER_H
 #define ONMCLI_ONM_LOGGER_H
 
-#define LOGFILE_NAME "onmcli.log"
+#define LOGFILE_NAME "/var/log/onmcli/onmcli.log"
 
 #include "config.h"
 
