@@ -18,7 +18,8 @@ void print_indentation(int pos, char **result) {
 
 void print_root_container_dnode(struct lyd_node *dnode, int pos, char **result) {
     char line[1024] = {0};
-    strlcat(line, dnode->schema->name, sizeof(line));
+
+    strlcat(line, get_root_ynode_cmd_name((struct lysc_node*)dnode->schema), sizeof(line));
     strlcat(line, "\n", sizeof(line));
 
     size_t new_size = strlen(line) + 1; // Length of schema name + null terminator
@@ -64,7 +65,14 @@ void print_inline_parents_dnode(const struct lysc_node *snode, int pos, char **r
 
 
 void print_list_dnode(struct lyd_node *dnode, int pos, char **result) {
-    print_indentation(pos, result);
+    struct lyd_node *parent_node;
+    parent_node = lyd_parent(dnode);
+    // if the parent node is container, and the parent is not top level node (root container), add it to the line.
+    if (parent_node->schema->nodetype == LYS_CONTAINER && lyd_parent(parent_node) != NULL ) {
+        print_inline_parents_dnode(parent_node->schema, pos, result);
+    } else {
+        print_indentation(pos, result);
+    }
     char line[1024] = {0};
     strlcat(line, dnode->schema->name, sizeof(line));
     strlcat(line, " ", sizeof(line));
@@ -105,7 +113,7 @@ void print_leaf_dnode(struct lyd_node *dnode, int pos, char **result) {
     }
     struct lyd_node *parent_node;
     parent_node = lyd_parent(dnode);
-    // if the parent node is container this add it to the line.
+    // if the parent node is container, add it to the line.
     if (parent_node->schema->nodetype == LYS_CONTAINER) {
         print_inline_parents_dnode(parent_node->schema, pos, result);
     } else {
