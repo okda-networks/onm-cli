@@ -193,7 +193,7 @@ int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
     lyd_path(data_node, LYD_PATH_STD, xpath, 256);
     sr_data_t *sysrepo_subtree;
     int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK) {
+    if (ret == SR_ERR_OK && sysrepo_subtree) {
         struct lyd_node *diff;
         lyd_diff_tree(data_node, sysrepo_subtree->tree, 0, &diff);
         sr_release_data(sysrepo_subtree);
