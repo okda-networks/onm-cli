@@ -24,7 +24,16 @@ int cmd_print_list_order(struct cli_def *cli, struct cli_command *c, const char 
     int curr_indx = 10;
     struct lyd_node *next = NULL, *entry_child = NULL;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
-    struct lyd_node *list_entries = get_local_list_nodes(y_node);
+
+    struct lyd_node *list_entries;
+    char xpath[1024] = {0};
+    if (y_node->parent != NULL && y_node->parent->parent != NULL) {
+        lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
+        list_entries = lyd_child(get_sysrepo_candidate_node(xpath));
+    } else {
+        return EXIT_FAILURE;
+    }
+
     char line[265] = {'\0'};
     LY_LIST_FOR(list_entries, next)
     {
@@ -70,7 +79,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
         // Check for conversion errors
         if ((*idx_endptr != '\0' && *idx_endptr != '\n') || (index == 0)) {
-            cli_error(cli, "ERROR: <index> must be numeric greater than 0, entered value=%s", optargs->value);
+            cli_error(cli, RED"ERROR: <index> must be numeric greater than 0, entered value=%s"RESET, optargs->value);
             return CLI_ERROR;
         }
     }
@@ -134,7 +143,7 @@ int cmd_yang_no_list(struct cli_def *cli, struct cli_command *c, const char *cmd
     ret = delete_data_node_list(y_node, cli);
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to delete the data tree");
-        cli_print(cli, "failed to execute command, error with adding the data node.");
+        cli_print(cli, RED"failed to execute command, error with adding the data node."RESET);
         return CLI_ERROR;
     }
     return CLI_OK;
@@ -162,7 +171,7 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
             cli_print(cli, "config diff is support for config-candidate only.");
             return CLI_ERROR;
         }
-        struct lyd_node *candidate_node = get_local_node_data(xpath);
+        struct lyd_node *candidate_node = get_sysrepo_candidate_node(xpath);
         if (candidate_node == NULL) {
             cli_print(cli, " no config diff between candidate and running for node '%s'", xpath);
             return CLI_OK;
@@ -182,7 +191,7 @@ int core_yand_show_config(struct cli_def *cli, struct cli_command *c, int datast
     } else {
         switch (datastore) {
             case CANDIDATE_DS:
-                d_node = get_local_node_data(xpath);
+                d_node = get_sysrepo_candidate_node(xpath);
                 break;
             case RUNNING_DS:
                 d_node = get_sysrepo_running_node(xpath);

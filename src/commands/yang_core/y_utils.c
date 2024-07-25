@@ -123,6 +123,19 @@ const char *get_relative_path(struct lysc_node *y_node) {
     return strdup(result);
 }
 
+struct lysc_node * get_parent_y_node_list(struct lysc_node *y_node){
+
+    struct lysc_node *y_nod_list_parent = y_node->parent;
+    while (y_nod_list_parent){
+        if (y_nod_list_parent->nodetype == LYS_LIST  )
+            break;
+        if (y_nod_list_parent->parent == NULL)
+            break;
+        y_nod_list_parent = y_nod_list_parent->parent;
+    }
+    return y_nod_list_parent;
+}
+
 struct cli_command *search_cmds(struct cli_command *commands, struct lysc_node **y_node) {
     struct cli_command *c;
     const char *root_module = lysc_owner_module(*y_node)->name;

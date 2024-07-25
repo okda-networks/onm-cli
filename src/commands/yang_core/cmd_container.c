@@ -55,7 +55,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
         ret = delete_data_node(y_node, NULL, cli);
         if (ret != LY_SUCCESS) {
             LOG_ERROR("Failed to delete the data tree");
-            cli_error(cli, "failed to execute command, error with deleting the data node.");
+            cli_error(cli, RED"failed to execute command, error with deleting the data node."RESET);
             return CLI_ERROR;
         } else
             return CLI_OK;
@@ -65,7 +65,7 @@ int cmd_yang_container(struct cli_def *cli, struct cli_command *c, const char *c
     ret = add_data_node(y_node, NULL, cli);
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to create the data tree");
-        cli_error(cli, "failed to execute command, error with adding the data node.");
+        cli_error(cli, RED"failed to execute command, error with adding the data node."RESET);
         return CLI_ERROR;
     }
 
@@ -92,7 +92,7 @@ int cmd_yang_no_container(struct cli_def *cli, struct cli_command *c, const char
     int ret = delete_data_node(y_node, NULL, cli);
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to delete the data tree");
-        cli_error(cli, "failed to execute command, error with deleting the data node.");
+        cli_error(cli, RED"failed to execute command, error with deleting the data node."RESET);
         return CLI_ERROR;
     }
     return CLI_OK;
@@ -115,7 +115,7 @@ int core_cmd_yang_show_config(struct cli_def *cli, struct cli_command *c, int da
 
     switch (datastore) {
         case CANDIDATE_DS:
-            d_node = get_local_node_data(xpath);
+            d_node = get_sysrepo_candidate_node(xpath);
             break;
         case RUNNING_DS:
             d_node = get_sysrepo_running_node(xpath);
@@ -191,7 +191,7 @@ cmd_yang_show_candidate_config_diff_container(struct cli_def *cli, struct cli_co
     char xpath[1028] = {0};
     lysc_path(y_node, LYSC_PATH_DATA, xpath, 1028);
     struct lyd_node *d_node = NULL;
-    struct lyd_node *candidate_node = get_local_node_data(xpath);
+    struct lyd_node *candidate_node = get_sysrepo_candidate_node(xpath);
     if (candidate_node == NULL) {
         cli_print(cli, " no config diff between candidate and running!");
         return CLI_OK;

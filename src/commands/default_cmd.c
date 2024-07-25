@@ -16,7 +16,7 @@
 #include "src/onm_sysrepo.h"
 #include "yang_core/data_factory.h"
 #include "src/onm_logger.h"
-
+#include "yang_core/data_print.h"
 
 #ifdef __GNUC__
 #define UNUSED(d) d __attribute__((unused))
@@ -30,6 +30,11 @@ extern struct lyd_node *parent_data;
 unsigned int regular_count = 0;
 unsigned int debug_regular = 0;
 
+enum {
+    RUNNING_DATASTORE,
+    CANDIDATE_DATASTORE,
+    STARTUP_DATASTORE,
+};
 
 int cmd_regular_callback(struct cli_def *cli) {
     regular_count++;
@@ -47,41 +52,29 @@ int cmd_no(struct cli_def *cli, struct cli_command *c, const char *cmd, char *ar
 
 int cmd_discard_changes(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    struct data_tree *config_dtree = get_config_root_tree();
 
-    // commit changes.
-    if (config_dtree == NULL) {
-        cli_print(cli, " no config changes found!");
-        return CLI_OK;
-    }
-    free_data_tree_all();
-
-    if (sysrepo_discard_changes() != SR_ERR_OK) {
-        cli_print(cli, "failed to discard changes, sysrepo error!");
-        return CLI_ERROR;
-    }
-    cli_print(cli, "config changes discarded!");
+    if (sr_has_changes(sysrepo_get_session())) {
+        if (sysrepo_discard_changes() != SR_ERR_OK) {
+            cli_print(cli, RED" failed to discard changes, sysrepo error!" RESET);
+            return CLI_ERROR;
+        }
+        cli_print(cli, GREEN" changes discarded!"RESET);
+    } else
+        cli_print(cli, " no changes to discard!");
+    free_parent_data();
     cli_set_configmode(cli, MODE_CONFIG, NULL);
     return CLI_OK;
 }
 
 int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    struct data_tree *config_dtree = get_config_root_tree();
     if (cli->mode == MODE_CONFIG) {
-        if (config_dtree != NULL) {
-            struct data_tree *curr_root = config_dtree;
-            while (curr_root != NULL) {
-                // 1 indicate there is config diff between sysrepo and local candidate
-                if (sysrepo_has_uncommited_changes(curr_root->node) == 1) {
-                    cli_print(cli,
-                              "ERROR: there are uncommitted changes, please `commit` or `discard-changes` before exist!");
-                    return CLI_ERROR;
-                }
-                curr_root = curr_root->prev;
-            }
-            free_data_tree_all();
+        if (sr_has_changes(sysrepo_get_session())) {
+            cli_print(cli,
+                      YELLOW" there are uncommitted changes, please `commit` or `discard-changes` before exist!"RESET);
+            return CLI_ERROR;
         }
+
         sysrepo_release_ctx();
         return cli_exit(cli, c, cmd, argv, argc);
     }
@@ -99,108 +92,76 @@ int cmd_exit2(struct cli_def *cli, struct cli_command *c, const char *cmd, char 
     return cli_exit(cli, c, cmd, argv, argc);
 }
 
-int cmd_show_config_running(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_print(cli, "not implemented, use show config-running <node>");
+int core_cmd_config_printer(struct cli_def *cli, int datastore) {
+
+    struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
+    struct lys_module *mod;
+    unsigned int index = 0;
+
+
+    while ((mod = (struct lys_module *) ly_ctx_get_module_iter(sysrepo_ctx, &index))) {
+        if (mod != NULL) {
+            if (!mod->implemented) {
+                continue;
+            }
+            if (mod->compiled->data == NULL)
+                continue;
+            char xpath[1024] = {0};
+            lysc_path(mod->compiled->data, LYSC_PATH_DATA, xpath, 1024);
+            struct lyd_node *dnode;
+            switch (datastore) {
+                case CANDIDATE_DATASTORE:
+                    dnode = get_sysrepo_candidate_node(xpath);
+                    break;
+                case RUNNING_DATASTORE:
+                    dnode = get_sysrepo_running_node(xpath);
+                    break;
+                case STARTUP_DATASTORE:
+                    dnode = get_sysrepo_startup_node(xpath);
+                    break;
+
+                default:
+                    dnode = get_sysrepo_candidate_node(xpath);
+                    break;
+            }
+
+            if (dnode == NULL)
+                continue;
+            char *result;
+            config_print_mem(&result, dnode);
+            cli_print(cli, "%s", result);
+            lyd_free_all(dnode);
+            free(result);
+        }
+    }
+    sysrepo_release_ctx();
     return CLI_OK;
+}
+
+int cmd_show_config_running(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
+    return core_cmd_config_printer(cli, RUNNING_DATASTORE);
 }
 
 int cmd_show_config_startup(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    cli_print(cli, "not implemented, use show config-startup <node>");
-    return CLI_OK;
+    return core_cmd_config_printer(cli, STARTUP_DATASTORE);
 }
 
-#include "yang_core/data_print.h"
 
 int cmd_show_config_candidate(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    enum FORMAT {
-        F_XML,
-        F_JSON,
-        F_CONFIG_LINE,
-    } format = F_CONFIG_LINE;
-    struct data_tree *config_dtree = get_config_root_tree();
-    char *format_opt = cli_get_optarg_value(cli, "format", NULL);
-    if (format_opt != NULL) {
-        to_lower(format_opt);
-        if (strcmp(format_opt, "json") == 0)
-            format = F_JSON;
-        else if (strcmp(format_opt, "xml") == 0)
-            format = F_XML;
-    }
-    // commit changes.
-    if (config_dtree == NULL) {
-        cli_print(cli, "no new config yet!");
-        return CLI_ERROR;
-    }
-    struct data_tree *curr_root = config_dtree;
-    while (curr_root != NULL) {
-        char *result;
-        if (format == F_JSON)
-            lyd_print_mem(&result, curr_root->node, LYD_JSON, 0);
-        else if (format == F_XML)
-            lyd_print_mem(&result, curr_root->node, LYD_XML, 0);
-        else
-            config_print_mem(&result, curr_root->node);
-        cli_print(cli, result, NULL);
-
-        curr_root = curr_root->prev;
-    }
-
-    return CLI_OK;
+    return core_cmd_config_printer(cli, CANDIDATE_DATASTORE);
 }
 
 int cmd_commit(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
-    sr_log_stderr(SR_LL_INF);
-    struct data_tree *config_dtree = get_config_root_tree();
-    // commit changes.
-    if (config_dtree == NULL) {
-        cli_print(cli, " no modification to commit!");
-        return CLI_OK;
-    }
-    int ret;
-    int change_added = 0;
-    struct lyd_node *all_dnodes = NULL;
-    struct data_tree *curr_root = config_dtree;
-    while (curr_root != NULL) {
-        if (sysrepo_has_uncommited_changes(curr_root->node) == 1) {
-            struct lyd_node *curr_node_cpy = NULL;
-            ret = lyd_dup_single(curr_root->node,
-                                 NULL, LYD_DUP_RECURSIVE | LYD_DUP_WITH_FLAGS, &curr_node_cpy);
-            if (ret != LY_SUCCESS) {
-                LOG_ERROR("ERROR: failed to duplicate child: %s", ly_strerrcode(ret));
-                cli_print(cli, " commit_failed: failed to commit changes!");
-                if (all_dnodes)
-                    lyd_free_all(all_dnodes);
-                sr_log_stderr(SR_LL_NONE);
-                return CLI_ERROR;
-            }
 
-            ret = lyd_insert_sibling(all_dnodes, curr_node_cpy, &all_dnodes);
-            if (ret != LY_SUCCESS) {
-                LOG_ERROR("ERROR: failed to group edited modules: %s", ly_strerrcode(ret));
-                cli_print(cli, " commit_failed: failed to commit changes!");
-                if (all_dnodes)
-                    lyd_free_all(all_dnodes);
-                sr_log_stderr(SR_LL_NONE);
-                return CLI_ERROR;
-            }
-            change_added = 1;
-        }
-        curr_root = curr_root->prev;
-    }
-    if (change_added) {
-        if (sysrepo_commit(all_dnodes) == EXIT_SUCCESS)
-            cli_print(cli, " changes applied successfully!");
-        else {
-            cli_print(cli, " commit_failed: failed to commit changes!");
-            lyd_free_all(all_dnodes);
-            sr_log_stderr(SR_LL_NONE);
-            return CLI_ERROR;
-        }
-    } else
+    if (sr_has_changes(sysrepo_get_session()) == 0) {
         cli_print(cli, " no modification to commit!");
+    } else {
+        if (sysrepo_commit() == EXIT_SUCCESS)
+            cli_print(cli, GREEN" commit: changes applied successfully!"RESET);
+        else
+            cli_print(cli, RED" commit: failed to commit changes!"RESET);
+    }
 
-    lyd_free_all(all_dnodes);
-    sr_log_stderr(SR_LL_NONE);
     return CLI_OK;
 }
 
@@ -221,9 +182,6 @@ int default_commands_init(struct cli_def *cli) {
                                                     "show", NULL, PRIVILEGE_UNPRIVILEGED,
                                                     MODE_ANY, NULL, "print the candidate/running config");
 
-//    struct cli_command *config_running = cli_register_command(cli, show, NULL,
-//                                                              "config-running", NULL, PRIVILEGE_UNPRIVILEGED,
-//                                                              MODE_ANY, NULL, "print the candidate/running config");
 
     struct cli_command *config_candidate = cli_register_command(cli, show, NULL,
                                                                 "config-candidate", cmd_show_config_candidate,

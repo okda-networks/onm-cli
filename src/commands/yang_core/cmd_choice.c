@@ -60,7 +60,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
         if (strcmp(argv[0], "delete") == 0) {
             ret = delete_data_node(y_case_n, argv[0], cli);
             if (ret != LY_SUCCESS) {
-                cli_print(cli, "Failed to delete the yang data node '%s'\n", y_case_n->name);
+                cli_print(cli, RED"Failed to delete the yang data node '%s'\n"RESET, y_case_n->name);
                 return CLI_ERROR;
             }
             return CLI_OK;
@@ -79,7 +79,7 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
                 if (strcmp(optargs->name, leaf_next->name) == 0) {
                     ret = add_data_node(leaf_next, optargs->value, cli);
                     if (ret != LY_SUCCESS) {
-                        cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
+                        cli_print(cli, RED"Failed to create the yang data node for '%s'\n"RESET, y_case_n->name);
                         return CLI_ERROR;
                     }
                     break;
@@ -117,7 +117,7 @@ int cmd_yang_no_case(struct cli_def *cli, struct cli_command *c, const char *cmd
         LY_LIST_FOR(y_case_n, leaf_next) {
             ret = delete_data_node(leaf_next, NULL, cli);
             if (ret != LY_SUCCESS) {
-                cli_print(cli, "Failed to create the yang data node for '%s'\n", y_case_n->name);
+                cli_print(cli, RED"Failed to create the yang data node for '%s'\n"RESET, y_case_n->name);
                 return CLI_ERROR;
             }
         }
@@ -126,7 +126,7 @@ int cmd_yang_no_case(struct cli_def *cli, struct cli_command *c, const char *cmd
     // data node is container.
     ret = delete_data_node(y_case_n, NULL, cli);
     if (ret != LY_SUCCESS) {
-        cli_print(cli, "Failed to delete the yang data node '%s'\n", y_case_n->name);
+        cli_print(cli, RED"Failed to delete the yang data node '%s'\n"RESET, y_case_n->name);
         return CLI_ERROR;
     }
     return CLI_OK;

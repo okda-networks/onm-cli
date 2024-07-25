@@ -20,6 +20,8 @@ struct cli_ctx_data {
 
 int get_extension(char *ext_name, const struct lysc_node *snode, char **value);
 
+struct lysc_node *get_parent_y_node_list(struct lysc_node *y_node);
+
 char *get_root_ynode_cmd_name(struct lysc_node *y_node);
 
 char *create_list_predicate_from_optargs(struct cli_def *cli, struct lysc_node *y_node);
