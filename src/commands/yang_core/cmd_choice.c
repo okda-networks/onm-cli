@@ -40,16 +40,13 @@ int cmd_yang_no_choice(struct cli_def *cli, struct cli_command *c, const char *c
 
 int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, char *argv[], int argc) {
 
-    struct cli_optarg_pair *optargs;
     struct lysc_node *y_node = (struct lysc_node *) c->cmd_model;
     struct lysc_node *y_case_n;
-
 
     // case might be leaf or container, for leaf we get the child, for container the child is null and we use y_node
     y_case_n = (struct lysc_node *) lysc_node_child(y_node);
     if (y_case_n == NULL)
         y_case_n = y_node;
-
 
     int ret;
     if (argc >= 1) {
@@ -57,43 +54,28 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
             cli_print(cli, "  <cr>");
             return CLI_OK;
         }
-        if (strcmp(argv[0], "delete") == 0) {
-            ret = delete_data_node(y_case_n, argv[0], cli);
-            if (ret != LY_SUCCESS) {
-                cli_print(cli, RED"Failed to delete the yang data node '%s'\n"RESET, y_case_n->name);
-                return CLI_ERROR;
-            }
-            return CLI_OK;
-        }
     }
-
-
-
-    // if the case node is leaf/leaf-list parse the value, else set the next config mode.
+    // if the case node is leaf/leaf-list parse the value, else the case is container so command is incomplete.
     if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
         struct lysc_node *leaf_next;
         LY_LIST_FOR(y_case_n, leaf_next) {
             // add data node
-            optargs = cli->found_optargs;
-            while (optargs != NULL) {
-                if (strcmp(optargs->name, leaf_next->name) == 0) {
-                    ret = add_data_node(leaf_next, optargs->value, cli);
-                    if (ret != LY_SUCCESS) {
-                        cli_print(cli, RED"Failed to create the yang data node for '%s'\n"RESET, y_case_n->name);
-                        return CLI_ERROR;
-                    }
-                    break;
+            char *value = cli_get_optarg_value(cli, leaf_next->name, NULL);
+            if (value){
+                ret = add_data_node(leaf_next, value, cli);
+                if (ret != LY_SUCCESS) {
+                    cli_print(cli, RED
+                    "Failed to create the yang data node for '%s'\n"
+                    RESET, leaf_next->name);
+                    return CLI_ERROR;
                 }
-
-                optargs = optargs->next;
             }
         }
-
 
         return CLI_OK;
     }
 
-    // case is container, add data node and move to next mode
+    // case is container. command is incomplete
     cli_print(cli, "incomplete command, please use '?' for options choice");
     return CLI_ERROR;
 }
@@ -206,7 +188,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
                 }
 
                 struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
-                                                           CLI_CMD_ARGUMENT,
+                                                           CLI_CMD_OPTIONAL_ARGUMENT,
                                                            PRIVILEGE_PRIVILEGED,
                                                            mode, optarg_help, optagr_get_compl_candidate_running,
                                                            yang_data_validator,
