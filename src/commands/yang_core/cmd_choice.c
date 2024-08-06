@@ -58,10 +58,11 @@ int cmd_yang_case(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     // if the case node is leaf/leaf-list parse the value, else the case is container so command is incomplete.
     if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
         struct lysc_node *leaf_next;
-        LY_LIST_FOR(y_case_n, leaf_next) {
+        LY_LIST_FOR(y_case_n, leaf_next)
+        {
             // add data node
             char *value = cli_get_optarg_value(cli, leaf_next->name, NULL);
-            if (value){
+            if (value) {
                 ret = add_data_node(leaf_next, value, cli);
                 if (ret != LY_SUCCESS) {
                     cli_print(cli, RED
@@ -96,10 +97,13 @@ int cmd_yang_no_case(struct cli_def *cli, struct cli_command *c, const char *cmd
     // if the case node is leaf/leaf-list,we need to remove all leafs from data_node.
     if (y_case_n->nodetype == LYS_LEAF || y_case_n->nodetype == LYS_LEAFLIST) {
         struct lysc_node *leaf_next;
-        LY_LIST_FOR(y_case_n, leaf_next) {
+        LY_LIST_FOR(y_case_n, leaf_next)
+        {
             ret = delete_data_node(leaf_next, NULL, cli);
             if (ret != LY_SUCCESS) {
-                cli_print(cli, RED"Failed to create the yang data node for '%s'\n"RESET, y_case_n->name);
+                cli_print(cli, RED
+                "Failed to create the yang data node for '%s'\n"
+                RESET, y_case_n->name);
                 return CLI_ERROR;
             }
         }
@@ -108,7 +112,9 @@ int cmd_yang_no_case(struct cli_def *cli, struct cli_command *c, const char *cmd
     // data node is container.
     ret = delete_data_node(y_case_n, NULL, cli);
     if (ret != LY_SUCCESS) {
-        cli_print(cli, RED"Failed to delete the yang data node '%s'\n"RESET, y_case_n->name);
+        cli_print(cli, RED
+        "Failed to delete the yang data node '%s'\n"
+        RESET, y_case_n->name);
         return CLI_ERROR;
     }
     return CLI_OK;
@@ -155,7 +161,8 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
     struct lysc_node_choice *y_choice = (struct lysc_node_choice *) y_node;
     struct lysc_node *y_case;
 
-    LY_LIST_FOR((struct lysc_node *) y_choice->cases, y_case) {
+    LY_LIST_FOR((struct lysc_node *) y_choice->cases, y_case)
+    {
         sprintf(help, "configure %s (%s) [case]", y_case->name, y_case->module->name);
         sprintf(no_help, "delete %s (%s) [case]", y_case->name, y_case->module->name);
 //        struct cli_command *case_cmd = choice_cmd;
@@ -172,7 +179,15 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
         struct lysc_node *case_child_list = (struct lysc_node *) lysc_node_child(y_case);
         struct lysc_node *case_child;
 
-        LY_LIST_FOR(case_child_list, case_child) {
+        // for case leafs; if there are more than one leaf under the case we need to add them as opt args, if only one
+        // leaf we need to add it as require opt arg.
+        int opt_flag = CLI_CMD_ARGUMENT;
+        if (case_child_list) {
+            if (case_child_list->next != NULL)
+                opt_flag = CLI_CMD_OPTIONAL_ARGUMENT;
+        }
+        LY_LIST_FOR(case_child_list, case_child)
+        {
             // if the case-child is another choice then run recursively
             if (case_child->nodetype == LYS_CHOICE) {
                 // should be called with same mode.
@@ -188,7 +203,7 @@ int register_cmd_choice_core(struct cli_def *cli, struct lysc_node *y_node, stru
                 }
 
                 struct cli_optarg *o = cli_register_optarg(case_cmd, case_child->name,
-                                                           CLI_CMD_OPTIONAL_ARGUMENT,
+                                                           opt_flag,
                                                            PRIVILEGE_PRIVILEGED,
                                                            mode, optarg_help, optagr_get_compl_candidate_running,
                                                            yang_data_validator,

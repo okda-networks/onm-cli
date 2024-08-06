@@ -104,7 +104,7 @@ int cmd_yang_list(struct cli_def *cli, struct cli_command *c, const char *cmd, c
 
     if (ret != LY_SUCCESS) {
         LOG_ERROR("Failed to create/delete the data tree");
-        cli_print(cli, "failed to execute command, error with adding the data node. list");
+        cli_print(cli, RED"failed to execute command, error with adding the data node. list"RESET);
         return CLI_ERROR;
     }
     if (!has_none_key_node) {

@@ -139,17 +139,21 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
             curr_indx += 10;
         }
     }
-
-
     if (edit_type == EDIT_DATA_ADD) {
 
-        if (!item_found)
+        if (!item_found) {
             ret = sr_set_item(sysrepo_get_session(), all_xpath, NULL, 0);
+            if (ret != SR_ERR_OK)
+                goto done;
+        }
         if (is_update_parent)
             parent_data = new_parent;
     } else {
-        if (item_found)
+        if (item_found) {
             ret = sr_delete_item(sysrepo_get_session(), all_xpath, 0);
+            if (ret != SR_ERR_OK)
+                goto done;
+        }
         else
             cli_print(cli, " item not found in datastore!");
         lyd_free_tree(new_parent);
@@ -162,7 +166,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
     }
     free(predicate_str);
     sysrepo_release_ctx();
-    return EXIT_SUCCESS;
+    return ret;
 }
 
 
@@ -217,7 +221,13 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             else {
                 lyd_free_tree(new_parent);
                 if (item_found) {
-                    ret = sr_delete_item(sysrepo_get_session(), xpath, 0);
+                    char all_xpath[1024] = {0};
+                    lyd_path(parent_data, LYD_PATH_STD, all_xpath, 1024);
+                    strlcat(all_xpath, "/", sizeof(all_xpath));
+                    strlcat(all_xpath, xpath, sizeof(all_xpath));
+                    ret = sr_delete_item(sysrepo_get_session(), all_xpath, 0);
+                    if (ret != SR_ERR_OK)
+                        break;
                 } else
                     cli_print(cli, " item not found in datastore!");
                 break;
@@ -249,13 +259,13 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             if (edit_type == EDIT_DATA_ADD) {
                 if (!item_found || strcmp(lyd_get_value(new_leaf), value) != 0) {
-                    // we can't change the value by setting the item again, so we delete then add.
-                    sr_delete_item(sysrepo_get_session(), all_xpath, 0);
-                    ret = sr_set_item_str(sysrepo_get_session(), all_xpath, value, NULL, 0);
+                    // SR_EDIT_ISOLATE is needed to change the edit value of leaf,
+                    // for example we set the value of mtu to 1300, then we change it to 1200 without commit,
+                    // for this case SR_EDIT_ISOLATE is required.
+                    ret = sr_set_item_str(sysrepo_get_session(), all_xpath, value, NULL, SR_EDIT_ISOLATE);
                     if (ret != SR_ERR_OK)
                         break;
                 }
-                lyd_change_term(new_leaf, value);
 
             } else {
                 lyd_free_tree(new_leaf);
