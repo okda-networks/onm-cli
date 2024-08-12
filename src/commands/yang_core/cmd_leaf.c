@@ -32,7 +32,7 @@ int cmd_yang_leaf_list(struct cli_def *cli, struct cli_command *c, const char *c
         if (yang_data_validator(cli, cmd, argv[i], c->cmd_model) != CLI_OK) return CLI_ERROR_ARG;
         ret = add_data_node(y_node, argv[i], cli);
         if (ret != LY_SUCCESS) {
-            cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
+            cli_print(cli, RED"Failed to create the yang data node for '%s'\n"RESET, y_node->name);
             return CLI_ERROR;
         }
     }
@@ -54,7 +54,7 @@ int cmd_yang_no_leaf_list(struct cli_def *cli, struct cli_command *c, const char
 
     ret = delete_data_node(y_node, argv[0], cli);
     if (ret != LY_SUCCESS) {
-        cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
+        cli_print(cli, RED"Failed to delete the yang data node for '%s'\n"RESET, y_node->name);
         return CLI_ERROR;
     }
     return CLI_OK;
@@ -68,7 +68,7 @@ int cmd_yang_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd, c
     char *value = cli_get_optarg_value(cli, "value", NULL);
     ret = add_data_node(y_node, value, cli);
     if (ret != LY_SUCCESS) {
-        cli_print(cli, "Failed to create the yang data node for '%s'\n", y_node->name);
+        cli_print(cli, RED"Failed to create the yang data node for '%s'\n"RESET, y_node->name);
         return CLI_ERROR;
     }
     return CLI_OK;
@@ -83,14 +83,11 @@ int cmd_yang_no_leaf(struct cli_def *cli, struct cli_command *c, const char *cmd
         if (!strcmp(argv[0], "?")) {
             cli_print(cli, " <cr>");
             return CLI_OK;
-        } else{
-            cli_print(cli, " ERROR: invalid input %s",argv[0]);
-            return CLI_ERROR;
         }
     }
     ret = delete_data_node(y_node, NULL, cli);
     if (ret != LY_SUCCESS) {
-        cli_print(cli, "Failed to delete the yang data node for '%s'\n", y_node->name);
+        cli_print(cli, RED"Failed to delete the yang data node for '%s'\n"RESET, y_node->name);
         return CLI_ERROR;
     }
     return CLI_OK;

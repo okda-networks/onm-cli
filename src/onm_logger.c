@@ -25,6 +25,7 @@ void initLogger(const char *logFileName) {
     logFile = fopen(logFileName, "a");
     if (logFile == NULL) {
         perror("Error opening log file");
+        printf("\nMake sure to run \"sudo make install\" before running onmcli\n");
         exit(1);
     }
 }

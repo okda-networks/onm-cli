@@ -17,12 +17,15 @@
 #include "src/onm_logger.h"
 
 
-struct lyd_node *parent_data;
-struct data_tree *curr_root;
-extern struct data_tree *config_root_tree;
+struct lyd_node *parent_data = NULL;
 
-struct data_tree *get_config_root_tree() {
-    return config_root_tree;
+void free_parent_data() {
+    lyd_free_tree(parent_data);
+    parent_data = NULL;
+}
+
+struct lyd_node *get_current_parent_dnode() {
+    return parent_data;
 }
 
 // edit type
@@ -32,48 +35,22 @@ enum {
 };
 
 
-// get list data node for y_node from local data_tree.
-struct lyd_node *get_local_list_nodes(struct lysc_node *y_node) {
-    char xpath[256] = {0};
-    struct lyd_node *match = NULL;
-    if (parent_data != NULL) {
-        if (parent_data->schema == y_node->parent)
-            match = parent_data;
-        else {
-            sprintf(xpath, "%s", get_relative_path(y_node->parent));
-            lyd_find_path(parent_data, xpath, 0, &match);
-            // for leafref if node does not exist in parent_data, check all roots.
+struct lyd_node *get_sysrepo_candidate_node(char *xpath) {
+    sr_data_t *sysrepo_subtree;
+    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
+    if (ret == SR_ERR_OK && sysrepo_subtree != NULL)
+        return sysrepo_subtree->tree;
 
-        }
-    }
-    if (match == NULL) {
-        struct data_tree *curr_node = config_root_tree;
-        lysc_path(y_node->parent, LYSC_PATH_DATA, xpath, 256);
-        while (curr_node != NULL && curr_node->node != NULL) {
-            lyd_find_path(curr_node->node, xpath, 0, &match);
-            if (match != NULL)
-                break;
-            curr_node = curr_node->prev;  // Move to the next node
-        }
-    }
-
-    if (match == NULL)
+    if (ret == SR_ERR_NOT_FOUND)
         return NULL;
-    struct lyd_node *list_node = lyd_child(match);
-    struct lyd_node *next = NULL;
-    LY_LIST_FOR(list_node, next)
-    {
-        if (next->schema->nodetype == LYS_LIST) {
-            if (!strcmp(y_node->name, next->schema->name))
-                return next;
-        }
-    }
+    LOG_ERROR("data_factory.c: error returning sysrepo data, code=%d", ret);
     return NULL;
 }
 
+
 struct lyd_node *get_sysrepo_running_node(char *xpath) {
     sr_data_t *sysrepo_subtree;
-    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
+    int ret = sr_get_subtree(sysrepo_get_running_session(), xpath, 0, &sysrepo_subtree);
     if (ret == SR_ERR_OK && sysrepo_subtree != NULL)
         return sysrepo_subtree->tree;
     if (ret == SR_ERR_NOT_FOUND)
@@ -104,22 +81,10 @@ struct lyd_node *get_sysrepo_startup_node(char *xpath) {
     return NULL;
 }
 
-struct lyd_node *get_local_node_data(char *xpath) {
-    struct lyd_node *match = NULL;
-    struct data_tree *curr_node = config_root_tree;
-    while (curr_node != NULL && curr_node->node != NULL) {
-        lyd_find_path(curr_node->node, xpath, 0, &match);
-        if (match != NULL)
-            break;
-        curr_node = curr_node->prev;  // Move to the next node
-    }
-    return match;
-}
-
 
 int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
                              int index, struct cli_def *cli, int is_update_parent) {
-    int ret;
+    int ret = EXIT_SUCCESS;
     char xpath[265];
     char *predicate_str;
     memset(xpath, 0, 265);
@@ -131,10 +96,9 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
     }
 
     sprintf(xpath, "%s", get_relative_path(y_node));
-    struct lyd_node *curr_parent, *new_parent;
+    struct lyd_node *curr_parent, *new_parent = NULL;
     // set current parent and xpath based on the list location in the tree.
     if (parent_data == NULL) {
-        curr_parent = curr_root->node;
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
     } else
         curr_parent = parent_data;
@@ -142,15 +106,19 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
     predicate_str = create_list_predicate_from_optargs(cli, y_node);
     strcat(xpath, predicate_str);
 
-    ret = lyd_find_path(curr_parent, xpath, 0, &new_parent);
-    if (new_parent == NULL || ret == LY_EINCOMPLETE)
-        ret = lyd_new_path2(curr_parent, sysrepo_ctx, xpath, NULL, 0,
-                            0, LYD_NEW_PATH_UPDATE, NULL, &new_parent);
+    char all_xpath[1024] = {0};
+    lyd_path(parent_data, LYD_PATH_STD, all_xpath, 1024);
+    strlcat(all_xpath, "/", sizeof(all_xpath));
+    strlcat(all_xpath, xpath, sizeof(all_xpath));
 
-    if (ret != LY_SUCCESS) {
-        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
-        goto done;
+    int item_found = 1;
+    new_parent = get_sysrepo_candidate_node(all_xpath);
+    if (new_parent == NULL) {
+        item_found = 0;
+        ret = lyd_new_path2(curr_parent, sysrepo_ctx, all_xpath, NULL, 0,
+                            0, LYD_NEW_PATH_UPDATE, NULL, &new_parent);
     }
+
     if (index) {
         // index start from 10 and the step is 10, 10,20,30...
         int curr_indx = 10;
@@ -172,13 +140,30 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
         }
     }
     if (edit_type == EDIT_DATA_ADD) {
+
+        if (!item_found) {
+            ret = sr_set_item(sysrepo_get_session(), all_xpath, NULL, 0);
+            if (ret != SR_ERR_OK)
+                goto done;
+        }
         if (is_update_parent)
             parent_data = new_parent;
-    } else
+    } else {
+        if (item_found) {
+            ret = sr_delete_item(sysrepo_get_session(), all_xpath, 0);
+            if (ret != SR_ERR_OK)
+                goto done;
+        }
+        else
+            cli_print(cli, " item not found in datastore!");
         lyd_free_tree(new_parent);
+    }
 
 
     done:
+    if (ret != LY_SUCCESS) {
+        print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
+    }
     free(predicate_str);
     sysrepo_release_ctx();
     return ret;
@@ -197,7 +182,7 @@ int delete_data_node_list(struct lysc_node *y_node, struct cli_def *cli) {
 
 
 static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_type, struct cli_def *cli) {
-    int ret;
+    int ret = LY_SUCCESS;
     char xpath[256];
     memset(xpath, '\0', 256);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
@@ -217,52 +202,14 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 snprintf(xpath, 256, "%s", get_relative_path(y_node));
             else
                 lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
-            // set the config_data_tree
-            // check if this is first node in the schema, to set the root node.
-            if (y_node->parent == NULL) {
-                // check if config_tree is empty
-                if (config_root_tree == NULL) {
-                    config_root_tree = malloc(sizeof(struct data_tree));
-                    config_root_tree->node = get_sysrepo_running_node(xpath);
-                    config_root_tree->prev = NULL;
-                    curr_root = config_root_tree;
-                    if (config_root_tree->node != NULL) {
-                        parent_data = config_root_tree->node;
-                        sysrepo_release_ctx();
-                        return EXIT_SUCCESS;
-                    }
-
-                } else {
-                    // check if data for this schema already exist in the tree. and use that tree if not allocat a new one
-                    // and link it to config_data_tree
-                    curr_root = config_root_tree;
-                    while (curr_root != NULL) {
-                        if (strcmp(curr_root->node->schema->name, y_node->name) == 0 &&
-                            strcmp(curr_root->node->schema->module->name, y_node->module->name) == 0 &&
-                            y_node->parent == NULL) {
-                            // root data tree found, we just set parent_data to the found root and exit without creating
-                            // new path.
-                            parent_data = curr_root->node;
-                            sysrepo_release_ctx();
-                            return LY_SUCCESS;
-                        }
-                        curr_root = curr_root->prev;
-                    }
-                    // create new root_tree node and link it to the list.
-                    struct data_tree *new_root = malloc(sizeof(struct data_tree));
-                    new_root->node = get_sysrepo_running_node(xpath);
-                    new_root->prev = config_root_tree;
-                    config_root_tree = new_root;
-                    curr_root = config_root_tree;
-                    parent_data = curr_root->node;
-                }
-            }
 
             struct lyd_node *new_parent = NULL;
 
-
+            int item_found = 1;
             // check if the node exist in the tree, if not create new node in the tree.
             ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
+            if (ret == LY_ENOTFOUND)
+                item_found = 0;
             if (new_parent == NULL || ret == LY_EINCOMPLETE) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
             }
@@ -273,10 +220,18 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 parent_data = new_parent;
             else {
                 lyd_free_tree(new_parent);
+                if (item_found) {
+                    char all_xpath[1024] = {0};
+                    lyd_path(parent_data, LYD_PATH_STD, all_xpath, 1024);
+                    strlcat(all_xpath, "/", sizeof(all_xpath));
+                    strlcat(all_xpath, xpath, sizeof(all_xpath));
+                    ret = sr_delete_item(sysrepo_get_session(), all_xpath, 0);
+                    if (ret != SR_ERR_OK)
+                        break;
+                } else
+                    cli_print(cli, " item not found in datastore!");
                 break;
             }
-
-            curr_root->node = curr_root->node ? curr_root->node : parent_data;
         }
             break;
 
@@ -287,20 +242,40 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             else
                 snprintf(xpath, 256, "%s", get_relative_path(y_node));
 
-            struct lyd_node *new_leaf;
+            struct lyd_node *new_leaf = NULL;
+            int item_found = 1;
+            char all_xpath[1024] = {0};
+            lyd_path(parent_data, LYD_PATH_STD, all_xpath, 1024);
+            strlcat(all_xpath, "/", sizeof(all_xpath));
+            strlcat(all_xpath, xpath, sizeof(all_xpath));
 
-            // check if node already exist in data_tree, if not creat a new node.
-            ret = lyd_find_path(parent_data, xpath, 0, &new_leaf);
-            if (new_leaf == NULL || ret == LY_EINCOMPLETE) {
-                ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, value, LYD_NEW_PATH_UPDATE,
-                                   &new_leaf);
+            new_leaf = get_sysrepo_candidate_node(all_xpath);
+            if (new_leaf == NULL) {
+                item_found = 0;
+                ret = lyd_new_path2(parent_data, sysrepo_ctx, xpath, value, strlen(value), LYD_ANYDATA_STRING,
+                                    LYD_NEW_PATH_OUTPUT, NULL, &new_leaf);
             }
 
 
-            if (edit_type == EDIT_DATA_ADD)
-                lyd_change_term(new_leaf, value);
-            else
+            if (edit_type == EDIT_DATA_ADD) {
+                if (!item_found || strcmp(lyd_get_value(new_leaf), value) != 0) {
+                    // SR_EDIT_ISOLATE is needed to change the edit value of leaf,
+                    // for example we set the value of mtu to 1300, then we change it to 1200 without commit,
+                    // for this case SR_EDIT_ISOLATE is required.
+                    ret = sr_set_item_str(sysrepo_get_session(), all_xpath, value, NULL, SR_EDIT_ISOLATE);
+                    if (ret != SR_ERR_OK)
+                        break;
+                }
+
+            } else {
                 lyd_free_tree(new_leaf);
+                if (item_found) {
+                    ret = sr_delete_item(sysrepo_get_session(), all_xpath, 0);
+                    if (ret != SR_ERR_OK)
+                        break;
+                } else
+                    cli_print(cli, " item not found in datastore!");
+            }
             break;
 
     }

@@ -18,7 +18,6 @@ void print_indentation(int pos, char **result) {
 
 void print_root_container_dnode(struct lyd_node *dnode, int pos, char **result) {
     char line[1024] = {0};
-
     strlcat(line, get_root_ynode_cmd_name((struct lysc_node*)dnode->schema), sizeof(line));
     strlcat(line, "\n", sizeof(line));
 
@@ -86,11 +85,15 @@ void print_list_dnode(struct lyd_node *dnode, int pos, char **result) {
                 if (strcmp(key_dflt_val,lyd_get_value(next)) != 0) {
                     strlcat(line, next->schema->name, sizeof(line));
                     strlcat(line, " ", sizeof(line));
+                    strlcat(line, BLUE, sizeof(line)); // Start color
                     strlcat(line, lyd_get_value(next), sizeof(line));
+                    strlcat(line, RESET, sizeof(line)); // Reset color
                     strlcat(line, " ", sizeof(line));
                 }
             } else {
+                strlcat(line, BLUE, sizeof(line)); // Start color
                 strlcat(line, lyd_get_value(next), sizeof(line));
+                strlcat(line, RESET, sizeof(line)); // Reset color
                 strlcat(line, " ", sizeof(line));
             }
         }
@@ -122,7 +125,9 @@ void print_leaf_dnode(struct lyd_node *dnode, int pos, char **result) {
     char line[1024] = {0};
     strlcat(line, dnode->schema->name, sizeof(line));
     strlcat(line, " ", sizeof(line));
+    strlcat(line, BLUE, sizeof(line)); // Start color
     strlcat(line, lyd_get_value(dnode), sizeof(line));
+    strlcat(line, RESET, sizeof(line)); // Reset color
     strlcat(line, "\n", sizeof(line));
 
     size_t new_size = strlen(line) + 1; // Length of line + null terminator

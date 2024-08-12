@@ -18,6 +18,14 @@
 #include "data_cmd_compl.h"
 
 
+enum {
+    CANDIDATE_SRC,
+    RUNNING_SRC,
+    STARTUP_SRC,
+    CANDIDATE_OR_RUNNING_SRC,
+    OPERATION_SRC
+};
+
 void identityref_add_comphelp(struct lysc_ident *identity, const char *word, struct cli_comphelp *comphelp) {
     if (!identity) {
         return;
@@ -66,44 +74,67 @@ int options_contain(const char **options, const char *str, int size) {
     return 0;
 }
 
-enum {
-    CANDIDATE_SRC,
-    RUNNING_SRC,
-    STARTUP_SRC,
-    CANDIDATE_OR_RUNNING_SRC,
-    OPERATION_SRC
-};
+extern struct cli_def *cli;
 
 const char **get_list_key_values_array(struct lysc_node *y_node, int num_args, int ds) {
     const char **env_vars = NULL;
     struct lyd_node *list_data_node = NULL;
+    struct lyd_node *curr_parent = get_current_parent_dnode();
     char xpath[1024] = {0};
+    // keep in mind the the y_node here is the key leaf node.
+    // we need to get the xpath for the node before fetching from sysrepo,
+    // based on the y_node and the current parent_node (config level) we choose if the xpath
+    // taken from the current_parent lyd_node, or from the y_node.
 
+    // first set the xpath to y_node parent, if th
+    struct lysc_node *y_nod_list_parent = get_parent_y_node_list(y_node->parent);
+    lysc_path(y_nod_list_parent, LYSC_PATH_DATA, xpath, 1024);
+
+    // then check if y_node is child of current_parent, to use the current_parent data_path in the xpath.
+    if (curr_parent && y_node->parent != NULL && y_node->parent->parent != NULL) {
+        char curr_parent_xpath[1024] = {0};
+        lysc_path(curr_parent->schema, LYSC_PATH_DATA, curr_parent_xpath, 1024);
+        // if the y_node parent config level (list of root container) xpath is the same as current_parent,
+        // then we use the current_parent xpath, if not we use the y_node
+        // ( the different y_node and current_parent node xpath is the case of leafref compl
+        // the where current config mode is different from the leafref)
+
+        if (!strcmp(curr_parent_xpath, xpath)) {
+            lyd_path(curr_parent, LYD_PATH_STD, xpath, 1024);
+            // if parent_node is different from the y_node parent_parent (which supposed to be the parent of the list)
+            // then add the relative path, example of difference in ietf-access-control-list.yang's list ace:
+            // acls-ietf
+            //   acl my_acl
+            //      aces ace my_ace1 <--
+            //         matches l3 ipv4 destination-ipv4-network 2.2.2.0/24
+            //         actions forwarding ietf-access-control-list:accept
+            //         actions logging ietf-access-control-list:log-none
+            //
+            if (strcmp(curr_parent->schema->name, y_node->parent->parent->name) != 0) {
+                strlcat(xpath, "/", sizeof(xpath));
+                strlcat(xpath, get_relative_path(y_node->parent->parent), sizeof(xpath));
+            }
+
+        }
+
+    }
     switch (ds) {
         case CANDIDATE_SRC:
-            list_data_node = get_local_list_nodes(y_node->parent);
-            break;
         case CANDIDATE_OR_RUNNING_SRC:
-            list_data_node = get_local_list_nodes(y_node->parent);
-            if (list_data_node) // if list_data found in candidate break, else try the running ds.
-                break;
+            list_data_node = lyd_child(get_sysrepo_candidate_node(xpath));
+
+            break;
         case RUNNING_SRC:
-            if (y_node->parent != NULL && y_node->parent->parent != NULL) {
-                lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
-                list_data_node = lyd_child(get_sysrepo_running_node(xpath));
-            }
+            list_data_node = lyd_child(get_sysrepo_running_node(xpath));
+
             break;
         case STARTUP_SRC:
-            if (y_node->parent != NULL && y_node->parent->parent != NULL) {
-                lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
-                list_data_node = lyd_child(get_sysrepo_startup_node(xpath));
-            }
+            list_data_node = lyd_child(get_sysrepo_startup_node(xpath));
+
             break;
         case OPERATION_SRC:
-            if (y_node->parent != NULL && y_node->parent->parent != NULL) {
-                lysc_path(y_node->parent->parent, LYSC_PATH_DATA, xpath, 1028);
-                list_data_node = lyd_child(get_sysrepo_operational_node(xpath));
-            }
+            list_data_node = lyd_child(get_sysrepo_operational_node(xpath));
+
             break;
     }
     struct lyd_node *next = NULL;

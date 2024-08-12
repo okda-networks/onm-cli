@@ -16,28 +16,11 @@
 #include "onm_logger.h"
 
 static sr_conn_ctx_t *connection = NULL;
-static sr_session_ctx_t *session = NULL, *startup_session = NULL, *operational_session = NULL;
+static sr_session_ctx_t *session = NULL, *running_session = NULL, *startup_session = NULL, *operational_session = NULL;
 
-struct data_tree *config_root_tree;
 
 char *module_path = NULL;
 
-void free_data_tree(struct data_tree *dtree) {
-    lyd_free_all(dtree->node);
-    dtree->prev = NULL;
-    free(dtree);
-}
-
-void free_data_tree_all() {
-    struct data_tree *curr_node = config_root_tree;
-    while (curr_node != NULL) {
-        struct data_tree *next_node = curr_node->prev;  // Save the pointer to the next node
-        lyd_free_all(curr_node->node);
-        free(curr_node);
-        curr_node = next_node;  // Move to the next node
-    }
-    config_root_tree = NULL;
-}
 
 // forward declaration
 int sysrepo_disconnect();
@@ -114,13 +97,19 @@ int sysrepo_disconnect() {
 }
 
 int sysrepo_start_session() {
-    // Start a new session
+    // Start a edit session
     if (sr_session_start(connection, SR_DS_RUNNING, &session) != SR_ERR_OK) {
+        LOG_ERROR("Failed to start a new Sysrepo session");
+        return EXIT_FAILURE;
+    }
+    // start running session
+    if (sr_session_start(connection, SR_DS_RUNNING, &running_session) != SR_ERR_OK) {
         LOG_ERROR("Failed to start a new Sysrepo session");
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
 }
+
 
 int sysrepo_start_session_startup() {
     // Start a new session
@@ -149,6 +138,10 @@ const struct ly_ctx *sysrepo_get_ctx() {
 
 sr_session_ctx_t *sysrepo_get_session() {
     return session;
+}
+
+sr_session_ctx_t *sysrepo_get_running_session() {
+    return running_session;
 }
 
 sr_session_ctx_t *sysrepo_get_session_startup() {
@@ -184,49 +177,17 @@ int sysrepo_discard_changes() {
     return sr_discard_changes(session);
 }
 
-
-int sysrepo_has_uncommited_changes(struct lyd_node *data_node) {
-    // get the respective data_node from sysrepo, and compare it with current data_node.
-    // 0 no changes, 1 there is changes.
-    char xpath[256];
-    memset(xpath, '\0', 256);
-    lyd_path(data_node, LYD_PATH_STD, xpath, 256);
-    sr_data_t *sysrepo_subtree;
-    int ret = sr_get_subtree(sysrepo_get_session(), xpath, 0, &sysrepo_subtree);
-    if (ret == SR_ERR_OK && sysrepo_subtree) {
-        struct lyd_node *diff;
-        lyd_diff_tree(data_node, sysrepo_subtree->tree, 0, &diff);
-        sr_release_data(sysrepo_subtree);
-        if (diff != NULL)
-            return 1;
+int sysrepo_commit() {
+    // Apply the changes (if any)
+    if (sr_apply_changes(session, 0) != SR_ERR_OK) {
+        LOG_ERROR("Failed to commit changes to Sysrepo");
+        return EXIT_FAILURE;
     }
-    if (ret == SR_ERR_NOT_FOUND)
-        return 1;
-    return 0;
-}
 
-int sysrepo_commit(struct lyd_node *data_tree) {
-    // Check if there is data_tree to add and apply
-
-    if (data_tree != NULL) {
-        // If there are changes in the session, add the data_tree using sr_edit_batch
-        if (sr_edit_batch(session, data_tree, "replace") != SR_ERR_OK) {
-            LOG_ERROR("Failed to add data_tree to Sysrepo changes");
-            return EXIT_FAILURE;
-        }
-        // Apply the changes (if any)
-        if (sr_apply_changes(session, 0) != SR_ERR_OK) {
-            LOG_ERROR("Failed to commit changes to Sysrepo");
-            sr_discard_changes(session);
-            return EXIT_FAILURE;
-        }
-
-    }
     return EXIT_SUCCESS;
 }
 
 int onm_sysrepo_done() {
-    free_data_tree_all();
     sysrepo_disconnect();
     return EXIT_SUCCESS;
 }
@@ -255,7 +216,7 @@ int onm_sysrepo_init() {
 
     if (sysrepo_start_session_operational() != EXIT_SUCCESS)
         return EXIT_FAILURE;
-    sr_log_stderr(SR_LL_NONE);
+
     return EXIT_SUCCESS;
 
 }
