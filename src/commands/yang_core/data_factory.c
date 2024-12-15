@@ -16,7 +16,6 @@
 #include "y_utils.h"
 #include "src/onm_logger.h"
 
-
 struct lyd_node *parent_data = NULL;
 
 void free_parent_data() {
@@ -207,12 +206,17 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             int item_found = 1;
             // check if the node exist in the tree, if not create new node in the tree.
-            ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
-            if (ret == LY_ENOTFOUND)
-                item_found = 0;
-            if (new_parent == NULL || ret == LY_EINCOMPLETE) {
+            if (parent_data == NULL) {
                 ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
+            } else {
+                ret = lyd_find_path(parent_data, xpath, 0, &new_parent);
+                if (ret == LY_ENOTFOUND)
+                    item_found = 0;
+                if (new_parent == NULL || ret == LY_EINCOMPLETE) {
+                    ret = lyd_new_path(parent_data, sysrepo_ctx, xpath, NULL, LYD_NEW_PATH_UPDATE, &new_parent);
+                }
             }
+
             if (ret != LY_SUCCESS)
                 break;
             // if the edit operation is 'add', then update the parent_node, else (which is 'delete' operation) then just set the out node.
@@ -253,7 +257,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             if (new_leaf == NULL) {
                 item_found = 0;
                 ret = lyd_new_path2(parent_data, sysrepo_ctx, xpath, value, strlen(value), LYD_ANYDATA_STRING,
-                                    LYD_NEW_PATH_OUTPUT, NULL, &new_leaf);
+                                    0, NULL, &new_leaf);
             }
 
 
