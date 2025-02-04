@@ -106,7 +106,5 @@ void onm_logger_close() {
 int onm_logger_init() {
     // Initialize the logger
     initLogger(LOGFILE_NAME);
-
-
     return 0;
 }

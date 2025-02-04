@@ -95,7 +95,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
     }
 
     sprintf(xpath, "%s", get_relative_path(y_node));
-    struct lyd_node *curr_parent, *new_parent = NULL;
+    struct lyd_node *curr_parent = NULL, *new_parent = NULL;
     // set current parent and xpath based on the list location in the tree.
     if (parent_data == NULL) {
         lysc_path(y_node, LYSC_PATH_DATA, xpath, 256);
@@ -124,8 +124,7 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
         struct lyd_node *next = NULL;
         struct lyd_node *orderd_nodes = lyd_first_sibling(new_parent);
 
-        LY_LIST_FOR(orderd_nodes, next)
-        {
+        LY_LIST_FOR(orderd_nodes, next) {
             if (index < curr_indx) {
                 ret = lyd_insert_before(next, new_parent);
                 if (ret != LY_SUCCESS) {
@@ -133,13 +132,11 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
                     goto done;
                 }
                 break;
-
             }
             curr_indx += 10;
         }
     }
     if (edit_type == EDIT_DATA_ADD) {
-
         if (!item_found) {
             ret = sr_set_item(sysrepo_get_session(), all_xpath, NULL, 0);
             if (ret != SR_ERR_OK)
@@ -152,14 +149,13 @@ int edit_node_data_tree_list(struct lysc_node *y_node, int edit_type,
             ret = sr_delete_item(sysrepo_get_session(), all_xpath, 0);
             if (ret != SR_ERR_OK)
                 goto done;
-        }
-        else
+        } else
             cli_print(cli, " item not found in datastore!");
         lyd_free_tree(new_parent);
     }
 
 
-    done:
+done:
     if (ret != LY_SUCCESS) {
         print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);
     }
@@ -175,8 +171,7 @@ int add_data_node_list(struct lysc_node *y_node, int index, struct cli_def *cli,
 }
 
 int delete_data_node_list(struct lysc_node *y_node, struct cli_def *cli) {
-    return edit_node_data_tree_list(y_node, EDIT_DATA_DEL, 0, cli, 0);// no index use key for delete
-
+    return edit_node_data_tree_list(y_node, EDIT_DATA_DEL, 0, cli, 0); // no index use key for delete
 }
 
 
@@ -185,7 +180,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
     char xpath[256];
     memset(xpath, '\0', 256);
     struct ly_ctx *sysrepo_ctx = (struct ly_ctx *) sysrepo_get_ctx();
-
+    char all_xpath[1024] = {0};
 
     if (!sysrepo_ctx) {
         LOG_ERROR(" add_data_node(): Failure: failed to get sysrepo_ctx");
@@ -225,7 +220,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             else {
                 lyd_free_tree(new_parent);
                 if (item_found) {
-                    char all_xpath[1024] = {0};
                     lyd_path(parent_data, LYD_PATH_STD, all_xpath, 1024);
                     strlcat(all_xpath, "/", sizeof(all_xpath));
                     strlcat(all_xpath, xpath, sizeof(all_xpath));
@@ -237,7 +231,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                 break;
             }
         }
-            break;
+        break;
 
         case LYS_LEAF:
         case LYS_LEAFLIST:
@@ -248,7 +242,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
 
             struct lyd_node *new_leaf = NULL;
             int item_found = 1;
-            char all_xpath[1024] = {0};
             lyd_path(parent_data, LYD_PATH_STD, all_xpath, 1024);
             strlcat(all_xpath, "/", sizeof(all_xpath));
             strlcat(all_xpath, xpath, sizeof(all_xpath));
@@ -270,7 +263,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     if (ret != SR_ERR_OK)
                         break;
                 }
-
             } else {
                 lyd_free_tree(new_leaf);
                 if (item_found) {
@@ -281,7 +273,6 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
                     cli_print(cli, " item not found in datastore!");
             }
             break;
-
     }
     if (ret != LY_SUCCESS)
         print_ly_err(ly_err_first(sysrepo_ctx), "data_factory.c", cli);

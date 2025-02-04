@@ -40,7 +40,7 @@ int onm_cli_init() {
     cli = cli_init();
     char banner[1024];
     memset(banner, '\0', 1024);
-    sprintf(banner, "\n\nonmcli version: %s.%s.%s\nby Okda networks (c) 2024", MAJOR, MINOR, PATCH);
+    sprintf(banner, "\n\nonmcli version: %s.%s.%s\nby Okda Networks (c) 2025", MAJOR, MINOR, PATCH);
 
     cli_telnet_protocol(cli, 0);
     cli_set_banner(cli, banner);
