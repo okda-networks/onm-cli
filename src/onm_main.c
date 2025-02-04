@@ -66,6 +66,8 @@ int main() {
         return -1;
     }
 
+    printf("[INF] Loading Sysrepo3 modules... This may take time.\n");
+
     ret = onm_sysrepo_init();
     if (ret != EXIT_SUCCESS) {
         LOG_ERROR("failed to initialize yang context: existing...");
@@ -87,5 +89,5 @@ int main() {
     onm_sysrepo_done();
 
     LOG_INFO("onmcli exiting...");
-
+    return 0;
 }
