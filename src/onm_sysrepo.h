@@ -36,4 +36,10 @@ sr_session_ctx_t *sysrepo_get_session_operational();
 
 void sysrepo_set_module_path(char *path);
 
+// Optional: configure schema-mount arguments before init
+void sysrepo_set_schema_mount_args(const char *module, const char *label);
+
+// Populate schema-mounts in operational DS using configured args (if any)
+int sysrepo_populate_schema_mounts();
+
 #endif //ONMCLI_ONM_SYSREPO_H

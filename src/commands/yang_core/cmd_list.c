@@ -427,34 +427,35 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
             o = cli_register_optarg(c, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                     mode, optarg_help, optagr_get_compl_candidate_running, yang_data_validator,
                                     NULL);
-
-
-            o->opt_model = (void *) child; // for get_completion
+            if (o)
+                o->opt_model = (void *) child; // for get_completion
 
             no_o = cli_register_optarg(no_c, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                        mode, optarg_help, optagr_get_compl_nocmd_candidate_running, yang_data_validator,
                                        NULL);
-
-            no_o->opt_model = (void *) child; // for get_completion
+            if (no_o)
+                no_o->opt_model = (void *) child; // for get_completion
 
             if (parent_cmd_show_conf_cand != NULL) {
                 show_o = cli_register_optarg(show_cmd_cand, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_candidate, yang_data_validator,
                                              NULL);
-
-                show_o->opt_model = (void *) child;// for get_completion
+                if (show_o)
+                    show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_start != NULL) {
                 show_o = cli_register_optarg(show_cmd_start, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_startup, yang_data_validator,
                                              NULL);
-                show_o->opt_model = (void *) child;// for get_completion
+                if (show_o)
+                    show_o->opt_model = (void *) child;// for get_completion
             }
             if (parent_cmd_show_conf_run != NULL) {
                 show_o = cli_register_optarg(show_cmd_run, child->name, opt_flag, PRIVILEGE_PRIVILEGED,
                                              MODE_ANY, optarg_help, optagr_get_compl_running, yang_data_validator,
                                              NULL);
-                show_o->opt_model = (void *) child;// for get_completion
+                if (show_o)
+                    show_o->opt_model = (void *) child;// for get_completion
             }
             free((char *) optarg_help);
         }
@@ -463,7 +464,7 @@ int register_cmd_list(struct cli_def *cli, struct lysc_node *y_node) {
     // add diff optargs for parent_cmd_show_conf_cand
     if (parent_cmd_show_conf_cand != NULL) {
         cli_register_optarg(show_cmd_cand, "diff", CLI_CMD_OPTIONAL_FLAG, PRIVILEGE_PRIVILEGED,
-                            MODE_ANY, strdup("show difference"), NULL, yang_data_validator, NULL);
+                            MODE_ANY, "show difference", NULL, yang_data_validator, NULL);
     }
     if (lysc_is_userordered(y_node)) {
         cli_register_optarg(c, "index", CLI_CMD_OPTIONAL_ARGUMENT, PRIVILEGE_PRIVILEGED,

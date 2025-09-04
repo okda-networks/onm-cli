@@ -246,7 +246,7 @@ static int edit_node_data_tree(struct lysc_node *y_node, char *value, int edit_t
             if (new_leaf == NULL) {
                 item_found = 0;
                 ret = lyd_new_path2(parent_data, sysrepo_ctx, xpath, value, strlen(value), LYD_ANYDATA_STRING,
-                                    LYD_NEW_PATH_OUTPUT, NULL, &new_leaf);
+                                    LYD_NEW_PATH_UPDATE, NULL, &new_leaf);
             }
 
 

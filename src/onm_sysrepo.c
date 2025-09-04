@@ -21,6 +21,10 @@ static sr_session_ctx_t *session = NULL, *running_session = NULL, *startup_sessi
 
 char *module_path = NULL;
 
+// schema-mount args (optional, set from CLI)
+static char *schema_mount_module = NULL;
+static char *schema_mount_label = NULL;
+
 
 // forward declaration
 int sysrepo_disconnect();
@@ -28,9 +32,23 @@ int sysrepo_disconnect();
 void sysrepo_set_module_path(char *path) {
     if (module_path != NULL)
         free(module_path);
-    module_path = malloc(sizeof(char) * (strlen(path) + 1));
-    memcpy(module_path, path, strlen(path));
-    return;
+    module_path = malloc(strlen(path) + 1);
+    if (module_path) {
+        memcpy(module_path, path, strlen(path) + 1);
+    }
+}
+
+void sysrepo_set_schema_mount_args(const char *module, const char *label) {
+    if (schema_mount_module) { free(schema_mount_module); schema_mount_module = NULL; }
+    if (schema_mount_label) { free(schema_mount_label); schema_mount_label = NULL; }
+    if (module) {
+        schema_mount_module = malloc(strlen(module) + 1);
+        memcpy(schema_mount_module, module, strlen(module) + 1);
+    }
+    if (label) {
+        schema_mount_label = malloc(strlen(label) + 1);
+        memcpy(schema_mount_label, label, strlen(label) + 1);
+    }
 }
 
 
@@ -129,6 +147,72 @@ int sysrepo_start_session_operational() {
     return EXIT_SUCCESS;
 }
 
+// helper: populate using given session, restore DS if not operational_session
+static int populate_schema_mount_in_session(sr_session_ctx_t *schema_session) {
+    if (!schema_session) return EXIT_SUCCESS;
+
+    int rc;
+    sr_datastore_t orig_ds = sr_session_get_ds(schema_session);
+
+    rc = sr_session_switch_ds(schema_session, SR_DS_OPERATIONAL);
+    if (rc != SR_ERR_OK) {
+        LOG_ERROR("Error: sr_session_switch_ds to operational failed: %s", sr_strerror(rc));
+        return EXIT_FAILURE;
+    }
+
+    char path[512];
+    snprintf(path, sizeof(path),
+             "/ietf-yang-schema-mount:schema-mounts/mount-point[module='%s'][label='%s']/shared-schema",
+             schema_mount_module, schema_mount_label);
+
+    rc = sr_set_item_str(schema_session, path, NULL, NULL, 0);
+    if (rc != SR_ERR_OK) {
+        LOG_ERROR("Error: sr_set_item_str failed to set config: %s", sr_strerror(rc));
+        // try to restore
+        if (schema_session != operational_session && orig_ds != SR_DS_OPERATIONAL) {
+            sr_session_switch_ds(schema_session, orig_ds);
+        }
+        return EXIT_FAILURE;
+    }
+
+    rc = sr_apply_changes(schema_session, 0);
+    if (rc != SR_ERR_OK) {
+        LOG_ERROR("Error: sr_apply_changes failed: %s", sr_strerror(rc));
+        if (schema_session != operational_session && orig_ds != SR_DS_OPERATIONAL) {
+            sr_session_switch_ds(schema_session, orig_ds);
+        }
+        return EXIT_FAILURE;
+    }
+
+    if (schema_session != operational_session && orig_ds != SR_DS_OPERATIONAL) {
+        rc = sr_session_switch_ds(schema_session, orig_ds);
+        if (rc != SR_ERR_OK) {
+            LOG_ERROR("Error: sr_session_switch_ds restore failed: %s", sr_strerror(rc));
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+// Populate ietf-yang-schema-mount mount-point with provided module/label
+int sysrepo_populate_schema_mounts() {
+    if (!schema_mount_module || !schema_mount_label) {
+        // Nothing to populate if args are not provided
+        return EXIT_SUCCESS;
+    }
+
+    int ret = EXIT_SUCCESS;
+    if (populate_schema_mount_in_session(session) != EXIT_SUCCESS) ret = EXIT_FAILURE;
+    if (populate_schema_mount_in_session(running_session) != EXIT_SUCCESS) ret = EXIT_FAILURE;
+    if (populate_schema_mount_in_session(startup_session) != EXIT_SUCCESS) ret = EXIT_FAILURE;
+    if (populate_schema_mount_in_session(operational_session) != EXIT_SUCCESS) ret = EXIT_FAILURE;
+
+    if (ret == EXIT_SUCCESS) {
+        LOG_INFO("schema-mount populated: module=%s label=%s", schema_mount_module, schema_mount_label);
+    }
+    return ret;
+}
+
 
 const struct ly_ctx *sysrepo_get_ctx() {
     LOG_DEBUG("sysrepo context acquired!");
@@ -216,6 +300,14 @@ int onm_sysrepo_init() {
 
     if (sysrepo_start_session_operational() != EXIT_SUCCESS)
         return EXIT_FAILURE;
+
+    // If CLI provided schema-mount args, populate across sessions
+    if (sysrepo_populate_schema_mounts() != EXIT_SUCCESS) {
+        LOG_ERROR("failed to populate schema-mounts during init");
+        // continue even on failure
+    }
+
+
 
     return EXIT_SUCCESS;
 
